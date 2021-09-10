@@ -53,9 +53,9 @@ dashXClient.track(event, withData: data)
 
 ```swift
 dashXClient.fetchContent("content_type/content", language: "en_US", {
-    result in log(result)
+    result in print(result)
 }, {
-    error in log(error)
+    error in print(error)
 })
 ```
 
@@ -72,17 +72,17 @@ dashXClient.fetchContent("content_type/content", language: "en_US", {
 ### Search Content
 
 ```swift
-dx.searchContent("contacts",
+dashXClient.searchContent("contacts",
     returnType: "all",
     filter: ["name_eq": "John"],
     order: ["created_at": "DESC"],
-    preview: true,
     limit: 10,
+    preview: true,
     {
-        result in log(result)
+        result in print(result)
     },
     {
-        error in log(error)
+        error in print(error)
     }
 )
 ```
