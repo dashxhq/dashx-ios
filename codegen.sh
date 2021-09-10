@@ -3,9 +3,6 @@
 # Exit on all errors, undeclared variables and pipefailures.
 set -euo pipefail
 
-# Advertisement!
-echo "Have you tried our new Swift Package Manager wrapper around codegen? It's now out of beta and ready to go! See docs at https://www.apollographql.com/docs/ios/swift-scripting/. This Bash script will be deprecated soon, so give it a try today!"
-
 # Get the path to the script directory
 SCRIPT_DIR="$(dirname "$0")"
 
