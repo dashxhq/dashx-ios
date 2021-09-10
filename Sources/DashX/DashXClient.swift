@@ -11,13 +11,23 @@ class DashXClient {
     private var deviceToken: String?
     private var accountType: String?
 
-    init(withPublicKey: String, withAccountType: String?, withBaseUri: String?, withTargetInstallation: String?, withTargetEnvironment: String?) {
-        ConfigInterceptor.shared.targetEnvironment = withTargetEnvironment
-        ConfigInterceptor.shared.targetInstallation = withTargetInstallation
-        self.accountType = withAccountType
+    init(withPublicKey: String, withAccountType: String? = nil, withBaseUri: String? = nil, withTargetInstallation: String? = nil, withTargetEnvironment: String? = nil) {
+        if let targetEnvironment = withTargetEnvironment {
+            ConfigInterceptor.shared.targetEnvironment = targetEnvironment
+        }
+
+        if let targetInstallation = withTargetInstallation {
+            ConfigInterceptor.shared.targetInstallation = targetInstallation
+        }
+
+        if let accountType = withAccountType {
+            self.accountType = accountType
+        }
+
         if let uri = withBaseUri {
             Network.shared.setBaseUri(to: uri)
         }
+
         generateAnonymousUid()
     }
 
@@ -79,7 +89,7 @@ class DashXClient {
     }
     // MARK: -- track
 
-    func track(_ event: String, withData: NSDictionary?) {
+    func track(_ event: String, withData: NSDictionary? = [:]) {
         let trackData: String?
 
         if withData == nil {
@@ -116,7 +126,7 @@ class DashXClient {
         }
     }
 
-    func screen(_ screenName: String, withData: NSDictionary?) {
+    func screen(_ screenName: String, withData: NSDictionary? = [:]) {
         let properties = withData as? [String: Any]
 
         track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties?.merging([ "name": screenName], uniquingKeysWith: { (_, new) in new }) as NSDictionary?)
@@ -152,7 +162,7 @@ class DashXClient {
     }
     // MARK: -- content
 
-    func fetchContent(_ contentUrn: String, preview: Bool?, language: String?, fields: [String]?, include: [String]?, exclude: [String]?,  _ resolve: @escaping (String) -> (), _ reject: @escaping (Error) -> ()) {
+    func fetchContent(_ contentUrn: String, preview: Bool? = true, language: String? = nil, fields: [String]? = nil, include: [String]? = nil, exclude: [String]? = nil,  _ resolve: @escaping (String) -> (), _ reject: @escaping (Error) -> ()) {
         let urnArray = contentUrn.split{$0 == "/"}.map(String.init)
 
         let fetchContentInput  = DashXGql.FetchContentInput(
@@ -182,7 +192,7 @@ class DashXClient {
         }
     }
 
-    func searchContent(_ contentType: String, returnType: String?, filter: NSDictionary?, order: NSDictionary?, limit: Int?, preview: Bool?, language: String?, fields: [String]?, include: [String]?, exclude: [String]?, _ resolve: @escaping ([String]) -> (), _ reject: @escaping (Error) -> ()) {
+    func searchContent(_ contentType: String, returnType: String? = "all", filter: NSDictionary? = nil, order: NSDictionary? = nil, limit: Int? = nil, preview: Bool? = true, language: String? = nil, fields: [String]? = nil, include: [String]? = nil, exclude: [String]? = nil, _ resolve: @escaping ([String]) -> (), _ reject: @escaping (Error) -> ()) {
         let filterJson: String?
         let orderJson: String?
 
