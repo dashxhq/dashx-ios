@@ -1,38 +1,76 @@
 import Foundation
 import Apollo
+import UIKit
+
+// MARK: Types
+typealias ResolveCallback =  (Any?) -> ()
+typealias RejectCallback = (Error) -> ()
 
 enum DashXClientError: Error {
     case noArgsInIdentify
 }
 
-class DashXClient {
+// Shared instance to be used by the SDK users
+public let DashX = DashXClient.instance
+
+public class DashXClient {
+    static let instance = DashXClient()
     private var anonymousUid: String?
     private var uid: String?
     private var deviceToken: String?
-    private var accountType: String?
 
-    init(withPublicKey: String, withAccountType: String? = nil, withBaseUri: String? = nil, withTargetInstallation: String? = nil, withTargetEnvironment: String? = nil) {
-        if let targetEnvironment = withTargetEnvironment {
-            ConfigInterceptor.shared.targetEnvironment = targetEnvironment
-        }
+    private var mustSubscribe: Bool = false;
 
-        if let targetInstallation = withTargetInstallation {
-            ConfigInterceptor.shared.targetInstallation = targetInstallation
-        }
-
-        if let accountType = withAccountType {
-            self.accountType = accountType
-        }
-
-        if let uri = withBaseUri {
-            Network.shared.setBaseUri(to: uri)
-        }
-
+    private init() {
         generateAnonymousUid()
+    }
+    
+    public init(withPublicKey publicKey: String,
+                baseURI: String? = nil,
+                targetInstallation: String? = nil,
+                targetEnvironment: String? = nil
+    ) {
+        self.setPublicKey(to: publicKey)
+        
+        if baseURI != nil {
+            self.setBaseURI(to: baseURI!)
+        }
+        
+        if targetInstallation != nil {
+            self.setTargetInstallation(to: targetInstallation!)
+        }
+        
+        if targetEnvironment != nil {
+            self.setTargetEnvironment(to: targetEnvironment!)
+        }
     }
 
     func setDeviceToken(to: String) {
         self.deviceToken = to
+
+        if (self.mustSubscribe) {
+          self.subscribe()
+        }
+    }
+
+    public func setPublicKey(to publicKey: String) {
+        ConfigInterceptor.shared.publicKey = publicKey
+    }
+    
+    public func setBaseURI(to baseURI: String) {
+        Network.shared.setBaseURI(to: baseURI)
+    }
+    
+    public func setTargetEnvironment(to environment: String) {
+        ConfigInterceptor.shared.targetEnvironment = environment
+    }
+
+    public func setTargetInstallation(to targetInstallation: String) {
+        ConfigInterceptor.shared.targetInstallation = targetInstallation
+    }
+
+    public func setIdentityToken(to token: String) {
+        ConfigInterceptor.shared.identityToken = token
     }
 
     private func generateAnonymousUid(withRegenerate: Bool = false) {
@@ -60,9 +98,10 @@ class DashXClient {
 
         let optionsDictionary = withOptions as? [String: String]
 
+        self.uid = optionsDictionary?["uid"]
+
         let identifyAccountInput = DashXGql.IdentifyAccountInput(
-            accountType: accountType,
-            uid: uid,
+            uid: optionsDictionary?["uid"],
             anonymousUid: anonymousUid,
             email: optionsDictionary?["email"],
             phone: optionsDictionary?["phone"],
@@ -89,27 +128,12 @@ class DashXClient {
     }
     // MARK: -- track
 
-    func track(_ event: String, withData: NSDictionary? = [:]) {
-        let trackData: String?
-
-        if withData == nil {
-            trackData = nil
-        } else if JSONSerialization.isValidJSONObject(withData!) {
-            trackData = try? String(
-                data: JSONSerialization.data(withJSONObject: withData!),
-                encoding: .utf8
-            )
-        } else {
-            DashXLog.d(tag: #function, "Encountered an error while encoding track data")
-            return
-        }
-
+    public func track(_ event: String, withData: NSDictionary? = nil) {
         let trackEventInput = DashXGql.TrackEventInput(
-            accountType: accountType!,
             event: event,
             accountUid: uid,
             accountAnonymousUid: anonymousUid,
-            data: trackData
+            data: withData as? [String: JSONDecodable?]
         )
 
         DashXLog.d(tag: #function, "Calling track with \(trackEventInput)")
@@ -119,32 +143,58 @@ class DashXClient {
         Network.shared.apollo.perform(mutation: trackEventMutation) { result in
           switch result {
           case .success(let graphQLResult):
-            DashXLog.d(tag: #function, "Sent track with \(String(describing: graphQLResult))")
+              DashXLog.d(tag: #function, "Sent track with \(String(describing: graphQLResult.data))")
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during track(): \(error)")
           }
         }
     }
 
-    func screen(_ screenName: String, withData: NSDictionary? = [:]) {
+    func screen(_ screenName: String, withData: NSDictionary?) {
         let properties = withData as? [String: Any]
 
         track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties?.merging([ "name": screenName], uniquingKeysWith: { (_, new) in new }) as NSDictionary?)
     }
+
+    // https://stackoverflow.com/a/11197770
+    func getDeviceModel() -> String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        return machineMirror.children.reduce("") { identifier, element in
+            guard let value = element.value as? Int8, value != 0 else { return identifier }
+            return identifier + String(UnicodeScalar(UInt8(value)))
+        }
+    }
+
     // MARK: -- subscribe
 
     func subscribe() {
-        if deviceToken == nil || ConfigInterceptor.shared.identityToken == nil {
+        if deviceToken == nil {
+            self.mustSubscribe = true
             return
         }
 
-        let deviceKind = "IOS"
+        self.mustSubscribe = false
 
+        let preferences = UserDefaults.standard
+        let deviceTokenKey = Constants.USER_PREFERENCES_KEY_DEVICE_TOKEN
+
+        if preferences.string(forKey: deviceTokenKey) == deviceToken {
+            DashXLog.d(tag: #function, "Already subscribed: \(String(describing: deviceToken))")
+            return
+        }
+        
         let subscribeContactInput  = DashXGql.SubscribeContactInput(
-            uid: uid!,
-            name: deviceKind,
+            accountUid: uid,
+            accountAnonymousUid: anonymousUid!,
+            name: UIDevice.current.model,
             kind: .ios,
-            value: deviceToken!
+            value: deviceToken!,
+            osName: UIDevice.current.systemName,
+            osVersion: UIDevice.current.systemVersion,
+            deviceModel: getDeviceModel(),
+            deviceManufacturer: "Apple"
         )
 
         DashXLog.d(tag: #function, "Calling subscribe with \(subscribeContactInput)")
@@ -154,7 +204,10 @@ class DashXClient {
         Network.shared.apollo.perform(mutation: subscribeContactMutation) { result in
           switch result {
           case .success(let graphQLResult):
-            DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
+              if graphQLResult.data != nil {
+                    preferences.set(graphQLResult.data?.subscribeContact.value, forKey: deviceTokenKey)
+                    DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
+              }
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during subscribe(): \(error)")
           }
@@ -162,12 +215,20 @@ class DashXClient {
     }
     // MARK: -- content
 
-    func fetchContent(_ contentUrn: String, preview: Bool? = true, language: String? = nil, fields: [String]? = nil, include: [String]? = nil, exclude: [String]? = nil,  _ resolve: @escaping (String) -> (), _ reject: @escaping (Error) -> ()) {
-        let urnArray = contentUrn.split{$0 == "/"}.map(String.init)
-
+    func fetchContent(
+        _ contentType: String,
+        _ content: String,
+        _ preview: Bool? = true,
+        _ language: String?,
+        _ fields: [String]? = [],
+        _ include: [String]? = [],
+        _ exclude: [String]? = [],
+        _ resolve: @escaping ResolveCallback,
+        _ reject: @escaping RejectCallback
+    ) {
         let fetchContentInput  = DashXGql.FetchContentInput(
-            contentType: urnArray[0],
-            content: urnArray[1],
+            contentType: contentType,
+            content: content,
             preview: preview,
             language: language,
             fields: fields,
@@ -177,14 +238,14 @@ class DashXClient {
 
         DashXLog.d(tag: #function, "Calling fetchContent with \(fetchContentInput)")
 
-        let fetchContentQuery = DashXGql.FetchContentQuery(input: fetchContentInput)
+        let findContentQuery = DashXGql.FetchContentQuery(input: fetchContentInput)
 
-        Network.shared.apollo.fetch(query: fetchContentQuery) { result in
+        Network.shared.apollo.fetch(query: findContentQuery, cachePolicy: .returnCacheDataElseFetch) { result in
           switch result {
           case .success(let graphQLResult):
-            DashXLog.d(tag: #function, "Sent fetchContent with \(String(describing: graphQLResult))")
+            DashXLog.d(tag: #function, "Sent findContent with \(String(describing: graphQLResult))")
             let content = graphQLResult.data?.fetchContent
-            resolve(content ?? "")
+            resolve(content)
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during fetchContent(): \(error)")
             reject(error)
@@ -192,40 +253,25 @@ class DashXClient {
         }
     }
 
-    func searchContent(_ contentType: String, returnType: String? = "all", filter: NSDictionary? = nil, order: NSDictionary? = nil, limit: Int? = nil, preview: Bool? = true, language: String? = nil, fields: [String]? = nil, include: [String]? = nil, exclude: [String]? = nil, _ resolve: @escaping ([String]) -> (), _ reject: @escaping (Error) -> ()) {
-        let filterJson: String?
-        let orderJson: String?
-
-        if filter == nil {
-            filterJson = nil
-        } else if JSONSerialization.isValidJSONObject(filter!) {
-            filterJson = try? String(
-                data: JSONSerialization.data(withJSONObject: filter!),
-                encoding: .utf8
-            )
-        } else {
-            DashXLog.d(tag: #function, "Encountered an error while encoding filter")
-            return
-        }
-
-        if order == nil {
-            orderJson = nil
-        } else if JSONSerialization.isValidJSONObject(order!) {
-            orderJson = try? String(
-                data: JSONSerialization.data(withJSONObject: order!),
-                encoding: .utf8
-            )
-        } else {
-            DashXLog.d(tag: #function, "Encountered an error while encoding order")
-            return
-        }
-
-
+    func searchContent(
+        _ contentType: String,
+        _ returnType: String,
+        _ filter: NSDictionary?,
+        _ order: NSDictionary?,
+        _ limit: Int?,
+        _ preview: Bool? = true,
+        _ language: String?,
+        _ fields: [String]? = [],
+        _ include: [String]? = [],
+        _ exclude: [String]? = [],
+        _ resolve: @escaping ResolveCallback,
+        _ reject: @escaping RejectCallback
+    ) {
         let searchContentsInput  = DashXGql.SearchContentInput(
             contentType: contentType,
-            returnType: returnType ?? "all",
-            filter: filterJson,
-            order: orderJson,
+            returnType: returnType,
+            filter: filter as? [String: Any],
+            order: order as? [String: Any],
             limit: limit,
             preview: preview,
             language: language,
@@ -238,13 +284,70 @@ class DashXClient {
 
         let searchContentQuery = DashXGql.SearchContentQuery(input: searchContentsInput)
 
-        Network.shared.apollo.fetch(query: searchContentQuery) { result in
+        Network.shared.apollo.fetch(query: searchContentQuery, cachePolicy: .returnCacheDataElseFetch) { result in
           switch result {
           case .success(let graphQLResult):
-            let content = graphQLResult.data?.searchContent
-            resolve(content ?? [])
+            let json = graphQLResult.data?.searchContent
+            DashXLog.d(tag: #function, "Sent searchContents with \(String(describing: json))")
+            resolve(json)
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during searchContent(): \(error)")
+            reject(error)
+          }
+        }
+    }
+    // MARK: -- cart
+
+    func addItemToCart(
+        _ itemId: String,
+        _ pricingId: String,
+        _ quantity: String,
+        _ reset: Bool,
+        _ custom: NSDictionary?,
+        _ resolve: @escaping ResolveCallback,
+        _ reject: @escaping RejectCallback
+    ) {
+        let addItemToCartInput  = DashXGql.AddItemToCartInput(
+             accountUid: self.uid, accountAnonymousUid: self.anonymousUid, itemId: itemId, pricingId: pricingId, quantity: quantity, reset: reset, custom: custom as? [String: JSONDecodable?]
+        )
+
+        DashXLog.d(tag: #function, "Calling addItemToCart with \(addItemToCartInput)")
+
+        let addItemToCartMutation = DashXGql.AddItemToCartMutation(input: addItemToCartInput)
+
+        Network.shared.apollo.perform(mutation: addItemToCartMutation) { result in
+          switch result {
+          case .success(let graphQLResult):
+            let json = graphQLResult.data?.addItemToCart
+            DashXLog.d(tag: #function, "Sent addItemToCart with \(String(describing: json))")
+            resolve(json?.resultMap)
+          case .failure(let error):
+            DashXLog.d(tag: #function, "Encountered an error during addItemToCart(): \(error)")
+            reject(error)
+          }
+        }
+    }
+
+    func fetchCart(
+        _ resolve: @escaping ResolveCallback,
+        _ reject: @escaping RejectCallback
+    ) {
+        let fetchCartInput  = DashXGql.FetchCartInput(
+            accountUid: self.uid, accountAnonymousUid: self.anonymousUid
+        )
+
+        DashXLog.d(tag: #function, "Calling fetchCart with \(fetchCartInput)")
+
+        let fetchCartQuery = DashXGql.FetchCartQuery(input: fetchCartInput)
+
+        Network.shared.apollo.fetch(query: fetchCartQuery) { result in
+          switch result {
+          case .success(let graphQLResult):
+            let json = graphQLResult.data?.fetchCart
+            DashXLog.d(tag: #function, "Sent fetchCart with \(String(describing: json))")
+            resolve(json?.resultMap)
+          case .failure(let error):
+            DashXLog.d(tag: #function, "Encountered an error during fetchCart(): \(error)")
             reject(error)
           }
         }

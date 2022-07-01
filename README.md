@@ -1,102 +1,80 @@
-# dashx-ios
+# iOS Native Module
 
-_DashX iOS SDK_
+## Development
 
-## Installation
+### Obtaining Graphql schema and generating Graphql operation
 
-- Go to *File* > *Swift Packages* > *Add Package Dependency*
-- Paste the URL to this repo (https://github.com/dashxhq/dashx-ios.git) into the search bar, then hit the Next button.
-- Under *Rules* select `Up To Next Minor`, you can put version `0.0.1`
-- Select `DashX` package
+- Make sure to install Apollo CLI via npm:
 
-## Usage
-
-```swift
-var dashXClient = DashXClient(withPublicKey: "Your Public Key")
+```sh
+$ npm i -g apollo
 ```
 
-DashXClient can be initialised with:
+- In order to generate code, Apollo requires local copy of Graphql schema, to download that:
 
-|Name|Type|
-|:---:|:--:|
-|**`withPublicKey`**|`String` _(Required)_ |
-|**`withAccountType`**|`String`|
-|**`withBaseUri`**|`String`|
-|**`withTargetInstallation`**|`String`|
-|**`withTargetEnvironment`**|`String`|
-
-### Identify User
-
-```swift
-dashXClient.identify(uid, withOptions: options)
+```sh
+$ apollo schema:download --endpoint="https://api.dashx.com/graphql" schema.json
 ```
 
-`withOptions` is a `NSDictionary` of
+This will save a `schama.json` file in your ios directory.
 
-|Name|Type|
-|:---:|:--:|
-|**`firstName`**|`String`|
-|**`lastName`**|`String`|
-|**`name`**|`String`|
-|**`email`**|`String`|
-|**`phone`**|`String`|
+- Add Graphql request in `graphql` dir.
 
-### Track Events
+- Regenerate `API.swift` using:
 
-```swift
-dashXClient.track(event, withData: data)
+```sh
+$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars API.swift
 ```
 
-`withData` accepts [String:String]
+For example, if you want to generate code for `FetchContent`.
 
-### Fetch Content
+- Download schema
 
-```swift
-dashXClient.fetchContent("content_type/content", language: "en_US", {
-    result in print(result)
-}, {
-    error in print(error)
-})
+```sh
+$ apollo schema:download --endpoint="https://api.dashx.com/graphql" schema.json
 ```
 
-`fetchContent` accepts following arguments
+- Add request in `graphql` dir with following contents:
 
-|Name|Type|Example|
-|:--:|:--:|:-----:|
-|**`preview`**|`boolean`||
-|**`language`**|`String`|`"en_US"`||
-|**`fields`**|`[String]`|`["character", "cast"]`||
-|**`include`**|`[String]`|`["character.createdBy", "character.birthDate"]`||
-|**`exclude`**|`[String]`|`["directors"]`||
+```graphql
+query FetchContent($input: FetchContentInput!) {
+  fetchContent(input: $input)
+}
+```
 
-### Search Content
+- Re-generate API.swift so it includes the `FetchContent` operation
+
+```sh
+$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars API.swift
+```
+
+- Now you can use FetchContent operation like so:
 
 ```swift
-dashXClient.searchContent("contacts",
-    returnType: "all",
-    filter: ["name_eq": "John"],
-    order: ["created_at": "DESC"],
-    limit: 10,
-    preview: true,
-    {
-        result in print(result)
-    },
-    {
-        error in print(error)
-    }
+let fetchContentInput  = DashXGql.FetchContentInput( // Note the DashXGql namespace
+    contentType: contentType,
+    content: content,
+    preview: preview,
+    language: language,
+    fields: fields,
+    include: include,
+    exclude: exclude
 )
+
+DashXLog.d(tag: #function, "Calling fetchContent with \(fetchContentInput)")
+
+let fetchContentQuery = DashXGql.FetchContentQuery(input: fetchContentInput)
+
+Network.shared.apollo.fetch(query: fetchContentQuery, cachePolicy: .returnCacheDataElseFetch) { result in
+  switch result {
+  case .success(let graphQLResult):
+    DashXLog.d(tag: #function, "Sent fetchContent with \(String(describing: graphQLResult))")
+    let content = graphQLResult.data?.fetchContent
+    resolve(content)
+  case .failure(let error):
+    DashXLog.d(tag: #function, "Encountered an error during fetchContent(): \(error)")
+    reject("", error.localizedDescription, error)
+  }
+
 ```
 
-`searchContent` accepts following arguments
-
-|Name|Type|Example|
-|:--:|:--:|:-----:|
-|**`returnType`**|`"all"` or `"one"`||
-|**`filter`**|`[String: String]`|`["name_eq": "John"]`|
-|**`order`**|`[String: String]`|`["created_at": "DESC"]`|
-|**`limit`**|`Int`||
-|**`preview`**|`Bool`||
-|**`language`**|`String`|`"en_US"`||
-|**`fields`**|`[String]`|`["character", "cast"]`||
-|**`include`**|`[String]`|`["character.createdBy", "character.birthDate"]`||
-|**`exclude`**|`[String]`|`["directors"]`||
