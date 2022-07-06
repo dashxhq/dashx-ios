@@ -62,8 +62,8 @@ class DashXAppDelegate: NSObject {
                 let request = UNNotificationRequest(identifier: identifier, content: notificationContent, trigger: nil)
                 let notificationCenter = UNUserNotificationCenter.current()
                 notificationCenter.add(request)
-
-                let data = ["data": userInfo]
+                  // TODO Complete the implementation below
+//                let data = ["data": userInfo]
             }
         }
 

@@ -44,6 +44,13 @@ public class DashXClient {
             self.setTargetEnvironment(to: targetEnvironment!)
         }
     }
+    
+    public func setup(withPublicKey publicKey: String,
+                      baseURI: String? = nil,
+                      trackAppLifecycleEvents: Bool? = false,
+                      trackScreenViews: Bool? = false) {
+        
+    }
 
     func setDeviceToken(to: String) {
         self.deviceToken = to
@@ -53,11 +60,11 @@ public class DashXClient {
         }
     }
 
-    public func setPublicKey(to publicKey: String) {
+    func setPublicKey(to publicKey: String) {
         ConfigInterceptor.shared.publicKey = publicKey
     }
     
-    public func setBaseURI(to baseURI: String) {
+    func setBaseURI(to baseURI: String) {
         Network.shared.setBaseURI(to: baseURI)
     }
     
