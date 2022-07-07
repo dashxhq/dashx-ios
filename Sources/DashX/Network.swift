@@ -5,7 +5,7 @@ class Network {
     static let shared = Network()
     private var baseUri: String = "https://api.dashx.com/graphql"
 
-    func setBaseUri(to: String) {
+    func setBaseURI(to: String) {
       self.baseUri = to
     }
 
@@ -23,7 +23,7 @@ class Network {
     }()
 }
 
-class NetworkInterceptorProvider: LegacyInterceptorProvider {
+class NetworkInterceptorProvider: DefaultInterceptorProvider {
     override func interceptors<Operation: GraphQLOperation>(for operation: Operation) -> [ApolloInterceptor] {
         var interceptors = super.interceptors(for: operation)
         interceptors.insert(ConfigInterceptor.shared, at: 0)
