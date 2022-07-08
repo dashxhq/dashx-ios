@@ -138,5 +138,4 @@ Pod::Spec.new do |spec|
   spec.dependency 'Alamofire', '~> 4.7'
   spec.dependency 'Apollo', '~> 0.51.2'
 
-
 end
