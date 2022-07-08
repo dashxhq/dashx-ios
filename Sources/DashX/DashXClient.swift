@@ -3,8 +3,8 @@ import Apollo
 import UIKit
 
 // MARK: Types
-typealias ResolveCallback =  (Any?) -> ()
-typealias RejectCallback = (Error) -> ()
+public typealias SuccessCallback =  (Any?) -> ()
+public typealias FailureCallback = (Error) -> ()
 
 enum DashXClientError: Error {
     case noArgsInIdentify
@@ -25,9 +25,9 @@ public class DashXClient {
         generateAnonymousUid()
     }
     
-    public init(withPublicKey publicKey: String,
+    // Hiding the initialiser from user till multiple dash clients support is in place
+    private init(withPublicKey publicKey: String,
                 baseURI: String? = nil,
-                targetInstallation: String? = nil,
                 targetEnvironment: String? = nil
     ) {
         self.setPublicKey(to: publicKey)
@@ -36,12 +36,22 @@ public class DashXClient {
             self.setBaseURI(to: baseURI!)
         }
         
-        if targetInstallation != nil {
-            self.setTargetInstallation(to: targetInstallation!)
-        }
-        
         if targetEnvironment != nil {
             self.setTargetEnvironment(to: targetEnvironment!)
+        }
+    }
+    
+    public func setup(_ options: NSDictionary?) {
+        ConfigInterceptor.shared.publicKey = options?.value(forKey: "publicKey") as? String
+
+        DashXAppDelegate.swizzleDidReceiveRemoteNotificationFetchCompletionHandler()
+
+        if let baseUri = options?.value(forKey: "baseUri") {
+            self.setBaseURI(to: baseUri as! String)
+        }
+
+        if let targetEnvironment = options?.value(forKey: "targetEnvironment") {
+            self.setTargetEnvironment(to: targetEnvironment as! String)
         }
     }
 
@@ -53,19 +63,19 @@ public class DashXClient {
         }
     }
 
-    public func setPublicKey(to publicKey: String) {
+    func setPublicKey(to publicKey: String) {
         ConfigInterceptor.shared.publicKey = publicKey
     }
     
-    public func setBaseURI(to baseURI: String) {
+    func setBaseURI(to baseURI: String) {
         Network.shared.setBaseURI(to: baseURI)
     }
     
-    public func setTargetEnvironment(to environment: String) {
+    func setTargetEnvironment(to environment: String) {
         ConfigInterceptor.shared.targetEnvironment = environment
     }
 
-    public func setTargetInstallation(to targetInstallation: String) {
+    func setTargetInstallation(to targetInstallation: String) {
         ConfigInterceptor.shared.targetInstallation = targetInstallation
     }
 
@@ -86,7 +96,7 @@ public class DashXClient {
     }
     // MARK: -- identify
 
-    func identify(_ uid: String?, withOptions: NSDictionary?) throws {
+    public func identify(_ uid: String?, withOptions: NSDictionary?) throws {
         if uid != nil {
             self.uid = uid
             return
@@ -215,16 +225,16 @@ public class DashXClient {
     }
     // MARK: -- content
 
-    func fetchContent(
-        _ contentType: String,
-        _ content: String,
-        _ preview: Bool? = true,
-        _ language: String?,
-        _ fields: [String]? = [],
-        _ include: [String]? = [],
-        _ exclude: [String]? = [],
-        _ resolve: @escaping ResolveCallback,
-        _ reject: @escaping RejectCallback
+    public func fetchContent(
+        contentType: String,
+        content: String,
+        preview: Bool? = true,
+        language: String?,
+        fields: [String]? = [],
+        include: [String]? = [],
+        exclude: [String]? = [],
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
     ) {
         let fetchContentInput  = DashXGql.FetchContentInput(
             contentType: contentType,
@@ -245,27 +255,27 @@ public class DashXClient {
           case .success(let graphQLResult):
             DashXLog.d(tag: #function, "Sent findContent with \(String(describing: graphQLResult))")
             let content = graphQLResult.data?.fetchContent
-            resolve(content)
+            successCallback(content)
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during fetchContent(): \(error)")
-            reject(error)
+              failureCallback(error)
           }
         }
     }
 
-    func searchContent(
-        _ contentType: String,
-        _ returnType: String,
-        _ filter: NSDictionary?,
-        _ order: NSDictionary?,
-        _ limit: Int?,
-        _ preview: Bool? = true,
-        _ language: String?,
-        _ fields: [String]? = [],
-        _ include: [String]? = [],
-        _ exclude: [String]? = [],
-        _ resolve: @escaping ResolveCallback,
-        _ reject: @escaping RejectCallback
+    public func searchContent(
+        contentType: String,
+        returnType: String,
+        filter: NSDictionary?,
+        order: NSDictionary?,
+        limit: Int?,
+        preview: Bool? = true,
+        language: String?,
+        fields: [String]? = [],
+        include: [String]? = [],
+        exclude: [String]? = [],
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
     ) {
         let searchContentsInput  = DashXGql.SearchContentInput(
             contentType: contentType,
@@ -289,23 +299,23 @@ public class DashXClient {
           case .success(let graphQLResult):
             let json = graphQLResult.data?.searchContent
             DashXLog.d(tag: #function, "Sent searchContents with \(String(describing: json))")
-            resolve(json)
+            successCallback(json)
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during searchContent(): \(error)")
-            reject(error)
+            failureCallback(error)
           }
         }
     }
     // MARK: -- cart
 
-    func addItemToCart(
-        _ itemId: String,
-        _ pricingId: String,
-        _ quantity: String,
-        _ reset: Bool,
-        _ custom: NSDictionary?,
-        _ resolve: @escaping ResolveCallback,
-        _ reject: @escaping RejectCallback
+    public func addItemToCart(
+        itemId: String,
+        pricingId: String,
+        quantity: String,
+        reset: Bool,
+        custom: NSDictionary?,
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
     ) {
         let addItemToCartInput  = DashXGql.AddItemToCartInput(
              accountUid: self.uid, accountAnonymousUid: self.anonymousUid, itemId: itemId, pricingId: pricingId, quantity: quantity, reset: reset, custom: custom as? [String: JSONDecodable?]
@@ -320,17 +330,17 @@ public class DashXClient {
           case .success(let graphQLResult):
             let json = graphQLResult.data?.addItemToCart
             DashXLog.d(tag: #function, "Sent addItemToCart with \(String(describing: json))")
-            resolve(json?.resultMap)
+            successCallback(json?.resultMap)
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during addItemToCart(): \(error)")
-            reject(error)
+            failureCallback(error)
           }
         }
     }
 
-    func fetchCart(
-        _ resolve: @escaping ResolveCallback,
-        _ reject: @escaping RejectCallback
+    public func fetchCart(
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
     ) {
         let fetchCartInput  = DashXGql.FetchCartInput(
             accountUid: self.uid, accountAnonymousUid: self.anonymousUid
@@ -345,10 +355,10 @@ public class DashXClient {
           case .success(let graphQLResult):
             let json = graphQLResult.data?.fetchCart
             DashXLog.d(tag: #function, "Sent fetchCart with \(String(describing: json))")
-            resolve(json?.resultMap)
+            successCallback(json?.resultMap)
           case .failure(let error):
             DashXLog.d(tag: #function, "Encountered an error during fetchCart(): \(error)")
-            reject(error)
+            failureCallback(error)
           }
         }
     }

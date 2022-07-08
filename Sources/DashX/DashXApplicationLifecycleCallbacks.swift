@@ -14,7 +14,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         notificationCenter.addObserver(self, selector: #selector(appResumed), name: UIApplication.willEnterForegroundNotification, object: nil)
 
         NSSetUncaughtExceptionHandler { exception in
-            DashXClient.instance.track(Constants.INTERNAL_EVENT_APP_CRASHED, withData: [ "exception": exception.reason ])
+            DashXClient.instance.track(Constants.INTERNAL_EVENT_APP_CRASHED, withData: [ "exception": exception.reason as Any ])
         }
 
         appOpened()
