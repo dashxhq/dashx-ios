@@ -35,7 +35,6 @@ class ConfigInterceptor: ApolloInterceptor {
     static let shared = ConfigInterceptor()
 
     var publicKey: String?
-    var targetInstallation: String?
     var targetEnvironment: String?
     var identityToken: String?
 
@@ -47,10 +46,6 @@ class ConfigInterceptor: ApolloInterceptor {
 
         if let publicKey = self.publicKey {
             request.addHeader(name: "X-PUBLIC-KEY", value: "\(publicKey)")
-        }
-
-        if let targetInstallation = self.targetInstallation {
-            request.addHeader(name: "X-TARGET-INSTALLATION", value: "\(targetInstallation)")
         }
 
         if let targetEnvironment = self.targetEnvironment {

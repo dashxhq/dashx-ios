@@ -75,10 +75,6 @@ public class DashXClient {
         ConfigInterceptor.shared.targetEnvironment = environment
     }
 
-    func setTargetInstallation(to targetInstallation: String) {
-        ConfigInterceptor.shared.targetInstallation = targetInstallation
-    }
-
     public func setIdentityToken(to token: String) {
         ConfigInterceptor.shared.identityToken = token
     }
