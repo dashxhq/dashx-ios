@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 @objc(DashXApplicationLifecycleCallbacks)
 class DashXApplicationLifecycleCallbacks: NSObject {
