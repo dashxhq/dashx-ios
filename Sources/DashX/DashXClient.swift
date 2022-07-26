@@ -74,8 +74,12 @@ public class DashXClient {
     public func setTargetEnvironment(to environment: String) {
         ConfigInterceptor.shared.targetEnvironment = environment
     }
-
-    public func setIdentityToken(to token: String) {
+    
+    public func setAccountUid(with uid: String) {
+        self.uid = uid
+    }
+    
+    public func setIdentityToken(token: String) {
         ConfigInterceptor.shared.identityToken = token
     }
 
@@ -92,23 +96,19 @@ public class DashXClient {
     }
     // MARK: -- identify
 
-    public func identify(_ uid: String?, withOptions: NSDictionary?) throws {
-        /* MARK: - Why do we return here
-        if uid != nil {
-            self.uid = uid
-            return
-        }
-         */
+    public func identify(withOptions: NSDictionary?) throws {
         if withOptions == nil {
             throw DashXClientError.noArgsInIdentify
         }
 
         let optionsDictionary = withOptions as? [String: String]
 
-        self.uid = optionsDictionary?["uid"]
+        let uid = optionsDictionary?["uid"] ?? self.uid
+        
+        let anonymousUid = optionsDictionary?["anonymousUid"] ?? self.anonymousUid
 
         let identifyAccountInput = DashXGql.IdentifyAccountInput(
-            uid: optionsDictionary?["uid"],
+            uid: uid,
             anonymousUid: anonymousUid,
             email: optionsDictionary?["email"],
             phone: optionsDictionary?["phone"],
@@ -350,7 +350,7 @@ public class DashXClient {
         Network.shared.apollo.fetch(query: fetchCartQuery) { result in
           switch result {
           case .success(let graphQLResult):
-            let json = graphQLResult.data?.fetchCart
+              let json = graphQLResult.data?.fetchCart
             DashXLog.d(tag: #function, "Sent fetchCart with \(String(describing: json))")
             successCallback(json?.resultMap)
           case .failure(let error):
@@ -359,6 +359,8 @@ public class DashXClient {
           }
         }
     }
+    
+    // MARK: -- StoredPreferences
     
     public func fetchStoredPreferences(
         successCallback: @escaping SuccessCallback,
@@ -377,9 +379,9 @@ public class DashXClient {
         Network.shared.apollo.fetch(query: fetchStoredPreferencesQuery) { result in
             switch result {
             case .success(let graphQLResult):
-              let json = graphQLResult.data?.fetchStoredPreferences
+              let json = graphQLResult.data?.fetchStoredPreferences.preferenceData
               DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(String(describing: json))")
-              successCallback(json?.resultMap)
+              successCallback(json)
             case .failure(let error):
               DashXLog.d(tag: #function, "Encountered an error during fetchStoredPreferences(): \(error)")
               failureCallback(error)
@@ -407,7 +409,7 @@ public class DashXClient {
             case .success(let graphQLResult):
               let json = graphQLResult.data?.saveStoredPreferences
               DashXLog.d(tag: #function, "Sent saveStoredPreferences with \(String(describing: json))")
-              successCallback(json?.resultMap)
+                successCallback(json?.resultMap)
             case .failure(let error):
               DashXLog.d(tag: #function, "Encountered an error during saveStoredPreferences(): \(error)")
               failureCallback(error)
