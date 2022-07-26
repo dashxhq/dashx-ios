@@ -15,8 +15,8 @@ public let DashX = DashXClient.instance
 
 public class DashXClient {
     static let instance = DashXClient()
-    private var anonymousUid: String?
-    private var uid: String?
+    private var accountAnonymousUid: String?
+    private var accountUid: String?
     private var deviceToken: String?
 
     private var mustSubscribe: Bool = false;
@@ -75,11 +75,8 @@ public class DashXClient {
         ConfigInterceptor.shared.targetEnvironment = environment
     }
     
-    public func setAccountUid(with uid: String) {
-        self.uid = uid
-    }
-    
-    public func setIdentityToken(token: String) {
+    public func setIdentity(uid: String? = nil, token: String? = nil) {
+        self.accountUid = uid
         ConfigInterceptor.shared.identityToken = token
     }
 
@@ -88,10 +85,10 @@ public class DashXClient {
         let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ANONYMOUS_UID
 
         if !withRegenerate && preferences.object(forKey: anonymousUidKey) != nil {
-            self.anonymousUid = preferences.string(forKey: anonymousUidKey) ?? nil
+            self.accountAnonymousUid = preferences.string(forKey: anonymousUidKey) ?? nil
         } else {
-            self.anonymousUid = UUID().uuidString
-            preferences.set(self.anonymousUid, forKey: anonymousUidKey)
+            self.accountAnonymousUid = UUID().uuidString
+            preferences.set(self.accountAnonymousUid, forKey: anonymousUidKey)
         }
     }
     // MARK: -- identify
@@ -103,9 +100,9 @@ public class DashXClient {
 
         let optionsDictionary = withOptions as? [String: String]
 
-        let uid = optionsDictionary?["uid"] ?? self.uid
+        let uid = optionsDictionary?["uid"] ?? self.accountUid
         
-        let anonymousUid = optionsDictionary?["anonymousUid"] ?? self.anonymousUid
+        let anonymousUid = optionsDictionary?["anonymousUid"] ?? self.accountAnonymousUid
 
         let identifyAccountInput = DashXGql.IdentifyAccountInput(
             uid: uid,
@@ -130,7 +127,7 @@ public class DashXClient {
     }
 
     func reset() {
-        self.uid = nil
+        self.accountUid = nil
         self.generateAnonymousUid(withRegenerate: true)
     }
     // MARK: -- track
@@ -138,8 +135,8 @@ public class DashXClient {
     public func track(_ event: String, withData: NSDictionary? = nil) {
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
-            accountUid: uid,
-            accountAnonymousUid: anonymousUid,
+            accountUid: accountUid,
+            accountAnonymousUid: accountAnonymousUid,
             data: withData as? [String: JSONDecodable?]
         )
 
@@ -193,8 +190,8 @@ public class DashXClient {
         }
         
         let subscribeContactInput  = DashXGql.SubscribeContactInput(
-            accountUid: uid,
-            accountAnonymousUid: anonymousUid!,
+            accountUid: accountUid,
+            accountAnonymousUid: accountAnonymousUid!,
             name: UIDevice.current.model,
             kind: .ios,
             value: deviceToken!,
@@ -315,7 +312,7 @@ public class DashXClient {
         failureCallback: @escaping FailureCallback
     ) {
         let addItemToCartInput  = DashXGql.AddItemToCartInput(
-             accountUid: self.uid, accountAnonymousUid: self.anonymousUid, itemId: itemId, pricingId: pricingId, quantity: quantity, reset: reset, custom: custom as? [String: JSONDecodable?]
+             accountUid: self.accountUid, accountAnonymousUid: self.accountAnonymousUid, itemId: itemId, pricingId: pricingId, quantity: quantity, reset: reset, custom: custom as? [String: JSONDecodable?]
         )
 
         DashXLog.d(tag: #function, "Calling addItemToCart with \(addItemToCartInput)")
@@ -340,7 +337,7 @@ public class DashXClient {
         failureCallback: @escaping FailureCallback
     ) {
         let fetchCartInput  = DashXGql.FetchCartInput(
-            accountUid: self.uid, accountAnonymousUid: self.anonymousUid
+            accountUid: self.accountUid, accountAnonymousUid: self.accountAnonymousUid
         )
 
         DashXLog.d(tag: #function, "Calling fetchCart with \(fetchCartInput)")
@@ -350,7 +347,7 @@ public class DashXClient {
         Network.shared.apollo.fetch(query: fetchCartQuery) { result in
           switch result {
           case .success(let graphQLResult):
-              let json = graphQLResult.data?.fetchCart
+            let json = graphQLResult.data?.fetchCart
             DashXLog.d(tag: #function, "Sent fetchCart with \(String(describing: json))")
             successCallback(json?.resultMap)
           case .failure(let error):
@@ -366,7 +363,7 @@ public class DashXClient {
         successCallback: @escaping SuccessCallback,
         failureCallback: @escaping FailureCallback
     ) {
-        guard let uid = self.uid else { return }
+        guard let uid = self.accountUid else { return }
         
         let fetchStoredPreferencesInput = DashXGql.FetchStoredPreferencesInput(
             accountUid: uid
@@ -394,7 +391,7 @@ public class DashXClient {
         successCallback: @escaping SuccessCallback,
         failureCallback: @escaping FailureCallback
     ) {
-        guard let uid = self.uid else { return }
+        guard let uid = self.accountUid else { return }
         
         guard let preferenceData = preferenceData as? [String: Any] else { return }
         
@@ -409,7 +406,7 @@ public class DashXClient {
             case .success(let graphQLResult):
               let json = graphQLResult.data?.saveStoredPreferences
               DashXLog.d(tag: #function, "Sent saveStoredPreferences with \(String(describing: json))")
-                successCallback(json?.resultMap)
+              successCallback(json?.resultMap)
             case .failure(let error):
               DashXLog.d(tag: #function, "Encountered an error during saveStoredPreferences(): \(error)")
               failureCallback(error)
