@@ -301,6 +301,7 @@ public enum DashXGql {
     public var graphQLMap: GraphQLMap
 
     /// - Parameters:
+    ///   - installationId
     ///   - contentId
     ///   - contentType
     ///   - content
@@ -309,8 +310,17 @@ public enum DashXGql {
     ///   - fields
     ///   - include
     ///   - exclude
-    public init(contentId: Swift.Optional<UUID?> = nil, contentType: Swift.Optional<String?> = nil, content: Swift.Optional<String?> = nil, preview: Swift.Optional<Bool?> = nil, language: Swift.Optional<String?> = nil, fields: Swift.Optional<[String]?> = nil, include: Swift.Optional<[String]?> = nil, exclude: Swift.Optional<[String]?> = nil) {
-      graphQLMap = ["contentId": contentId, "contentType": contentType, "content": content, "preview": preview, "language": language, "fields": fields, "include": include, "exclude": exclude]
+    public init(installationId: Swift.Optional<UUID?> = nil, contentId: Swift.Optional<UUID?> = nil, contentType: Swift.Optional<String?> = nil, content: Swift.Optional<String?> = nil, preview: Swift.Optional<Bool?> = nil, language: Swift.Optional<String?> = nil, fields: Swift.Optional<[String]?> = nil, include: Swift.Optional<[String]?> = nil, exclude: Swift.Optional<[String]?> = nil) {
+      graphQLMap = ["installationId": installationId, "contentId": contentId, "contentType": contentType, "content": content, "preview": preview, "language": language, "fields": fields, "include": include, "exclude": exclude]
+    }
+
+    public var installationId: Swift.Optional<UUID?> {
+      get {
+        return graphQLMap["installationId"] as? Swift.Optional<UUID?> ?? Swift.Optional<UUID?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "installationId")
+      }
     }
 
     public var contentId: Swift.Optional<UUID?> {
@@ -382,6 +392,25 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "exclude")
+      }
+    }
+  }
+
+  public struct FetchStoredPreferencesInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - accountUid
+    public init(accountUid: String) {
+      graphQLMap = ["accountUid": accountUid]
+    }
+
+    public var accountUid: String {
+      get {
+        return graphQLMap["accountUid"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "accountUid")
       }
     }
   }
@@ -471,6 +500,35 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "scope")
+      }
+    }
+  }
+
+  public struct SaveStoredPreferencesInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - accountUid
+    ///   - preferenceData
+    public init(accountUid: String, preferenceData: JSON) {
+      graphQLMap = ["accountUid": accountUid, "preferenceData": preferenceData]
+    }
+
+    public var accountUid: String {
+      get {
+        return graphQLMap["accountUid"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "accountUid")
+      }
+    }
+
+    public var preferenceData: JSON {
+      get {
+        return graphQLMap["preferenceData"] as! JSON
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "preferenceData")
       }
     }
   }
@@ -2077,6 +2135,99 @@ public enum DashXGql {
     }
   }
 
+  public final class FetchStoredPreferencesQuery: GraphQLQuery {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      query FetchStoredPreferences($input: FetchStoredPreferencesInput!) {
+        fetchStoredPreferences(input: $input) {
+          __typename
+          preferenceData
+        }
+      }
+      """
+
+    public let operationName: String = "FetchStoredPreferences"
+
+    public var input: FetchStoredPreferencesInput
+
+    public init(input: FetchStoredPreferencesInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Query"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("fetchStoredPreferences", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(FetchStoredPreference.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(fetchStoredPreferences: FetchStoredPreference) {
+        self.init(unsafeResultMap: ["__typename": "Query", "fetchStoredPreferences": fetchStoredPreferences.resultMap])
+      }
+
+      public var fetchStoredPreferences: FetchStoredPreference {
+        get {
+          return FetchStoredPreference(unsafeResultMap: resultMap["fetchStoredPreferences"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "fetchStoredPreferences")
+        }
+      }
+
+      public struct FetchStoredPreference: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["FetchStoredPreferencesResponse"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("preferenceData", type: .nonNull(.scalar(JSON.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(preferenceData: JSON) {
+          self.init(unsafeResultMap: ["__typename": "FetchStoredPreferencesResponse", "preferenceData": preferenceData])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var preferenceData: JSON {
+          get {
+            return resultMap["preferenceData"]! as! JSON
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "preferenceData")
+          }
+        }
+      }
+    }
+  }
+
   public final class IdentifyAccountMutation: GraphQLMutation {
     /// The raw GraphQL definition of this operation.
     public let operationDefinition: String =
@@ -2164,6 +2315,99 @@ public enum DashXGql {
           }
           set {
             resultMap.updateValue(newValue, forKey: "id")
+          }
+        }
+      }
+    }
+  }
+
+  public final class SaveStoredPreferencesMutation: GraphQLMutation {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      mutation SaveStoredPreferences($input: SaveStoredPreferencesInput!) {
+        saveStoredPreferences(input: $input) {
+          __typename
+          success
+        }
+      }
+      """
+
+    public let operationName: String = "SaveStoredPreferences"
+
+    public var input: SaveStoredPreferencesInput
+
+    public init(input: SaveStoredPreferencesInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Mutation"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("saveStoredPreferences", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(SaveStoredPreference.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(saveStoredPreferences: SaveStoredPreference) {
+        self.init(unsafeResultMap: ["__typename": "Mutation", "saveStoredPreferences": saveStoredPreferences.resultMap])
+      }
+
+      public var saveStoredPreferences: SaveStoredPreference {
+        get {
+          return SaveStoredPreference(unsafeResultMap: resultMap["saveStoredPreferences"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "saveStoredPreferences")
+        }
+      }
+
+      public struct SaveStoredPreference: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["SaveStoredPreferencesResponse"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("success", type: .nonNull(.scalar(Bool.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(success: Bool) {
+          self.init(unsafeResultMap: ["__typename": "SaveStoredPreferencesResponse", "success": success])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var success: Bool {
+          get {
+            return resultMap["success"]! as! Bool
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "success")
           }
         }
       }

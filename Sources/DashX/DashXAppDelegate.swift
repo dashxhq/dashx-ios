@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 @objc(DashXAppDelegate)
 class DashXAppDelegate: NSObject {

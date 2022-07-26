@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 extension UIViewController {
     static func swizzle() {
