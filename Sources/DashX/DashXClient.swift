@@ -23,6 +23,7 @@ public class DashXClient {
 
     private init() {
         generateAnonymousUid()
+        loadIdentity()
     }
     
     // Hiding the initialiser from user till multiple dash clients support is in place
@@ -78,6 +79,11 @@ public class DashXClient {
     public func setIdentity(uid: String? = nil, token: String? = nil) {
         self.accountUid = uid
         ConfigInterceptor.shared.identityToken = token
+        
+        let preferences = UserDefaults.standard
+        
+        preferences.set(self.accountUid, forKey: Constants.USER_PREFERENCES_ACCOUNT_UID)
+        preferences.set(token, forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
     }
 
     private func generateAnonymousUid(withRegenerate: Bool = false) {
@@ -125,9 +131,23 @@ public class DashXClient {
           }
         }
     }
+    
+    func loadIdentity() {
+        let preferences = UserDefaults.standard
+        setIdentity(
+            uid: preferences.string(forKey: Constants.USER_PREFERENCES_ACCOUNT_UID),
+            token: preferences.string(forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
+        )
+    }
 
     func reset() {
+        let preferences = UserDefaults.standard
+        
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_ACCOUNT_UID)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
+        
         self.accountUid = nil
+        ConfigInterceptor.shared.identityToken = nil
         self.generateAnonymousUid(withRegenerate: true)
     }
     // MARK: -- track

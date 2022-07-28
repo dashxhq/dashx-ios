@@ -5,6 +5,8 @@ struct Constants {
     static let USER_PREFERENCES_KEY_ANONYMOUS_UID = "\(PACKAGE_NAME).anonymous_uid"
     static let USER_PREFERENCES_KEY_DEVICE_TOKEN = "\(PACKAGE_NAME).device_token"
     static let USER_PREFERENCES_KEY_BUILD = "\(PACKAGE_NAME).build"
+    static let USER_PREFERENCES_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
+    static let USER_PREFERENCES_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"
     static let INTERNAL_EVENT_APP_INSTALLED = "Application Installed"
     static let INTERNAL_EVENT_APP_UPDATED = "Application Updated"
     static let INTERNAL_EVENT_APP_OPENED = "Application Opened"
