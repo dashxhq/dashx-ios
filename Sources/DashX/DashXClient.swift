@@ -134,10 +134,8 @@ public class DashXClient {
     
     func loadIdentity() {
         let preferences = UserDefaults.standard
-        setIdentity(
-            uid: preferences.string(forKey: Constants.USER_PREFERENCES_ACCOUNT_UID),
-            token: preferences.string(forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
-        )
+        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_ACCOUNT_UID)
+        ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
     }
 
     func reset() {
