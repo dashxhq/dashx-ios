@@ -94,7 +94,7 @@ public class DashXClient {
             return storedAnonymousUid
         } else {
             let uniqueIdentifier = UUID().uuidString
-            preferences.set(self.accountAnonymousUid, forKey: anonymousUidKey)
+            preferences.set(uniqueIdentifier, forKey: anonymousUidKey)
             return uniqueIdentifier
         }
     }
