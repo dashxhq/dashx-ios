@@ -90,12 +90,12 @@ public class DashXClient {
         let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID
         let storedAnonymousUid = preferences.string(forKey: anonymousUidKey)
         
-        if withRegenerate || storedAnonymousUid == nil {
+        if !withRegenerate && storedAnonymousUid != nil {
+            return storedAnonymousUid
+        } else {
             let uniqueIdentifier = UUID().uuidString
             preferences.set(self.accountAnonymousUid, forKey: anonymousUidKey)
             return uniqueIdentifier
-        } else {
-            return storedAnonymousUid
         }
     }
     // MARK: -- identify
@@ -149,7 +149,7 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         
         self.accountUid = nil
-        self.accountAnonymousUid = nil
+        self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
         ConfigInterceptor.shared.identityToken = nil
     }
     // MARK: -- track
