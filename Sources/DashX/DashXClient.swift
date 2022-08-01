@@ -82,8 +82,8 @@ public class DashXClient {
         
         let preferences = UserDefaults.standard
         
-        preferences.set(self.accountUid, forKey: Constants.USER_PREFERENCES_ACCOUNT_UID)
-        preferences.set(token, forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
+        preferences.set(self.accountUid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
     private func generateAnonymousUid(withRegenerate: Bool = false) {
@@ -134,15 +134,15 @@ public class DashXClient {
     
     func loadIdentity() {
         let preferences = UserDefaults.standard
-        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_ACCOUNT_UID)
-        ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
+        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
     func reset() {
         let preferences = UserDefaults.standard
         
-        preferences.removeObject(forKey: Constants.USER_PREFERENCES_ACCOUNT_UID)
-        preferences.removeObject(forKey: Constants.USER_PREFERENCES_IDENTITY_TOKEN)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         
         self.accountUid = nil
         ConfigInterceptor.shared.identityToken = nil
