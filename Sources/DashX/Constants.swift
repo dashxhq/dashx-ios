@@ -3,7 +3,7 @@ import Foundation
 struct Constants {
     static let PACKAGE_NAME = "com.dashx.sdk"
     static let USER_PREFERENCES_KEY_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
-    static let USER_PREFERENCES_KEY_ANONYMOUS_UID = "\(PACKAGE_NAME).anonymous_uid"
+    static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID = "\(PACKAGE_NAME).account_anonymous_uid"
     static let USER_PREFERENCES_KEY_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"
     static let USER_PREFERENCES_KEY_DEVICE_TOKEN = "\(PACKAGE_NAME).device_token"
     static let USER_PREFERENCES_KEY_BUILD = "\(PACKAGE_NAME).build"

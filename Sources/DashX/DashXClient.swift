@@ -22,7 +22,6 @@ public class DashXClient {
     private var mustSubscribe: Bool = false;
 
     private init() {
-        generateAnonymousUid()
         loadIdentity()
     }
     
@@ -86,15 +85,17 @@ public class DashXClient {
         preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
-    private func generateAnonymousUid(withRegenerate: Bool = false) {
+    private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
         let preferences = UserDefaults.standard
-        let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ANONYMOUS_UID
-
-        if !withRegenerate && preferences.object(forKey: anonymousUidKey) != nil {
-            self.accountAnonymousUid = preferences.string(forKey: anonymousUidKey) ?? nil
-        } else {
-            self.accountAnonymousUid = UUID().uuidString
+        let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID
+        let storedAnonymousUid = preferences.string(forKey: anonymousUidKey)
+        
+        if withRegenerate || storedAnonymousUid == nil {
+            let uniqueIdentifier = UUID().uuidString
             preferences.set(self.accountAnonymousUid, forKey: anonymousUidKey)
+            return uniqueIdentifier
+        } else {
+            return storedAnonymousUid
         }
     }
     // MARK: -- identify
@@ -134,7 +135,9 @@ public class DashXClient {
     
     func loadIdentity() {
         let preferences = UserDefaults.standard
+        
         self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        self.accountAnonymousUid = generateAnonymousUid()
         ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
@@ -142,11 +145,12 @@ public class DashXClient {
         let preferences = UserDefaults.standard
         
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         
         self.accountUid = nil
+        self.accountAnonymousUid = nil
         ConfigInterceptor.shared.identityToken = nil
-        self.generateAnonymousUid(withRegenerate: true)
     }
     // MARK: -- track
 
