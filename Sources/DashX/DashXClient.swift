@@ -8,6 +8,7 @@ public typealias FailureCallback = (Error) -> ()
 
 enum DashXClientError: Error {
     case noArgsInIdentify
+    case assetIsNotReady
 }
 
 // Shared instance to be used by the SDK users
@@ -432,6 +433,122 @@ public class DashXClient {
             case .failure(let error):
               DashXLog.d(tag: #function, "Encountered an error during saveStoredPreferences(): \(error)")
               failureCallback(error)
+            }
+        }
+    }
+    
+    public func uploadExternalAsset(
+        filePath: URL,
+        externalColumnId: String,
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
+    ) {
+        self.prepareExternalAsset(externalColumnId: externalColumnId) { response in
+            
+            if let jsonDictionary = response.jsonValue as? [String: Any],
+               let data = jsonDictionary["data"] as? [String: Any],
+               let uploadData = data["upload"] as? [String: Any],
+               let urlString = uploadData["url"] as? String,
+               let url = URL(string: urlString),
+               let assetId = jsonDictionary["id"] as? String {
+                
+                var uploadAssetRequest = URLRequest(url: url)
+                uploadAssetRequest.httpMethod = "PUT"
+                uploadAssetRequest.timeoutInterval = 2
+                
+                do {
+                    let fileData = try Data(contentsOf: filePath)
+                    URLSession.shared.uploadTask(with: uploadAssetRequest, from: fileData) { data, response, error in
+                        if error != nil {
+                            failureCallback(error!)
+                        }
+                        if let httpResponse = response as? HTTPURLResponse {
+                            if httpResponse.statusCode == 200 {
+                                self.pollTillAssetIsReady(trysLeft: 5, assetId: assetId) { response in
+                                    successCallback(response)
+                                } failureCallback: { error in
+                                    failureCallback(error)
+                                }
+                            }
+                        }
+                    }.resume()
+                } catch {
+                    failureCallback(error)
+                }
+            }
+        } failureCallback: { error in
+            failureCallback(error)
+        }
+    }
+    
+    private func prepareExternalAsset(
+        externalColumnId: String,
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
+    ) {
+        let prepareExternalAssetInput = DashXGql.PrepareExternalAssetInput(externalColumnId: externalColumnId)
+        
+        DashXLog.d(tag: #function, "Calling prepareExternalAsset with \(prepareExternalAssetInput)")
+        
+        let prepareExternalAssetMutation = DashXGql.PrepareExternalAssetMutation(input: prepareExternalAssetInput)
+        
+        Network.shared.apollo.perform(mutation: prepareExternalAssetMutation) { result in
+            switch result {
+            case .success(let graphQLResult):
+                let json = graphQLResult.data?.prepareExternalAsset
+                DashXLog.d(tag: #function, "Sent prepareExternalAsset with \(String(describing: json))")
+                successCallback(json?.resultMap)
+            case .failure(let error):
+                DashXLog.d(tag: #function, "Encountered an error during prepareExternalAsset(): \(error)")
+                failureCallback(error)
+            }
+        }
+    }
+    
+    private func pollTillAssetIsReady(
+        trysLeft: Int,
+        assetId: String,
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
+    ) {
+        self.externalAsset(assetId: assetId) { response in
+            if let jsonDictionary = response.jsonValue as? [String: Any],
+               let status = jsonDictionary["status"] as? String {
+                if status == "ready" {
+                    successCallback(response)
+                } else {
+                    if trysLeft != 0 {
+                        _ = Timer.scheduledTimer(withTimeInterval: 3, repeats: false) { timer in
+                            self.pollTillAssetIsReady(trysLeft: trysLeft - 1, assetId: assetId, successCallback: successCallback, failureCallback: failureCallback)
+                        }
+                    } else {
+                        failureCallback(DashXClientError.assetIsNotReady)
+                    }
+                }
+            }
+        } failureCallback: { error in
+            failureCallback(error)
+        }
+    }
+    
+    public func externalAsset(
+        assetId: String,
+        successCallback: @escaping SuccessCallback,
+        failureCallback: @escaping FailureCallback
+    ) {
+        DashXLog.d(tag: #function, "Calling externalAsset with \(assetId)")
+        
+        let externalAssetQuery = DashXGql.ExternalAssetQuery(id: assetId)
+        
+        Network.shared.apollo.fetch(query: externalAssetQuery) { result in
+            switch result {
+            case .success(let graphQLResult):
+                let json = graphQLResult.data?.externalAsset
+                DashXLog.d(tag: #function, "Sent externalAsset with \(String(describing: json))")
+                successCallback(json?.resultMap)
+            case .failure(let error):
+                DashXLog.d(tag: #function, "Encountered an error during externalAsset(): \(error)")
+                failureCallback(error)
             }
         }
     }
