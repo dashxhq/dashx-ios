@@ -22,7 +22,7 @@ public class DashXClient {
     private var mustSubscribe: Bool = false;
 
     private init() {
-        generateAnonymousUid()
+        loadIdentity()
     }
     
     // Hiding the initialiser from user till multiple dash clients support is in place
@@ -78,17 +78,24 @@ public class DashXClient {
     public func setIdentity(uid: String? = nil, token: String? = nil) {
         self.accountUid = uid
         ConfigInterceptor.shared.identityToken = token
+        
+        let preferences = UserDefaults.standard
+        
+        preferences.set(self.accountUid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
-    private func generateAnonymousUid(withRegenerate: Bool = false) {
+    private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
         let preferences = UserDefaults.standard
-        let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ANONYMOUS_UID
-
-        if !withRegenerate && preferences.object(forKey: anonymousUidKey) != nil {
-            self.accountAnonymousUid = preferences.string(forKey: anonymousUidKey) ?? nil
+        let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID
+        let storedAnonymousUid = preferences.string(forKey: anonymousUidKey)
+        
+        if !withRegenerate && storedAnonymousUid != nil {
+            return storedAnonymousUid
         } else {
-            self.accountAnonymousUid = UUID().uuidString
-            preferences.set(self.accountAnonymousUid, forKey: anonymousUidKey)
+            let uniqueIdentifier = UUID().uuidString
+            preferences.set(uniqueIdentifier, forKey: anonymousUidKey)
+            return uniqueIdentifier
         }
     }
     // MARK: -- identify
@@ -125,10 +132,25 @@ public class DashXClient {
           }
         }
     }
+    
+    func loadIdentity() {
+        let preferences = UserDefaults.standard
+        
+        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        self.accountAnonymousUid = generateAnonymousUid()
+        ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+    }
 
     func reset() {
+        let preferences = UserDefaults.standard
+        
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        
         self.accountUid = nil
-        self.generateAnonymousUid(withRegenerate: true)
+        self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
+        ConfigInterceptor.shared.identityToken = nil
     }
     // MARK: -- track
 
