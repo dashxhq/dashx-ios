@@ -454,7 +454,6 @@ public class DashXClient {
                 
                 var uploadAssetRequest = URLRequest(url: url)
                 uploadAssetRequest.httpMethod = "PUT"
-                uploadAssetRequest.timeoutInterval = 2
                 
                 do {
                     let fileData = try Data(contentsOf: filePath)
