@@ -108,18 +108,18 @@ public class DashXClient {
 
         let optionsDictionary = withOptions as? [String: String]
 
-        let uid = optionsDictionary?["uid"] ?? self.accountUid
+        let uid = optionsDictionary?[UserAttributes.UID] ?? self.accountUid
         
-        let anonymousUid = optionsDictionary?["anonymousUid"] ?? self.accountAnonymousUid
+        let anonymousUid = optionsDictionary?[UserAttributes.ANONYMOUS_UID] ?? self.accountAnonymousUid
 
         let identifyAccountInput = DashXGql.IdentifyAccountInput(
             uid: uid,
             anonymousUid: anonymousUid,
-            email: optionsDictionary?["email"],
-            phone: optionsDictionary?["phone"],
-            name: optionsDictionary?["name"],
-            firstName: optionsDictionary?["firstName"],
-            lastName: optionsDictionary?["lastName"]
+            email: optionsDictionary?[UserAttributes.EMAIL],
+            phone: optionsDictionary?[UserAttributes.PHONE],
+            name: optionsDictionary?[UserAttributes.NAME],
+            firstName: optionsDictionary?[UserAttributes.FIRST_NAME],
+            lastName: optionsDictionary?[UserAttributes.LAST_NAME]
         )
 
         let identifyAccountMutation = DashXGql.IdentifyAccountMutation(input: identifyAccountInput)
@@ -396,7 +396,7 @@ public class DashXClient {
         
         let fetchStoredPreferencesQuery = DashXGql.FetchStoredPreferencesQuery(input: fetchStoredPreferencesInput)
         
-        Network.shared.apollo.fetch(query: fetchStoredPreferencesQuery) { result in
+        Network.shared.apollo.fetch(query: fetchStoredPreferencesQuery, cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
             case .success(let graphQLResult):
               let json = graphQLResult.data?.fetchStoredPreferences.preferenceData
