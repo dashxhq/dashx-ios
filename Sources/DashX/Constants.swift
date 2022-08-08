@@ -13,6 +13,8 @@ struct Constants {
     static let INTERNAL_EVENT_APP_BACKGROUNDED = "Application Backgrounded"
     static let INTERNAL_EVENT_APP_CRASHED = "Application Crashed"
     static let INTERNAL_EVENT_APP_SCREEN_VIEWED = "Screen Viewed"
+    static let CONTENT_TYPE = "Content-Type"
+    static let GCS_ASSET_UPLOAD_HEADER_KEY = "x-goog-meta-origin-id"
 }
 
 public struct UserAttributes {
@@ -23,4 +25,26 @@ public struct UserAttributes {
     public static let NAME = "name"
     public static let FIRST_NAME = "firstName"
     public static let LAST_NAME = "lastName"
+}
+
+public enum FileType {
+    case image
+    case video
+    
+    public var headerField: String {
+        switch self {
+        case .image:
+             return "image/*"
+        case .video:
+            return "video/*"
+        }
+    }
+}
+
+public enum HttpMethod: String {
+    case get = "GET"
+    case post = "POST"
+    case put = "PUT"
+    case patch = "PATCH"
+    case delete = "DELETE"
 }

@@ -301,7 +301,6 @@ public enum DashXGql {
     public var graphQLMap: GraphQLMap
 
     /// - Parameters:
-    ///   - installationId
     ///   - contentId
     ///   - contentType
     ///   - content
@@ -310,17 +309,8 @@ public enum DashXGql {
     ///   - fields
     ///   - include
     ///   - exclude
-    public init(installationId: Swift.Optional<UUID?> = nil, contentId: Swift.Optional<UUID?> = nil, contentType: Swift.Optional<String?> = nil, content: Swift.Optional<String?> = nil, preview: Swift.Optional<Bool?> = nil, language: Swift.Optional<String?> = nil, fields: Swift.Optional<[String]?> = nil, include: Swift.Optional<[String]?> = nil, exclude: Swift.Optional<[String]?> = nil) {
-      graphQLMap = ["installationId": installationId, "contentId": contentId, "contentType": contentType, "content": content, "preview": preview, "language": language, "fields": fields, "include": include, "exclude": exclude]
-    }
-
-    public var installationId: Swift.Optional<UUID?> {
-      get {
-        return graphQLMap["installationId"] as? Swift.Optional<UUID?> ?? Swift.Optional<UUID?>.none
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "installationId")
-      }
+    public init(contentId: Swift.Optional<UUID?> = nil, contentType: Swift.Optional<String?> = nil, content: Swift.Optional<String?> = nil, preview: Swift.Optional<Bool?> = nil, language: Swift.Optional<String?> = nil, fields: Swift.Optional<[String]?> = nil, include: Swift.Optional<[String]?> = nil, exclude: Swift.Optional<[String]?> = nil) {
+      graphQLMap = ["contentId": contentId, "contentType": contentType, "content": content, "preview": preview, "language": language, "fields": fields, "include": include, "exclude": exclude]
     }
 
     public var contentId: Swift.Optional<UUID?> {
@@ -1652,6 +1642,7 @@ public enum DashXGql {
           id
           externalColumnId
           status
+          data
         }
       }
       """
@@ -1705,6 +1696,7 @@ public enum DashXGql {
             GraphQLField("id", type: .nonNull(.scalar(UUID.self))),
             GraphQLField("externalColumnId", type: .nonNull(.scalar(UUID.self))),
             GraphQLField("status", type: .scalar(String.self)),
+            GraphQLField("data", type: .scalar(JSON.self)),
           ]
         }
 
@@ -1714,8 +1706,8 @@ public enum DashXGql {
           self.resultMap = unsafeResultMap
         }
 
-        public init(id: UUID, externalColumnId: UUID, status: String? = nil) {
-          self.init(unsafeResultMap: ["__typename": "ExternalAsset", "id": id, "externalColumnId": externalColumnId, "status": status])
+        public init(id: UUID, externalColumnId: UUID, status: String? = nil, data: JSON? = nil) {
+          self.init(unsafeResultMap: ["__typename": "ExternalAsset", "id": id, "externalColumnId": externalColumnId, "status": status, "data": data])
         }
 
         public var __typename: String {
@@ -1751,6 +1743,15 @@ public enum DashXGql {
           }
           set {
             resultMap.updateValue(newValue, forKey: "status")
+          }
+        }
+
+        public var data: JSON? {
+          get {
+            return resultMap["data"] as? JSON
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "data")
           }
         }
       }
