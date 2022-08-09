@@ -17,67 +17,36 @@ public let DashX = DashXClient.instance
 
 public class DashXClient {
     static let instance = DashXClient()
+    
     private var accountAnonymousUid: String?
     private var accountUid: String?
     private var deviceToken: String?
 
-    private var mustSubscribe: Bool = false;
+    private var mustSubscribe: Bool = false
 
     private init() {
         loadIdentity()
     }
     
-    // Hiding the initialiser from user till multiple dash clients support is in place
-    private init(withPublicKey publicKey: String,
-                baseURI: String? = nil,
-                targetEnvironment: String? = nil
+    public func configure(
+        withPublicKey publicKey: String,
+        baseURI: String? = nil,
+        targetEnvironment: String? = nil
     ) {
-        self.setPublicKey(to: publicKey)
-        
-        if baseURI != nil {
-            self.setBaseURI(to: baseURI!)
-        }
-        
-        if targetEnvironment != nil {
-            self.setTargetEnvironment(to: targetEnvironment!)
-        }
-    }
-    
-    public func setup(_ options: NSDictionary?) {
-        ConfigInterceptor.shared.publicKey = options?.value(forKey: "publicKey") as? String
-
         DashXAppDelegate.swizzleDidReceiveRemoteNotificationFetchCompletionHandler()
-
-        if let baseUri = options?.value(forKey: "baseUri") {
-            self.setBaseURI(to: baseUri as! String)
-        }
-
-        if let targetEnvironment = options?.value(forKey: "targetEnvironment") {
-            self.setTargetEnvironment(to: targetEnvironment as! String)
-        }
-    }
-
-    func setDeviceToken(to: String) {
-        self.deviceToken = to
-
-        if (self.mustSubscribe) {
-          self.subscribe()
-        }
-    }
-
-    public func setPublicKey(to publicKey: String) {
+        
         ConfigInterceptor.shared.publicKey = publicKey
+        
+        if let baseURI = baseURI {
+            Network.shared.setBaseURI(to: baseURI)
+        }
+        
+        if let targetEnvironment = targetEnvironment {
+            ConfigInterceptor.shared.targetEnvironment = targetEnvironment
+        }
     }
-    
-    public func setBaseURI(to baseURI: String) {
-        Network.shared.setBaseURI(to: baseURI)
-    }
-    
-    public func setTargetEnvironment(to environment: String) {
-        ConfigInterceptor.shared.targetEnvironment = environment
-    }
-    
-    public func setIdentity(uid: String? = nil, token: String? = nil) {
+
+    public func setIdentity(uid: String, token: String) {
         self.accountUid = uid
         ConfigInterceptor.shared.identityToken = token
         
@@ -85,6 +54,14 @@ public class DashXClient {
         
         preferences.set(self.accountUid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+    }
+    
+    private func setDeviceToken(to: String) {
+        self.deviceToken = to
+
+        if (self.mustSubscribe) {
+          self.subscribe()
+        }
     }
 
     private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
