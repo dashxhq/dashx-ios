@@ -120,7 +120,7 @@ public class DashXClient {
         ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
-    func reset() {
+    public func reset() {
         let preferences = UserDefaults.standard
         
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
