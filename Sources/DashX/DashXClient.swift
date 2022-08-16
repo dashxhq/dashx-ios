@@ -48,7 +48,9 @@ public class DashXClient {
 
     public func setIdentity(uid: String, token: String) {
         self.accountUid = uid
-        ConfigInterceptor.shared.identityToken = token
+        
+        // Not setting this for now.
+        // ConfigInterceptor.shared.identityToken = token
         
         let preferences = UserDefaults.standard
         
