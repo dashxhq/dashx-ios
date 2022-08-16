@@ -9,22 +9,22 @@ public struct Preference: Codable {
 }
 
 public struct PrepareExternalAssetResponse: Codable {
-    let data: AssetData
-    let createdAt: String
-    let status: String
+    let data: AssetData?
+    let createdAt: String?
+    let status: String?
     // let storageProviderId: nil
-    let updatedAt: String
-    let externalColumnId: String
-    let id: String
-    let installationId: String
+    let updatedAt: String?
+    let externalColumnId: String?
+    let id: String?
+    let installationId: String?
 }
 
 public struct AssetData: Codable {
     // let asset: nil
-    let upload: UploadData
+    let upload: UploadData?
 }
 
 public struct UploadData: Codable {
-    let headers: [String: String]
-    let url: String
+    let headers: [String: String]?
+    let url: String?
 }
