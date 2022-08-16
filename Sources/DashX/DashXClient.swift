@@ -408,7 +408,7 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: saveStoredPreferencesMutation) { result in
             switch result {
             case .success(let graphQLResult):
-                let json = graphQLResult.data?.saveStoredPreferences
+              let json = graphQLResult.data?.saveStoredPreferences
               DashXLog.d(tag: #function, "Sent saveStoredPreferences with \(String(describing: json))")
               successCallback(json?.resultMap)
             case .failure(let error):
