@@ -94,3 +94,6 @@ iOSInjectionProject/
 
 # Apollo client files
 apollo*
+
+# GraphQL Schema
+schema.json

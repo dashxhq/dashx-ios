@@ -386,6 +386,25 @@ public enum DashXGql {
     }
   }
 
+  public struct FetchStoredPreferencesInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - accountUid
+    public init(accountUid: String) {
+      graphQLMap = ["accountUid": accountUid]
+    }
+
+    public var accountUid: String {
+      get {
+        return graphQLMap["accountUid"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "accountUid")
+      }
+    }
+  }
+
   public struct IdentifyAccountInput: GraphQLMapConvertible {
     public var graphQLMap: GraphQLMap
 
@@ -471,6 +490,54 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "scope")
+      }
+    }
+  }
+
+  public struct PrepareExternalAssetInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - externalColumnId
+    public init(externalColumnId: UUID) {
+      graphQLMap = ["externalColumnId": externalColumnId]
+    }
+
+    public var externalColumnId: UUID {
+      get {
+        return graphQLMap["externalColumnId"] as! UUID
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "externalColumnId")
+      }
+    }
+  }
+
+  public struct SaveStoredPreferencesInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - accountUid
+    ///   - preferenceData
+    public init(accountUid: String, preferenceData: JSON) {
+      graphQLMap = ["accountUid": accountUid, "preferenceData": preferenceData]
+    }
+
+    public var accountUid: String {
+      get {
+        return graphQLMap["accountUid"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "accountUid")
+      }
+    }
+
+    public var preferenceData: JSON {
+      get {
+        return graphQLMap["preferenceData"] as! JSON
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "preferenceData")
       }
     }
   }
@@ -1565,6 +1632,132 @@ public enum DashXGql {
     }
   }
 
+  public final class ExternalAssetQuery: GraphQLQuery {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      query ExternalAsset($id: UUID!) {
+        externalAsset(id: $id) {
+          __typename
+          id
+          externalColumnId
+          status
+          data
+        }
+      }
+      """
+
+    public let operationName: String = "ExternalAsset"
+
+    public var id: UUID
+
+    public init(id: UUID) {
+      self.id = id
+    }
+
+    public var variables: GraphQLMap? {
+      return ["id": id]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Query"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("externalAsset", arguments: ["id": GraphQLVariable("id")], type: .nonNull(.object(ExternalAsset.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(externalAsset: ExternalAsset) {
+        self.init(unsafeResultMap: ["__typename": "Query", "externalAsset": externalAsset.resultMap])
+      }
+
+      public var externalAsset: ExternalAsset {
+        get {
+          return ExternalAsset(unsafeResultMap: resultMap["externalAsset"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "externalAsset")
+        }
+      }
+
+      public struct ExternalAsset: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["ExternalAsset"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("id", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("externalColumnId", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("status", type: .scalar(String.self)),
+            GraphQLField("data", type: .scalar(JSON.self)),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(id: UUID, externalColumnId: UUID, status: String? = nil, data: JSON? = nil) {
+          self.init(unsafeResultMap: ["__typename": "ExternalAsset", "id": id, "externalColumnId": externalColumnId, "status": status, "data": data])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var id: UUID {
+          get {
+            return resultMap["id"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "id")
+          }
+        }
+
+        public var externalColumnId: UUID {
+          get {
+            return resultMap["externalColumnId"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "externalColumnId")
+          }
+        }
+
+        public var status: String? {
+          get {
+            return resultMap["status"] as? String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "status")
+          }
+        }
+
+        public var data: JSON? {
+          get {
+            return resultMap["data"] as? JSON
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "data")
+          }
+        }
+      }
+    }
+  }
+
   public final class FetchCartQuery: GraphQLQuery {
     /// The raw GraphQL definition of this operation.
     public let operationDefinition: String =
@@ -2077,6 +2270,99 @@ public enum DashXGql {
     }
   }
 
+  public final class FetchStoredPreferencesQuery: GraphQLQuery {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      query FetchStoredPreferences($input: FetchStoredPreferencesInput!) {
+        fetchStoredPreferences(input: $input) {
+          __typename
+          preferenceData
+        }
+      }
+      """
+
+    public let operationName: String = "FetchStoredPreferences"
+
+    public var input: FetchStoredPreferencesInput
+
+    public init(input: FetchStoredPreferencesInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Query"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("fetchStoredPreferences", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(FetchStoredPreference.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(fetchStoredPreferences: FetchStoredPreference) {
+        self.init(unsafeResultMap: ["__typename": "Query", "fetchStoredPreferences": fetchStoredPreferences.resultMap])
+      }
+
+      public var fetchStoredPreferences: FetchStoredPreference {
+        get {
+          return FetchStoredPreference(unsafeResultMap: resultMap["fetchStoredPreferences"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "fetchStoredPreferences")
+        }
+      }
+
+      public struct FetchStoredPreference: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["FetchStoredPreferencesResponse"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("preferenceData", type: .nonNull(.scalar(JSON.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(preferenceData: JSON) {
+          self.init(unsafeResultMap: ["__typename": "FetchStoredPreferencesResponse", "preferenceData": preferenceData])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var preferenceData: JSON {
+          get {
+            return resultMap["preferenceData"]! as! JSON
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "preferenceData")
+          }
+        }
+      }
+    }
+  }
+
   public final class IdentifyAccountMutation: GraphQLMutation {
     /// The raw GraphQL definition of this operation.
     public let operationDefinition: String =
@@ -2164,6 +2450,269 @@ public enum DashXGql {
           }
           set {
             resultMap.updateValue(newValue, forKey: "id")
+          }
+        }
+      }
+    }
+  }
+
+  public final class PrepareExternalAssetMutation: GraphQLMutation {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      mutation PrepareExternalAsset($input: PrepareExternalAssetInput!) {
+        prepareExternalAsset(input: $input) {
+          __typename
+          id
+          installationId
+          externalColumnId
+          storageProviderId
+          status
+          data
+          createdAt
+          updatedAt
+        }
+      }
+      """
+
+    public let operationName: String = "PrepareExternalAsset"
+
+    public var input: PrepareExternalAssetInput
+
+    public init(input: PrepareExternalAssetInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Mutation"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("prepareExternalAsset", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(PrepareExternalAsset.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(prepareExternalAsset: PrepareExternalAsset) {
+        self.init(unsafeResultMap: ["__typename": "Mutation", "prepareExternalAsset": prepareExternalAsset.resultMap])
+      }
+
+      public var prepareExternalAsset: PrepareExternalAsset {
+        get {
+          return PrepareExternalAsset(unsafeResultMap: resultMap["prepareExternalAsset"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "prepareExternalAsset")
+        }
+      }
+
+      public struct PrepareExternalAsset: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["ExternalAsset"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("id", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("installationId", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("externalColumnId", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("storageProviderId", type: .scalar(UUID.self)),
+            GraphQLField("status", type: .scalar(String.self)),
+            GraphQLField("data", type: .scalar(JSON.self)),
+            GraphQLField("createdAt", type: .nonNull(.scalar(DateTime.self))),
+            GraphQLField("updatedAt", type: .nonNull(.scalar(DateTime.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(id: UUID, installationId: UUID, externalColumnId: UUID, storageProviderId: UUID? = nil, status: String? = nil, data: JSON? = nil, createdAt: DateTime, updatedAt: DateTime) {
+          self.init(unsafeResultMap: ["__typename": "ExternalAsset", "id": id, "installationId": installationId, "externalColumnId": externalColumnId, "storageProviderId": storageProviderId, "status": status, "data": data, "createdAt": createdAt, "updatedAt": updatedAt])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var id: UUID {
+          get {
+            return resultMap["id"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "id")
+          }
+        }
+
+        public var installationId: UUID {
+          get {
+            return resultMap["installationId"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "installationId")
+          }
+        }
+
+        public var externalColumnId: UUID {
+          get {
+            return resultMap["externalColumnId"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "externalColumnId")
+          }
+        }
+
+        public var storageProviderId: UUID? {
+          get {
+            return resultMap["storageProviderId"] as? UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "storageProviderId")
+          }
+        }
+
+        public var status: String? {
+          get {
+            return resultMap["status"] as? String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "status")
+          }
+        }
+
+        public var data: JSON? {
+          get {
+            return resultMap["data"] as? JSON
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "data")
+          }
+        }
+
+        public var createdAt: DateTime {
+          get {
+            return resultMap["createdAt"]! as! DateTime
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "createdAt")
+          }
+        }
+
+        public var updatedAt: DateTime {
+          get {
+            return resultMap["updatedAt"]! as! DateTime
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "updatedAt")
+          }
+        }
+      }
+    }
+  }
+
+  public final class SaveStoredPreferencesMutation: GraphQLMutation {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      mutation SaveStoredPreferences($input: SaveStoredPreferencesInput!) {
+        saveStoredPreferences(input: $input) {
+          __typename
+          success
+        }
+      }
+      """
+
+    public let operationName: String = "SaveStoredPreferences"
+
+    public var input: SaveStoredPreferencesInput
+
+    public init(input: SaveStoredPreferencesInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Mutation"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("saveStoredPreferences", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(SaveStoredPreference.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(saveStoredPreferences: SaveStoredPreference) {
+        self.init(unsafeResultMap: ["__typename": "Mutation", "saveStoredPreferences": saveStoredPreferences.resultMap])
+      }
+
+      public var saveStoredPreferences: SaveStoredPreference {
+        get {
+          return SaveStoredPreference(unsafeResultMap: resultMap["saveStoredPreferences"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "saveStoredPreferences")
+        }
+      }
+
+      public struct SaveStoredPreference: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["SaveStoredPreferencesResponse"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("success", type: .nonNull(.scalar(Bool.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(success: Bool) {
+          self.init(unsafeResultMap: ["__typename": "SaveStoredPreferencesResponse", "success": success])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var success: Bool {
+          get {
+            return resultMap["success"]! as! Bool
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "success")
           }
         }
       }

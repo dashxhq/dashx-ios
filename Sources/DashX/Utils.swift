@@ -1,4 +1,20 @@
 import Foundation
+import Foundation
+import MobileCoreServices
+
+extension URL {
+    func mimeType() -> String {
+        let url = NSURL(fileURLWithPath: path)
+        let pathExtension = url.pathExtension
+        
+        if let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, pathExtension! as NSString, nil)?.takeRetainedValue() {
+            if let mimetype = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue() {
+                return mimetype as String
+            }
+        }
+        return "application/octet-stream"
+    }
+}
 
 let swizzler: (AnyClass, AnyClass, Selector, Selector) -> Void = { mainClass, swizzledClass, originalSelector, swizzledSelector in
     guard let swizzledMethod = class_getInstanceMethod(swizzledClass, swizzledSelector) else {
