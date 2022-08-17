@@ -158,7 +158,7 @@ public class DashXClient {
         }
     }
 
-    func screen(_ screenName: String, withData: NSDictionary?) {
+    public func screen(_ screenName: String, withData: NSDictionary?) {
         let properties = withData as? [String: Any]
 
         track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties?.merging([ "name": screenName], uniquingKeysWith: { (_, new) in new }) as NSDictionary?)
@@ -177,7 +177,7 @@ public class DashXClient {
 
     // MARK: -- subscribe
 
-    func subscribe() {
+    public func subscribe() {
         if deviceToken == nil {
             self.mustSubscribe = true
             return
