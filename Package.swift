@@ -13,8 +13,7 @@ let package = Package(
             targets: ["DashX"]),
     ],
     dependencies: [
-        .package(name: "Alamofire", url: "https://github.com/Alamofire/Alamofire.git", from: "5.2.2"),
-        .package(name: "Apollo", url: "https://github.com/apollographql/apollo-ios.git", from: "0.52.0"),
+        .package(name: "Apollo", url: "https://github.com/apollographql/apollo-ios.git", from: "0.52.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -22,7 +21,6 @@ let package = Package(
         .target(
             name: "DashX",
             dependencies: [
-                .product(name: "Alamofire", package: "Alamofire"),
                 .product(name: "Apollo", package: "Apollo")
             ]
         ),
