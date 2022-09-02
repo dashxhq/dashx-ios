@@ -78,3 +78,11 @@ Network.shared.apollo.fetch(query: fetchContentQuery, cachePolicy: .returnCacheD
 
 ```
 
+## Release
+
+1. Bump up the version number in `DashX.podspec`
+2. Commit the version bump: `Bump version to x.x.x`
+3. Create a tag: `git tag 'x.x.x'`
+4. Push the tag: `git push origin --tags`
+
+The GitHub Workflow will take care of the rest.
