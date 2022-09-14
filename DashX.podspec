@@ -135,6 +135,6 @@ Pod::Spec.new do |spec|
   # spec.requires_arc = true
 
   # spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
-  spec.dependency 'Apollo', '~> 0.51.2'
+  spec.dependency 'SwiftGraphQL', '~> 4.0.0'
 
 end

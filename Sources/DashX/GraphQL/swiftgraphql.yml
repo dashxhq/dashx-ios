@@ -1,0 +1,7 @@
+scalars:
+    Date: DateScalar
+    DateTime: DateTimeScalar
+    Decimal: DecimalScalar
+    JSON: JSONScalar
+    UUID: UUIDScalar
+    Upload: UploadScalar

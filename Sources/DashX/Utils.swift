@@ -26,3 +26,12 @@ let swizzler: (AnyClass, AnyClass, Selector, Selector) -> Void = { mainClass, sw
         class_addMethod(mainClass, swizzledSelector, method_getImplementation(swizzledMethod), method_getTypeEncoding(swizzledMethod))
     }
 }
+
+extension String {
+    func convertToDictionary() -> [String: Any]? {
+        if let data = data(using: .utf8) {
+            return (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: Any]
+        }
+        return nil
+    }
+}
