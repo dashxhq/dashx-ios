@@ -66,8 +66,9 @@ Pod::Spec.new do |spec|
   #
 
   # spec.platform     = :ios
-  spec.platform     = :ios, "12.0"
+  spec.platform     = :ios, "13.0"
   spec.swift_version = "4.2"
+  spec.libraries = ["GraphQL", "SwiftGraphQL", "SwiftGraphQLClient"]
 
   #  When using multiple platforms
   # spec.ios.deployment_target = "5.0"
@@ -135,6 +136,5 @@ Pod::Spec.new do |spec|
   # spec.requires_arc = true
 
   # spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
-  spec.dependency 'SwiftGraphQL', '~> 4.0.0'
 
 end

@@ -23,8 +23,10 @@ let package = Package(
             name: "DashX",
             dependencies: [
                 .product(name: "SwiftGraphQL", package: "SwiftGraphQL"),
-                .product(name: "SwiftGraphQLClient", package: "SwiftGraphQL")
-            ]
-        ),
+                .product(name: "SwiftGraphQLClient", package: "SwiftGraphQL"),
+                .product(name: "GraphQL", package: "SwiftGraphQL")
+            ],
+            path: "Sources/DashX"
+        )
     ]
 )

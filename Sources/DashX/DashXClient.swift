@@ -1,7 +1,13 @@
 import Foundation
 import Combine
 import UIKit
-import SwiftGraphQL
+
+
+// TODO:
+// Create input if needed
+// Log input if it is present
+// Create query or mutation
+// Log responses from those calls
 
 // MARK: Types
 public typealias SuccessCallback =  (Any?) -> ()
@@ -217,15 +223,21 @@ public class DashXClient {
     ) {
         guard let uid = self.accountUid else { return }
         
+        let fetchStoredPreferencesInput = FetchStoredPreferences.input(uid: uid)
+        
+        DashXLog.d(tag: #function, "Calling fetchStoredPreferences with \(fetchStoredPreferencesInput)")
+        
+        let fetchStoredPreferencesQuery = FetchStoredPreferences.query(input: fetchStoredPreferencesInput)
+        
         Network.client(publicKey: self.publicKey ?? "", environment: self.targetEnvironment ?? "")
-            .query(FetchStoredPreferences.fetchStoredPreferencesQuery(uid: uid))
-            .sink(receiveCompletion: { error in
-//                Check whether the error is of type finished or real error
-//                failureCallback(error)
+            .query(fetchStoredPreferencesQuery)
+            .sink { error in
+                // Check whether the error is of type finished or real error
+                // failureCallback(error)
                 print(error)
-            }) { data in
+            } receiveValue: { data in
                 print(data)
-//                successCallback(data)
+                successCallback(data.data.preferenceData)
             }
             .store(in: &bag)
     }
@@ -236,6 +248,23 @@ public class DashXClient {
         failureCallback: @escaping FailureCallback
     ) {
         guard let uid = self.accountUid else { return }
+        
+        guard let preferenceData = preferenceData as? [String: Any] else { return }
+        
+        let saveStoredPreferencesInput = SaveStoredPreferences.input(uid: uid, preferenceData: preferenceData)
+        
+        DashXLog.d(tag: #function, "Calling saveStoredPreferences with \(saveStoredPreferencesInput)")
+        
+        let saveStoredPreferencesMutation = SaveStoredPreferences.mutation(input: saveStoredPreferencesInput)
+        
+        Network.client(publicKey: self.publicKey ?? "", environment: self.targetEnvironment ?? "")
+            .mutate(saveStoredPreferencesMutation)
+            .sink { error in
+                print(error)
+            } receiveValue: { data in
+                print(data)
+            }
+            .store(in: &bag)
     }
     
     // MARK: -- Asset
