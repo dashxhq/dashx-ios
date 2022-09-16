@@ -5,8 +5,9 @@ import AppTrackingTransparency
 import CoreBluetooth
 import CoreTelephony
 import Network
+import CoreLocation
 
-class SystemContext {
+class SystemContext: NSObject {
     
     struct AppContext {
         let name: String?
@@ -29,14 +30,14 @@ class SystemContext {
     var app: AppContext?
     
     struct DeviceContext {
-            let id: String?
-            let advertisingId: String?
-            let adTrackingEnabled: Bool?
-            let manufacturer: String?
-            let model: String?
-            let name: String?
-            let kind: String?
-            let token: String?
+        let id: String?
+        let advertisingId: String?
+        let adTrackingEnabled: Bool?
+        let manufacturer: String?
+        let model: String?
+        let name: String?
+        let kind: String?
+        let token: String?
         
         init(
             id: String? = nil,
@@ -125,6 +126,7 @@ class SystemContext {
     }
     var screen: ScreenContext?
     
+    var locationManager: CLLocationManager?
     struct LocationContext {
         let city: String?
         let country: String?
@@ -152,13 +154,15 @@ class SystemContext {
     var locale: String?
     var timeZone: String?
     
-    init() {
+    override init() {
+        super.init()
         setAppContext(bundle: Bundle.main)
         setDeviceContext(device: UIDevice.current, advertisingManager: ASIdentifierManager.shared())
         setOSContext(device: UIDevice.current)
         setLibraryContext()
         setNetworkContext(cbCentralManager: CBCentralManager(), networkMonitor: NetworkMonitor.shared)
         setScreenContext(screen: UIScreen.main)
+        setupLocationManager()
         setLocationContext()
         
         self.ip = ""//FIXME: Get IP address
@@ -234,7 +238,16 @@ class SystemContext {
         )
     }
     
-    func setLocationContext() {
+    func setupLocationManager() {
+        locationManager = CLLocationManager()
+        locationManager?.delegate = self
+        locationManager?.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager?.distanceFilter = kCLLocationAccuracyHundredMeters
+        locationManager?.startUpdatingLocation()
+    }
+    
+    func setLocationContext(_ locationContext: LocationContext? = nil) {
+        self.location = locationContext
     }
 }
 
@@ -255,4 +268,41 @@ extension SystemContext: Encodable {
     }
     // Not needed atleast for now
     enum CodingKeys: CodingKey { } // Declare raw type --> String
+}
+
+extension SystemContext: CLLocationManagerDelegate {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        var authStatus = CLAuthorizationStatus.notDetermined
+        if #available(iOS 14.0, *) {
+            authStatus = manager.authorizationStatus
+        } else {
+            authStatus = CLLocationManager.authorizationStatus()
+        }
+        switch authStatus {
+        case .authorized, .authorizedAlways, .authorizedWhenInUse:
+            locationManager?.startUpdatingLocation()
+            break
+        default:
+            break
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let currentLocation = locations.first {
+            let latitude: Double? = currentLocation.coordinate.latitude
+            let longitude: Double? = currentLocation.coordinate.longitude
+            let speed: Double? = currentLocation.speed
+            var city: String? = nil
+            var country: String? = nil
+            let geocoder = CLGeocoder()
+            geocoder.reverseGeocodeLocation(currentLocation, completionHandler: { placemarks, error in
+                guard error == nil else { return }
+                if let placemarks = placemarks, let placemark = placemarks.first {
+                    city = placemark.name
+                    country = placemark.country
+                }
+            })
+            setLocationContext(LocationContext(city: city, country: country, latitude: latitude, longitude: longitude, speed: speed))
+        }
+    }
 }
