@@ -2,19 +2,19 @@ import Foundation
 import GraphQL
 import SwiftGraphQL
 
-extension FetchStoredPreferences {
+extension FetchStoredPreferencesModel {
     static func input(uid: String) -> InputObjects.FetchStoredPreferencesInput {
         return InputObjects.FetchStoredPreferencesInput(accountUid: uid)
     }
     
-    static let selection = Selection.FetchStoredPreferencesResponse<FetchStoredPreferences> {
+    static let selection = Selection.FetchStoredPreferencesResponse<FetchStoredPreferencesModel> {
         let preferenceData = try $0.preferenceData().value as? [String: Any?] ?? [:]
         
-        return FetchStoredPreferences(preferenceData: preferenceData)
+        return FetchStoredPreferencesModel(preferenceData: preferenceData)
     }
     
-    static func query(input: InputObjects.FetchStoredPreferencesInput) -> Selection<FetchStoredPreferences, Objects.Query> {
-        return Selection.Query<FetchStoredPreferences> {
+    static func query(input: InputObjects.FetchStoredPreferencesInput) -> Selection<FetchStoredPreferencesModel, Objects.Query> {
+        return Selection.Query<FetchStoredPreferencesModel> {
             try $0.fetchStoredPreferences(input: input, selection: selection)
         }
     }

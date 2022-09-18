@@ -2,14 +2,9 @@ import Foundation
 import GraphQL
 import SwiftGraphQL
 
-typealias DateScalar     = String
-typealias DateTimeScalar = String
-typealias DecimalScalar  = String
-typealias JSONScalar     = AnyCodable
-typealias UUIDScalar     = String
-typealias UploadScalar   = String
-
-enum DecodingError: Error {
-    case invalidType
-    case invalidValue
-}
+public typealias DateScalar     = String
+public typealias DateTimeScalar = String
+public typealias DecimalScalar  = String
+public typealias JSONScalar     = AnyCodable
+public typealias UUIDScalar     = String
+public typealias UploadScalar   = String

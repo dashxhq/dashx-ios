@@ -10514,6 +10514,46 @@ extension Fields where TypeLock == Objects.Mutation {
     }
   }
 
+  func createOperation<T>(
+    input: InputObjects.CreateOperationInput, selection: Selection<T, Objects.Operation>
+  ) throws -> T {
+    let field = GraphQLField.composite(
+      field: "createOperation",
+      parent: "Mutation",
+      type: "Operation",
+      arguments: [Argument(name: "input", type: "CreateOperationInput!", value: input)],
+      selection: selection.__selection()
+    )
+    self.__select(field)
+
+    switch self.__state {
+    case .decoding:
+      return try self.__decode(field: field.alias!) { try selection.__decode(data: $0) }
+    case .selecting:
+      return try selection.__mock()
+    }
+  }
+
+  func updateOperation<T>(
+    input: InputObjects.UpdateOperationInput, selection: Selection<T, Objects.Operation>
+  ) throws -> T {
+    let field = GraphQLField.composite(
+      field: "updateOperation",
+      parent: "Mutation",
+      type: "Operation",
+      arguments: [Argument(name: "input", type: "UpdateOperationInput!", value: input)],
+      selection: selection.__selection()
+    )
+    self.__select(field)
+
+    switch self.__state {
+    case .decoding:
+      return try self.__decode(field: field.alias!) { try selection.__decode(data: $0) }
+    case .selecting:
+      return try selection.__mock()
+    }
+  }
+
   func createAttribute<T>(
     input: InputObjects.CreateAttributeInput, selection: Selection<T, Objects.Attribute>
   ) throws -> T {
@@ -26213,6 +26253,22 @@ extension Objects.Mutation {
     }
   }
 
+  static func createOperation<T>(
+    input: InputObjects.CreateOperationInput, selection: Selection<T, Objects.Operation>
+  ) -> Selection<T, Objects.Mutation> {
+    Selection<T, Objects.Mutation> {
+      try $0.createOperation(input: input, selection: selection)
+    }
+  }
+
+  static func updateOperation<T>(
+    input: InputObjects.UpdateOperationInput, selection: Selection<T, Objects.Operation>
+  ) -> Selection<T, Objects.Mutation> {
+    Selection<T, Objects.Mutation> {
+      try $0.updateOperation(input: input, selection: selection)
+    }
+  }
+
   static func createAttribute<T>(
     input: InputObjects.CreateAttributeInput, selection: Selection<T, Objects.Attribute>
   ) -> Selection<T, Objects.Mutation> {
@@ -34081,6 +34137,75 @@ extension InputObjects {
   }
 }
 extension InputObjects {
+  struct CreateOperationInput: Encodable, Hashable {
+
+    var resourceId: OptionalArgument<UUIDScalar> = .init()
+
+    var appId: OptionalArgument<UUIDScalar> = .init()
+
+    var name: String
+
+    var identifier: String
+
+    var description: OptionalArgument<String> = .init()
+
+    var icon: OptionalArgument<String> = .init()
+
+    var position: Int
+
+    var behavior: Enums.OperationBehavior
+
+    var kind: Enums.OperationKind
+
+    var actsOn: OptionalArgument<Enums.OperationActsOn> = .init()
+
+    var behaviorInstallationId: OptionalArgument<UUIDScalar> = .init()
+
+    var behaviorOperationId: OptionalArgument<UUIDScalar> = .init()
+
+    var behaviorArguments: OptionalArgument<JSONScalar> = .init()
+
+    func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      if resourceId.hasValue { try container.encode(resourceId, forKey: .resourceId) }
+      if appId.hasValue { try container.encode(appId, forKey: .appId) }
+      try container.encode(name, forKey: .name)
+      try container.encode(identifier, forKey: .identifier)
+      if description.hasValue { try container.encode(description, forKey: .description) }
+      if icon.hasValue { try container.encode(icon, forKey: .icon) }
+      try container.encode(position, forKey: .position)
+      try container.encode(behavior, forKey: .behavior)
+      try container.encode(kind, forKey: .kind)
+      if actsOn.hasValue { try container.encode(actsOn, forKey: .actsOn) }
+      if behaviorInstallationId.hasValue {
+        try container.encode(behaviorInstallationId, forKey: .behaviorInstallationId)
+      }
+      if behaviorOperationId.hasValue {
+        try container.encode(behaviorOperationId, forKey: .behaviorOperationId)
+      }
+      if behaviorArguments.hasValue {
+        try container.encode(behaviorArguments, forKey: .behaviorArguments)
+      }
+    }
+
+    enum CodingKeys: String, CodingKey {
+      case resourceId = "resourceId"
+      case appId = "appId"
+      case name = "name"
+      case identifier = "identifier"
+      case description = "description"
+      case icon = "icon"
+      case position = "position"
+      case behavior = "behavior"
+      case kind = "kind"
+      case actsOn = "actsOn"
+      case behaviorInstallationId = "behaviorInstallationId"
+      case behaviorOperationId = "behaviorOperationId"
+      case behaviorArguments = "behaviorArguments"
+    }
+  }
+}
+extension InputObjects {
   struct CreateOrderInput: Encodable, Hashable {
 
     var accountId: OptionalArgument<UUIDScalar> = .init()
@@ -37143,6 +37268,75 @@ extension InputObjects {
       case isLocked = "isLocked"
       case isRepeated = "isRepeated"
       case isSticky = "isSticky"
+    }
+  }
+}
+extension InputObjects {
+  struct UpdateOperationInput: Encodable, Hashable {
+
+    var id: UUIDScalar
+
+    var appId: OptionalArgument<UUIDScalar> = .init()
+
+    var name: OptionalArgument<String> = .init()
+
+    var identifier: OptionalArgument<String> = .init()
+
+    var description: OptionalArgument<String> = .init()
+
+    var icon: OptionalArgument<String> = .init()
+
+    var position: OptionalArgument<Int> = .init()
+
+    var behavior: OptionalArgument<Enums.OperationBehavior> = .init()
+
+    var kind: OptionalArgument<Enums.OperationKind> = .init()
+
+    var actsOn: OptionalArgument<Enums.OperationActsOn> = .init()
+
+    var behaviorInstallationId: OptionalArgument<UUIDScalar> = .init()
+
+    var behaviorOperationId: OptionalArgument<UUIDScalar> = .init()
+
+    var behaviorArguments: OptionalArgument<JSONScalar> = .init()
+
+    func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(id, forKey: .id)
+      if appId.hasValue { try container.encode(appId, forKey: .appId) }
+      if name.hasValue { try container.encode(name, forKey: .name) }
+      if identifier.hasValue { try container.encode(identifier, forKey: .identifier) }
+      if description.hasValue { try container.encode(description, forKey: .description) }
+      if icon.hasValue { try container.encode(icon, forKey: .icon) }
+      if position.hasValue { try container.encode(position, forKey: .position) }
+      if behavior.hasValue { try container.encode(behavior, forKey: .behavior) }
+      if kind.hasValue { try container.encode(kind, forKey: .kind) }
+      if actsOn.hasValue { try container.encode(actsOn, forKey: .actsOn) }
+      if behaviorInstallationId.hasValue {
+        try container.encode(behaviorInstallationId, forKey: .behaviorInstallationId)
+      }
+      if behaviorOperationId.hasValue {
+        try container.encode(behaviorOperationId, forKey: .behaviorOperationId)
+      }
+      if behaviorArguments.hasValue {
+        try container.encode(behaviorArguments, forKey: .behaviorArguments)
+      }
+    }
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case appId = "appId"
+      case name = "name"
+      case identifier = "identifier"
+      case description = "description"
+      case icon = "icon"
+      case position = "position"
+      case behavior = "behavior"
+      case kind = "kind"
+      case actsOn = "actsOn"
+      case behaviorInstallationId = "behaviorInstallationId"
+      case behaviorOperationId = "behaviorOperationId"
+      case behaviorArguments = "behaviorArguments"
     }
   }
 }
