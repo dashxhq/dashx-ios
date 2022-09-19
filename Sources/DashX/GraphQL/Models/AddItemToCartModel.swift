@@ -87,7 +87,14 @@ public struct CouponModel {
     public let currencyCode: String?
     public let expiresAt: String?
     
-    public init(name: String, identifier: String, discountType: String, discountAmount: DecimalScalar, currencyCode: String? = nil, expiresAt: String? = nil) {
+    public init(
+        name: String,
+        identifier: String,
+        discountType: String,
+        discountAmount: DecimalScalar,
+        currencyCode: String? = nil,
+        expiresAt: String? = nil
+    ) {
         self.name = name
         self.identifier = identifier
         self.discountType = discountType
