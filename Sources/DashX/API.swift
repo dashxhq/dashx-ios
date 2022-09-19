@@ -417,8 +417,9 @@ public enum DashXGql {
     ///   - firstName
     ///   - lastName
     ///   - scope
-    public init(uid: Swift.Optional<String?> = nil, anonymousUid: Swift.Optional<String?> = nil, email: Swift.Optional<String?> = nil, phone: Swift.Optional<String?> = nil, name: Swift.Optional<String?> = nil, firstName: Swift.Optional<String?> = nil, lastName: Swift.Optional<String?> = nil, scope: Swift.Optional<String?> = nil) {
-      graphQLMap = ["uid": uid, "anonymousUid": anonymousUid, "email": email, "phone": phone, "name": name, "firstName": firstName, "lastName": lastName, "scope": scope]
+    ///   - systemContext
+    public init(uid: Swift.Optional<String?> = nil, anonymousUid: Swift.Optional<String?> = nil, email: Swift.Optional<String?> = nil, phone: Swift.Optional<String?> = nil, name: Swift.Optional<String?> = nil, firstName: Swift.Optional<String?> = nil, lastName: Swift.Optional<String?> = nil, scope: Swift.Optional<String?> = nil, systemContext: Swift.Optional<SystemContextInput?> = nil) {
+      graphQLMap = ["uid": uid, "anonymousUid": anonymousUid, "email": email, "phone": phone, "name": name, "firstName": firstName, "lastName": lastName, "scope": scope, "systemContext": systemContext]
     }
 
     public var uid: Swift.Optional<String?> {
@@ -490,6 +491,556 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "scope")
+      }
+    }
+
+    public var systemContext: Swift.Optional<SystemContextInput?> {
+      get {
+        return graphQLMap["systemContext"] as? Swift.Optional<SystemContextInput?> ?? Swift.Optional<SystemContextInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "systemContext")
+      }
+    }
+  }
+
+  public struct SystemContextInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - ipV4
+    ///   - ipV6
+    ///   - locale
+    ///   - timeZone
+    ///   - userAgent
+    ///   - app
+    ///   - device
+    ///   - os
+    ///   - library
+    ///   - network
+    ///   - screen
+    ///   - campaign
+    ///   - location
+    public init(ipV4: String, ipV6: Swift.Optional<String?> = nil, locale: String, timeZone: String, userAgent: String, app: Swift.Optional<SystemContextAppInput?> = nil, device: Swift.Optional<SystemContextDeviceInput?> = nil, os: Swift.Optional<SystemContextOsInput?> = nil, library: Swift.Optional<SystemContextLibraryInput?> = nil, network: Swift.Optional<SystemContextNetworkInput?> = nil, screen: Swift.Optional<SystemContextScreenInput?> = nil, campaign: Swift.Optional<SystemContextCampaignInput?> = nil, location: Swift.Optional<SystemContextLocationInput?> = nil) {
+      graphQLMap = ["ipV4": ipV4, "ipV6": ipV6, "locale": locale, "timeZone": timeZone, "userAgent": userAgent, "app": app, "device": device, "os": os, "library": library, "network": network, "screen": screen, "campaign": campaign, "location": location]
+    }
+
+    public var ipV4: String {
+      get {
+        return graphQLMap["ipV4"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "ipV4")
+      }
+    }
+
+    public var ipV6: Swift.Optional<String?> {
+      get {
+        return graphQLMap["ipV6"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "ipV6")
+      }
+    }
+
+    public var locale: String {
+      get {
+        return graphQLMap["locale"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "locale")
+      }
+    }
+
+    public var timeZone: String {
+      get {
+        return graphQLMap["timeZone"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "timeZone")
+      }
+    }
+
+    public var userAgent: String {
+      get {
+        return graphQLMap["userAgent"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "userAgent")
+      }
+    }
+
+    public var app: Swift.Optional<SystemContextAppInput?> {
+      get {
+        return graphQLMap["app"] as? Swift.Optional<SystemContextAppInput?> ?? Swift.Optional<SystemContextAppInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "app")
+      }
+    }
+
+    public var device: Swift.Optional<SystemContextDeviceInput?> {
+      get {
+        return graphQLMap["device"] as? Swift.Optional<SystemContextDeviceInput?> ?? Swift.Optional<SystemContextDeviceInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "device")
+      }
+    }
+
+    public var os: Swift.Optional<SystemContextOsInput?> {
+      get {
+        return graphQLMap["os"] as? Swift.Optional<SystemContextOsInput?> ?? Swift.Optional<SystemContextOsInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "os")
+      }
+    }
+
+    public var library: Swift.Optional<SystemContextLibraryInput?> {
+      get {
+        return graphQLMap["library"] as? Swift.Optional<SystemContextLibraryInput?> ?? Swift.Optional<SystemContextLibraryInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "library")
+      }
+    }
+
+    public var network: Swift.Optional<SystemContextNetworkInput?> {
+      get {
+        return graphQLMap["network"] as? Swift.Optional<SystemContextNetworkInput?> ?? Swift.Optional<SystemContextNetworkInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "network")
+      }
+    }
+
+    public var screen: Swift.Optional<SystemContextScreenInput?> {
+      get {
+        return graphQLMap["screen"] as? Swift.Optional<SystemContextScreenInput?> ?? Swift.Optional<SystemContextScreenInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "screen")
+      }
+    }
+
+    public var campaign: Swift.Optional<SystemContextCampaignInput?> {
+      get {
+        return graphQLMap["campaign"] as? Swift.Optional<SystemContextCampaignInput?> ?? Swift.Optional<SystemContextCampaignInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "campaign")
+      }
+    }
+
+    public var location: Swift.Optional<SystemContextLocationInput?> {
+      get {
+        return graphQLMap["location"] as? Swift.Optional<SystemContextLocationInput?> ?? Swift.Optional<SystemContextLocationInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "location")
+      }
+    }
+  }
+
+  public struct SystemContextAppInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - name
+    ///   - version
+    ///   - build
+    ///   - namespace
+    public init(name: String, version: String, build: String, namespace: String) {
+      graphQLMap = ["name": name, "version": version, "build": build, "namespace": namespace]
+    }
+
+    public var name: String {
+      get {
+        return graphQLMap["name"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "name")
+      }
+    }
+
+    public var version: String {
+      get {
+        return graphQLMap["version"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "version")
+      }
+    }
+
+    public var build: String {
+      get {
+        return graphQLMap["build"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "build")
+      }
+    }
+
+    public var namespace: String {
+      get {
+        return graphQLMap["namespace"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "namespace")
+      }
+    }
+  }
+
+  public struct SystemContextDeviceInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - id
+    ///   - advertisingId
+    ///   - adTrackingEnabled
+    ///   - manufacturer
+    ///   - model
+    ///   - name
+    ///   - kind
+    ///   - token
+    public init(id: String, advertisingId: String, adTrackingEnabled: String, manufacturer: String, model: String, name: String, kind: String, token: String) {
+      graphQLMap = ["id": id, "advertisingId": advertisingId, "adTrackingEnabled": adTrackingEnabled, "manufacturer": manufacturer, "model": model, "name": name, "kind": kind, "token": token]
+    }
+
+    public var id: String {
+      get {
+        return graphQLMap["id"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "id")
+      }
+    }
+
+    public var advertisingId: String {
+      get {
+        return graphQLMap["advertisingId"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "advertisingId")
+      }
+    }
+
+    public var adTrackingEnabled: String {
+      get {
+        return graphQLMap["adTrackingEnabled"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "adTrackingEnabled")
+      }
+    }
+
+    public var manufacturer: String {
+      get {
+        return graphQLMap["manufacturer"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "manufacturer")
+      }
+    }
+
+    public var model: String {
+      get {
+        return graphQLMap["model"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "model")
+      }
+    }
+
+    public var name: String {
+      get {
+        return graphQLMap["name"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "name")
+      }
+    }
+
+    public var kind: String {
+      get {
+        return graphQLMap["kind"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "kind")
+      }
+    }
+
+    public var token: String {
+      get {
+        return graphQLMap["token"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "token")
+      }
+    }
+  }
+
+  public struct SystemContextOsInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - name
+    ///   - version
+    public init(name: String, version: String) {
+      graphQLMap = ["name": name, "version": version]
+    }
+
+    public var name: String {
+      get {
+        return graphQLMap["name"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "name")
+      }
+    }
+
+    public var version: String {
+      get {
+        return graphQLMap["version"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "version")
+      }
+    }
+  }
+
+  public struct SystemContextLibraryInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - name
+    ///   - version
+    public init(name: String, version: String) {
+      graphQLMap = ["name": name, "version": version]
+    }
+
+    public var name: String {
+      get {
+        return graphQLMap["name"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "name")
+      }
+    }
+
+    public var version: String {
+      get {
+        return graphQLMap["version"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "version")
+      }
+    }
+  }
+
+  public struct SystemContextNetworkInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - bluetooth
+    ///   - carrier
+    ///   - cellular
+    ///   - wifi
+    public init(bluetooth: Bool, carrier: String, cellular: Bool, wifi: Bool) {
+      graphQLMap = ["bluetooth": bluetooth, "carrier": carrier, "cellular": cellular, "wifi": wifi]
+    }
+
+    public var bluetooth: Bool {
+      get {
+        return graphQLMap["bluetooth"] as! Bool
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "bluetooth")
+      }
+    }
+
+    public var carrier: String {
+      get {
+        return graphQLMap["carrier"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "carrier")
+      }
+    }
+
+    public var cellular: Bool {
+      get {
+        return graphQLMap["cellular"] as! Bool
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "cellular")
+      }
+    }
+
+    public var wifi: Bool {
+      get {
+        return graphQLMap["wifi"] as! Bool
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "wifi")
+      }
+    }
+  }
+
+  public struct SystemContextScreenInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - width
+    ///   - height
+    ///   - density
+    public init(width: Int, height: Int, density: Int) {
+      graphQLMap = ["width": width, "height": height, "density": density]
+    }
+
+    public var width: Int {
+      get {
+        return graphQLMap["width"] as! Int
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "width")
+      }
+    }
+
+    public var height: Int {
+      get {
+        return graphQLMap["height"] as! Int
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "height")
+      }
+    }
+
+    public var density: Int {
+      get {
+        return graphQLMap["density"] as! Int
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "density")
+      }
+    }
+  }
+
+  public struct SystemContextCampaignInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - name
+    ///   - source
+    ///   - medium
+    ///   - term
+    ///   - content
+    public init(name: String, source: String, medium: String, term: String, content: String) {
+      graphQLMap = ["name": name, "source": source, "medium": medium, "term": term, "content": content]
+    }
+
+    public var name: String {
+      get {
+        return graphQLMap["name"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "name")
+      }
+    }
+
+    public var source: String {
+      get {
+        return graphQLMap["source"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "source")
+      }
+    }
+
+    public var medium: String {
+      get {
+        return graphQLMap["medium"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "medium")
+      }
+    }
+
+    public var term: String {
+      get {
+        return graphQLMap["term"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "term")
+      }
+    }
+
+    public var content: String {
+      get {
+        return graphQLMap["content"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "content")
+      }
+    }
+  }
+
+  public struct SystemContextLocationInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - city
+    ///   - country
+    ///   - latitude
+    ///   - longitude
+    ///   - speed
+    public init(city: String, country: String, latitude: Decimal, longitude: Decimal, speed: Decimal) {
+      graphQLMap = ["city": city, "country": country, "latitude": latitude, "longitude": longitude, "speed": speed]
+    }
+
+    public var city: String {
+      get {
+        return graphQLMap["city"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "city")
+      }
+    }
+
+    public var country: String {
+      get {
+        return graphQLMap["country"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "country")
+      }
+    }
+
+    public var latitude: Decimal {
+      get {
+        return graphQLMap["latitude"] as! Decimal
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "latitude")
+      }
+    }
+
+    public var longitude: Decimal {
+      get {
+        return graphQLMap["longitude"] as! Decimal
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "longitude")
+      }
+    }
+
+    public var speed: Decimal {
+      get {
+        return graphQLMap["speed"] as! Decimal
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "speed")
       }
     }
   }
@@ -869,8 +1420,9 @@ public enum DashXGql {
     ///   - accountAnonymousUid
     ///   - data
     ///   - timestamp
-    public init(event: String, accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, data: Swift.Optional<JSON?> = nil, timestamp: Swift.Optional<DateTime?> = nil) {
-      graphQLMap = ["event": event, "accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "data": data, "timestamp": timestamp]
+    ///   - systemContext
+    public init(event: String, accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, data: Swift.Optional<JSON?> = nil, timestamp: Swift.Optional<DateTime?> = nil, systemContext: Swift.Optional<SystemContextInput?> = nil) {
+      graphQLMap = ["event": event, "accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "data": data, "timestamp": timestamp, "systemContext": systemContext]
     }
 
     public var event: String {
@@ -915,6 +1467,15 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "timestamp")
+      }
+    }
+
+    public var systemContext: Swift.Optional<SystemContextInput?> {
+      get {
+        return graphQLMap["systemContext"] as? Swift.Optional<SystemContextInput?> ?? Swift.Optional<SystemContextInput?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "systemContext")
       }
     }
   }
