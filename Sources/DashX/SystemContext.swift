@@ -46,6 +46,31 @@ class SystemContext: NSObject {
     func setupCBCentralManager() {
         cbCentralManager.delegate = self
     }
+    
+    func getSystemContextInput() -> DashXGql.SystemContextInput? {
+        let ipAddresses = getIPAddress()
+        if let ipV4 = ipAddresses.ipV4,
+           let locale = locale.regionCode {
+            let ipV6 = ipAddresses.ipV6
+            
+            return DashXGql.SystemContextInput(
+                ipV4: ipV4,
+                ipV6: ipV6,
+                locale: locale,
+                timeZone: timeZone.identifier,
+                userAgent: userAgentString(),
+                app: nil,
+                device: nil,
+                os: nil,
+                library: nil,
+                network: nil,
+                screen: nil,
+                campaign: nil,
+                location: nil
+            )
+        }
+        return nil
+    }
 }
 
 extension SystemContext: CBCentralManagerDelegate {
