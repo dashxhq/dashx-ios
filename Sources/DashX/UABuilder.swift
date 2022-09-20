@@ -8,6 +8,7 @@ fileprivate func DarwinVersion() -> String {
     let dv = String(bytes: Data(bytes: &sysinfo.release, count: Int(_SYS_NAMELEN)), encoding: .ascii)!.trimmingCharacters(in: .controlCharacters)
     return "Darwin/\(dv)"
 }
+
 //eg. CFNetwork/808.3
 fileprivate func CFNetworkVersion() -> String {
     let dictionary = Bundle(identifier: "com.apple.CFNetwork")?.infoDictionary!
@@ -20,12 +21,14 @@ fileprivate func deviceVersion() -> String {
     let currentDevice = UIDevice.current
     return "\(currentDevice.systemName)/\(currentDevice.systemVersion)"
 }
+
 //eg. iPhone5,2
 fileprivate func deviceName() -> String {
     var sysinfo = utsname()
     uname(&sysinfo)
     return String(bytes: Data(bytes: &sysinfo.machine, count: Int(_SYS_NAMELEN)), encoding: .ascii)!.trimmingCharacters(in: .controlCharacters)
 }
+
 //eg. MyApp/1
 fileprivate func appNameAndVersion() -> String {
     let dictionary = Bundle.main.infoDictionary!
