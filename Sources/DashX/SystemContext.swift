@@ -47,3 +47,27 @@ class SystemContext: NSObject {
         cbCentralManager.delegate = self
     }
 }
+
+extension SystemContext: CBCentralManagerDelegate {
+    func centralManagerDidUpdateState(_ central: CBCentralManager) { }
+}
+
+extension SystemContext: CLLocationManagerDelegate {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        var authStatus = CLAuthorizationStatus.notDetermined
+        if #available(iOS 14.0, *) {
+            authStatus = manager.authorizationStatus
+        } else {
+            authStatus = CLLocationManager.authorizationStatus()
+        }
+        switch authStatus {
+        case .authorized, .authorizedAlways, .authorizedWhenInUse:
+            locationManager.startUpdatingLocation()
+            break
+        default:
+            break
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) { }
+}
