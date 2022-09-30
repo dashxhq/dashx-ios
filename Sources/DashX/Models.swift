@@ -9,22 +9,44 @@ public struct Preference: Codable {
 }
 
 public struct PrepareExternalAssetResponse: Codable {
-    let data: AssetData?
-    let createdAt: String?
-    let status: String?
-    // let storageProviderId: nil
-    let updatedAt: String?
-    let externalColumnId: String?
-    let id: String?
-    let installationId: String?
+    public var data: AssetData?
+    public var id: String?
 }
 
 public struct AssetData: Codable {
-    // let asset: nil
-    let upload: UploadData?
+    public var upload: UploadData?
 }
 
 public struct UploadData: Codable {
-    let headers: [String: String]?
-    let url: String?
+    public var headers: [String: String]?
+    public var url: String?
+}
+
+public struct ExternalAssetResponse: Codable {
+    public struct ExternalAssetDataResponse: Codable {
+        public var assetData: ExternalAssetData?
+        
+        enum CodingKeys: String, CodingKey {
+            case assetData = "asset"
+        }
+    }
+    
+    public var status: String?
+    public var data: ExternalAssetDataResponse?
+}
+
+public struct ExternalAssetData: Codable {
+    public var status: String?
+    public var url: String?
+    public var playbackIds: [PlaybackData]?
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case url
+    }
+}
+
+public struct PlaybackData: Codable {
+    public var id: String?
+    public var policy: String?
 }
