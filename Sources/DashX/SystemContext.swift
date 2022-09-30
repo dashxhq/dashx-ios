@@ -16,7 +16,7 @@ struct SystemContextEnvironment {
     let cbCentralManager: CBCentralManager
     let networkMonitor: NetworkMonitor
     let screen: UIScreen
-    let locationManager: CLLocationManager
+    let locationMonitor: LocationMonitor
     
     static let live = Self(
         locale: Locale.current,
@@ -27,19 +27,13 @@ struct SystemContextEnvironment {
         cbCentralManager: CBCentralManager.shared,
         networkMonitor: NetworkMonitor.shared,
         screen: UIScreen.main,
-        locationManager: CLLocationManager.shared
+        locationMonitor: LocationMonitor.shared
     )
 }
 
 extension CBCentralManager {
     static var shared: CBCentralManager {
         return CBCentralManager()
-    }
-}
-
-extension CLLocationManager {
-    static var shared: CLLocationManager {
-        return CLLocationManager()
     }
 }
 
@@ -51,15 +45,7 @@ class SystemContext: NSObject {
         self.environment = environment
         
         super.init()
-        setupLocationManager()
         setupCBCentralManager()
-    }
-    
-    func setupLocationManager() {
-        environment.locationManager.delegate = self
-        environment.locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        environment.locationManager.distanceFilter = kCLLocationAccuracyHundredMeters
-        environment.locationManager.startUpdatingLocation()
     }
     
     func setupCBCentralManager() {
@@ -78,15 +64,95 @@ class SystemContext: NSObject {
                 locale: locale,
                 timeZone: environment.timeZone.identifier,
                 userAgent: userAgentString(),
-                app: nil,
-                device: nil,
-                os: nil,
-                library: nil,
-                network: nil,
-                screen: nil,
+                app: getSystemContextAppInput(),
+                device: getSystemContextDeviceInput(),
+                os: getSystemContextOsInput(),
+                library: getSystemContextLibraryInput(),
+                network: getSystemContextNetworkInput(),
+                screen: getSystemContextScreenInput(),
                 campaign: nil,
-                location: nil
+                location: getSystemContextLocationInput()
             )
+        }
+        return nil
+    }
+    
+    func getSystemContextAppInput() -> DashXGql.SystemContextAppInput? {
+        if let bundleName = environment.bundle.object(forInfoDictionaryKey: "CFBundleName") as? String,
+           let bundleVersion = environment.bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+           let bundleShortVersion = environment.bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+           let namespace = environment.bundle.bundleIdentifier {
+            return DashXGql.SystemContextAppInput(
+                name: bundleName,
+                version: bundleShortVersion,
+                build: bundleVersion,
+                namespace: namespace
+            )
+        }
+        return nil
+    }
+    
+    func getSystemContextDeviceInput() -> DashXGql.SystemContextDeviceInput? {
+        var isAdTrackingEnabled = false
+        if #available(iOS 14, *) {
+            isAdTrackingEnabled = ATTrackingManager.trackingAuthorizationStatus == .authorized
+        } else {
+            isAdTrackingEnabled = environment.advertisingManager.isAdvertisingTrackingEnabled
+        }
+        
+        if let id = environment.device.identifierForVendor?.uuidString {
+            return DashXGql.SystemContextDeviceInput(
+                id: id,
+                advertisingId: environment.advertisingManager.advertisingIdentifier.uuidString,
+                adTrackingEnabled: "\(isAdTrackingEnabled)",
+                manufacturer: "Apple",
+                model: environment.device.model,
+                name: environment.device.name,
+                kind: environment.device.systemName,
+                token: ""
+            )
+        }
+        return nil
+    }
+    
+    func getSystemContextOsInput() -> DashXGql.SystemContextOsInput {
+        return DashXGql.SystemContextOsInput(name: environment.device.systemName, version: environment.device.systemVersion)
+    }
+    
+    func getSystemContextLibraryInput() -> DashXGql.SystemContextLibraryInput {
+        return DashXGql.SystemContextLibraryInput(name: Constants.PACKAGE_NAME, version: Constants.PACKAGE_VERSION)
+    }
+    
+    func getSystemContextNetworkInput() -> DashXGql.SystemContextNetworkInput? {
+        let networkInfo = CTTelephonyNetworkInfo()
+        if let carrierName = networkInfo.serviceSubscriberCellularProviders?.first?.value.carrierName {
+            let cellularReachabilityStatus = environment.networkMonitor.isReachableOnCellular
+            let wifiReachabilityStatus = environment.networkMonitor.isReachableOnWifi
+            return DashXGql.SystemContextNetworkInput(
+                bluetooth: environment.cbCentralManager.state == .poweredOn,
+                carrier: carrierName,
+                cellular: cellularReachabilityStatus,
+                wifi: wifiReachabilityStatus
+            )
+        }
+        return nil
+    }
+    
+    func getSystemContextScreenInput() -> DashXGql.SystemContextScreenInput {
+        return DashXGql.SystemContextScreenInput(
+            width: Int(environment.screen.bounds.width),
+            height: Int(environment.screen.bounds.height),
+            density: Int(environment.screen.scale)
+        )
+    }
+    
+    func getSystemContextLocationInput() -> DashXGql.SystemContextLocationInput? {
+        if let city = environment.locationMonitor.city,
+           let country = environment.locationMonitor.country,
+           let latitude = environment.locationMonitor.latitude,
+           let longitude = environment.locationMonitor.longitude,
+           let speed = environment.locationMonitor.speed {
+            return DashXGql.SystemContextLocationInput(city: city, country: country, latitude: DashXGql.Decimal(latitude), longitude: DashXGql.Decimal(longitude), speed: DashXGql.Decimal(speed))
         }
         return nil
     }
@@ -94,24 +160,4 @@ class SystemContext: NSObject {
 
 extension SystemContext: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) { }
-}
-
-extension SystemContext: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        var authStatus = CLAuthorizationStatus.notDetermined
-        if #available(iOS 14.0, *) {
-            authStatus = manager.authorizationStatus
-        } else {
-            authStatus = CLLocationManager.authorizationStatus()
-        }
-        switch authStatus {
-        case .authorized, .authorizedAlways, .authorizedWhenInUse:
-            environment.locationManager.startUpdatingLocation()
-            break
-        default:
-            break
-        }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) { }
 }
