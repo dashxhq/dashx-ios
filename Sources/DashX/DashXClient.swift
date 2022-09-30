@@ -141,7 +141,8 @@ public class DashXClient {
             event: event,
             accountUid: accountUid,
             accountAnonymousUid: accountAnonymousUid,
-            data: withData as? [String: JSONDecodable?]
+            data: withData as? [String: JSONDecodable?],
+            systemContext: SystemContext.shared.getSystemContextInput()
         )
 
         DashXLog.d(tag: #function, "Calling track with \(trackEventInput)")

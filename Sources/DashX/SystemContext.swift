@@ -7,29 +7,48 @@ import CoreTelephony
 import Network
 import CoreLocation
 
+struct SystemContextEnvironment {
+    let locale: Locale
+    let timeZone: TimeZone
+    let bundle: Bundle
+    let device: UIDevice
+    let advertisingManager: ASIdentifierManager
+    let cbCentralManager: CBCentralManager
+    let networkMonitor: NetworkMonitor
+    let screen: UIScreen
+    let locationManager: CLLocationManager
+    
+    static let live = Self(
+        locale: Locale.current,
+        timeZone: TimeZone.current,
+        bundle: Bundle.main,
+        device: UIDevice.current,
+        advertisingManager: ASIdentifierManager.shared(),
+        cbCentralManager: CBCentralManager.shared,
+        networkMonitor: NetworkMonitor.shared,
+        screen: UIScreen.main,
+        locationManager: CLLocationManager.shared
+    )
+}
+
+extension CBCentralManager {
+    static var shared: CBCentralManager {
+        return CBCentralManager()
+    }
+}
+
+extension CLLocationManager {
+    static var shared: CLLocationManager {
+        return CLLocationManager()
+    }
+}
+
 class SystemContext: NSObject {
     static var shared: SystemContext = SystemContext()
+    private let environment: SystemContextEnvironment
     
-    var timeZone: TimeZone
-    var locale: Locale
-    var bundle: Bundle
-    var device: UIDevice
-    var advertisingManager: ASIdentifierManager
-    var cbCentralManager: CBCentralManager
-    var networkMonitor: NetworkMonitor
-    var screen: UIScreen
-    var locationManager: CLLocationManager
-    
-    override init() {
-        self.locale = Locale.current
-        self.timeZone = TimeZone.current
-        self.bundle = Bundle.main
-        self.advertisingManager = ASIdentifierManager.shared()
-        self.cbCentralManager = CBCentralManager()
-        self.networkMonitor = NetworkMonitor.shared
-        self.device = UIDevice.current
-        self.screen = UIScreen.main
-        self.locationManager = CLLocationManager()
+    init(environment: SystemContextEnvironment = .live) {
+        self.environment = environment
         
         super.init()
         setupLocationManager()
@@ -37,14 +56,39 @@ class SystemContext: NSObject {
     }
     
     func setupLocationManager() {
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = kCLLocationAccuracyHundredMeters
-        locationManager.startUpdatingLocation()
+        environment.locationManager.delegate = self
+        environment.locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        environment.locationManager.distanceFilter = kCLLocationAccuracyHundredMeters
+        environment.locationManager.startUpdatingLocation()
     }
     
     func setupCBCentralManager() {
-        cbCentralManager.delegate = self
+        environment.cbCentralManager.delegate = self
+    }
+    
+    func getSystemContextInput() -> DashXGql.SystemContextInput? {
+        let ipAddresses = getIPAddress()
+        if let ipV4 = ipAddresses.ipV4,
+           let locale = environment.locale.regionCode {
+            let ipV6 = ipAddresses.ipV6
+            
+            return DashXGql.SystemContextInput(
+                ipV4: ipV4,
+                ipV6: ipV6,
+                locale: locale,
+                timeZone: environment.timeZone.identifier,
+                userAgent: userAgentString(),
+                app: nil,
+                device: nil,
+                os: nil,
+                library: nil,
+                network: nil,
+                screen: nil,
+                campaign: nil,
+                location: nil
+            )
+        }
+        return nil
     }
 }
 
@@ -62,7 +106,7 @@ extension SystemContext: CLLocationManagerDelegate {
         }
         switch authStatus {
         case .authorized, .authorizedAlways, .authorizedWhenInUse:
-            locationManager.startUpdatingLocation()
+            environment.locationManager.startUpdatingLocation()
             break
         default:
             break
