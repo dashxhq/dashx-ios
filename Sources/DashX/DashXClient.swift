@@ -506,8 +506,8 @@ public class DashXClient {
         failureCallback: @escaping FailureCallback
     ) {
         self.externalAsset(assetId: assetId) { response in
-            if let jsonDictionary = response.jsonValue as? [String: Any],
-               let status = jsonDictionary["status"] as? String {
+            if let response = response as? ExternalAssetResponse,
+               let status = response.status {
                 if status == "ready" || trysLeft == 0 {
                     successCallback(response)
                 } else {
@@ -535,7 +535,23 @@ public class DashXClient {
             case .success(let graphQLResult):
                 let json = graphQLResult.data?.externalAsset
                 DashXLog.d(tag: #function, "Sent externalAsset with \(String(describing: json))")
-                successCallback(json?.resultMap)
+                if let jsonDictionary = json?.resultMap.jsonValue as? [String: Any] {
+                    do {
+                        let json = try JSONSerialization.data(withJSONObject: jsonDictionary)
+                        var data = try JSONDecoder().decode(ExternalAssetResponse.self, from: json)
+                        if var assetData = data.data?.assetData,
+                           assetData.url == nil,
+                            let id = assetData.playbackIds?.first?.id {
+                            assetData.url = generateMuxVideoUrl(playbackId: id)
+                            data.data?.assetData = assetData
+                        }
+                        successCallback(data)
+                    } catch {
+                        failureCallback(error)
+                    }
+                } else {
+                    failureCallback(DashXClientError.assetIsNotUploaded)
+                }
             case .failure(let error):
                 DashXLog.d(tag: #function, "Encountered an error during externalAsset(): \(error)")
                 failureCallback(error)
