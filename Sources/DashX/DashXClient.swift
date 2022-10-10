@@ -31,7 +31,8 @@ public class DashXClient {
     public func configure(
         withPublicKey publicKey: String,
         baseURI: String? = nil,
-        targetEnvironment: String? = nil
+        targetEnvironment: String? = nil,
+        libraryInfo: LibraryInfo? = nil
     ) {
         DashXAppDelegate.swizzleDidReceiveRemoteNotificationFetchCompletionHandler()
         
@@ -43,6 +44,10 @@ public class DashXClient {
         
         if let targetEnvironment = targetEnvironment {
             ConfigInterceptor.shared.targetEnvironment = targetEnvironment
+        }
+        
+        if let libraryInfo = libraryInfo {
+            SystemContext.shared.setLibraryInfo(libraryInfo: libraryInfo)
         }
     }
 
