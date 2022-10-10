@@ -37,15 +37,34 @@ extension CBCentralManager {
     }
 }
 
+public struct LibraryInfo {
+    public let name: String
+    public let version: String
+    
+    public init(
+        name: String,
+        version: String
+    ) {
+        self.name = name
+        self.version = version
+    }
+}
+
 class SystemContext: NSObject {
     static var shared: SystemContext = SystemContext()
     private let environment: SystemContextEnvironment
+    
+    private var libraryInfo: LibraryInfo? = nil
     
     init(environment: SystemContextEnvironment = .live) {
         self.environment = environment
         
         super.init()
         setupCBCentralManager()
+    }
+    
+    func setLibraryInfo(libraryInfo: LibraryInfo) {
+        self.libraryInfo = libraryInfo
     }
     
     func setupCBCentralManager() {
@@ -120,6 +139,9 @@ class SystemContext: NSObject {
     }
     
     func getSystemContextLibraryInput() -> DashXGql.SystemContextLibraryInput {
+        if let libraryInfo = libraryInfo {
+            return DashXGql.SystemContextLibraryInput(name: libraryInfo.name, version: libraryInfo.version)
+        }
         return DashXGql.SystemContextLibraryInput(name: Constants.PACKAGE_NAME, version: Constants.PACKAGE_VERSION)
     }
     
