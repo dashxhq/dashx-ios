@@ -1,8 +1,74 @@
-# iOS Native Module
+<p align="center">
+    <br />
+    <a href="https://dashx.com"><img src="https://raw.githubusercontent.com/dashxhq/brand-book/master/assets/logo-black-text-color-icon@2x.png" alt="DashX" height="40" /></a>
+    <br />
+    <br />
+    <strong>Your All-in-One Product Stack</strong>
+</p>
 
-## Development
+<div align="center">
+  <h4>
+    <a href="https://dashx.com">Website</a>
+    <span> | </span>
+    <a href="https://dashxdemo.com">Demos</a>
+    <span> | </span>
+    <a href="https://docs.dashx.com/developer">Documentation</a>
+  </h4>
+</div>
 
-### Obtaining Graphql schema and generating Graphql operation
+<br />
+
+# dashx-ios
+
+_DashX SDK for iOS_
+
+## Install
+
+**CocoaPods**
+
+Specify the dependency in your `Podfile`:
+
+```
+pod 'DashX'
+```
+
+Run the following command:
+
+```sh
+pod install
+```
+
+**Carthage**
+
+Specify the dependency in your `Cartfile`:
+
+```
+github "dashxhq/dashx-ios"
+```
+
+Run the following command:
+
+```sh
+carthage update
+```
+
+**Swift Package Manager**
+
+Add the following to your `Package.swift`:
+
+```
+dependencies: [
+    .package(url: "https://github.com/dashxhq/dashx-ios.git", .upToNextMajor(from: "1.0.0"))
+]
+```
+
+## Usage
+
+For detailed usage, refer to the [documentation](https://docs.dashx.com/developer).
+
+## Contributing
+
+### Obtaining GraphQL schema and generating GraphQL operation
 
 - Make sure to install Apollo CLI via npm:
 
@@ -78,7 +144,7 @@ Network.shared.apollo.fetch(query: fetchContentQuery, cachePolicy: .returnCacheD
 
 ```
 
-## Release
+### Publishing
 
 1. Bump up the version number in `DashX.podspec` and `DashX\Constants.swift`
 2. Commit the version bump: `Bump version to x.x.x`

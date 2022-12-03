@@ -18,16 +18,11 @@ Pod::Spec.new do |spec|
   spec.name         = "DashX"
   spec.module_name  = "DashX"
   spec.version      = "1.0.5"
-  spec.summary      = "DashX gives your app nocode superpowers to your app"
+  spec.summary      = "DashX SDK for iOS"
 
-  # This description is used to generate tags and improve search results.
-  #   * Think: What does it do? Why did you write it? What is the focus?
-  #   * Try to keep it short, snappy and to the point.
-  #   * Write the description between the DESC delimiters below.
-  #   * Finally, don't worry about the indent, CocoaPods strips it!
   spec.description  = <<-DESC
-    DashX lets you edit in-app content, view analytics, send notifications, supports customizable workflows, helps in billing and provides CMS capabilities
-                   DESC
+    DashX is an all-in-one Product Stack which includes the following features: Content Management, Notifications System, Billing System, Feature Flags, Analytics, Business Intelligence and more!
+  DESC
 
   spec.homepage     = "https://dashx.com"
   # spec.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
@@ -41,7 +36,6 @@ Pod::Spec.new do |spec|
   #
 
   spec.license      = "MIT"
-  # spec.license      = { :type => "MIT", :file => "FILE_LICENSE" }
 
 
   # ――― Author Metadata  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
@@ -55,9 +49,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.author             = { "Team DashX" => "dev@dashx.com" }
-  # Or just: spec.author    = "Team DashX"
-  # spec.authors            = { "Team DashX" => "dev@dashx.com" }
-  # spec.social_media_url   = ""
+
 
   # ――― Platform Specifics ――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   #
@@ -65,7 +57,6 @@ Pod::Spec.new do |spec|
   #  the deployment target. You can optionally include the target after the platform.
   #
 
-  # spec.platform     = :ios
   spec.platform     = :ios, "12.0"
   spec.swift_version = "4.2"
 
@@ -135,6 +126,10 @@ Pod::Spec.new do |spec|
   # spec.requires_arc = true
 
   # spec.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
+
+
+  # ――― Dependencies ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
+
   spec.dependency 'Apollo', '~> 0.51.2'
 
 end
