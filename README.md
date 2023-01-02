@@ -92,7 +92,7 @@ This will save a `schama.json` file in your ios directory.
 $ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars API.swift
 ```
 
-For example, if you want to generate code for `FetchContent`.
+For example, if you want to generate code for `FetchCart`.
 
 - Download schema
 
@@ -103,45 +103,43 @@ $ apollo schema:download --endpoint="https://api.dashx.com/graphql" schema.json
 - Add request in `graphql` dir with following contents:
 
 ```graphql
-query FetchContent($input: FetchContentInput!) {
-  fetchContent(input: $input)
+query FetchCart($input: FetchCartInput!) {
+  fetchCart(input: $input) {
+    id
+    // ... other fields
+  }
 }
 ```
 
-- Re-generate API.swift so it includes the `FetchContent` operation
+- Re-generate API.swift so it includes the `FetchCart` operation
 
 ```sh
 $ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars API.swift
 ```
 
-- Now you can use FetchContent operation like so:
+- Now you can use FetchCart operation like so:
 
 ```swift
-let fetchContentInput  = DashXGql.FetchContentInput( // Note the DashXGql namespace
-    contentType: contentType,
-    content: content,
-    preview: preview,
-    language: language,
-    fields: fields,
-    include: include,
-    exclude: exclude
+let fetchCartInput  = DashXGql.FetchCartInput( // Note the DashXGql namespace
+    accountUid: self.accountUid,
+    accountAnonymousUid: self.accountAnonymousUid
 )
 
-DashXLog.d(tag: #function, "Calling fetchContent with \(fetchContentInput)")
+DashXLog.d(tag: #function, "Calling fetchCart with \(fetchCartInput)")
 
-let fetchContentQuery = DashXGql.FetchContentQuery(input: fetchContentInput)
+let fetchCartQuery = DashXGql.FetchCartQuery(input: fetchCartInput)
 
-Network.shared.apollo.fetch(query: fetchContentQuery, cachePolicy: .returnCacheDataElseFetch) { result in
+Network.shared.apollo.fetch(query: fetchCartQuery) { result in
   switch result {
   case .success(let graphQLResult):
-    DashXLog.d(tag: #function, "Sent fetchContent with \(String(describing: graphQLResult))")
-    let content = graphQLResult.data?.fetchContent
-    resolve(content)
+    let json = graphQLResult.data?.fetchCart
+    DashXLog.i(tag: #function, "Sent fetchCart with \(String(describing: json))")
+    successCallback(json?.resultMap)
   case .failure(let error):
-    DashXLog.d(tag: #function, "Encountered an error during fetchContent(): \(error)")
-    reject("", error.localizedDescription, error)
+    DashXLog.e(tag: #function, "Encountered an error during fetchCart(): \(error)")
+    failureCallback(error)
   }
-
+}
 ```
 
 ### Publishing

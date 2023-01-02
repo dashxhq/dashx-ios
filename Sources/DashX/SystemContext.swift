@@ -127,8 +127,7 @@ class SystemContext: NSObject {
                 manufacturer: "Apple",
                 model: environment.device.model,
                 name: environment.device.name,
-                kind: environment.device.systemName,
-                token: ""
+                kind: environment.device.systemName
             )
         }
         return nil
@@ -170,11 +169,11 @@ class SystemContext: NSObject {
     
     func getSystemContextLocationInput() -> DashXGql.SystemContextLocationInput? {
         if let city = environment.locationMonitor.city,
-           let country = environment.locationMonitor.country,
-           let latitude = environment.locationMonitor.latitude,
-           let longitude = environment.locationMonitor.longitude,
-           let speed = environment.locationMonitor.speed {
-            return DashXGql.SystemContextLocationInput(city: city, country: country, latitude: DashXGql.Decimal(latitude), longitude: DashXGql.Decimal(longitude), speed: DashXGql.Decimal(speed))
+           let country = environment.locationMonitor.country {
+            return DashXGql.SystemContextLocationInput(
+                city: city,
+                country: country
+            )
         }
         return nil
     }

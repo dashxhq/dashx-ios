@@ -69,6 +69,6 @@ func getIPAddress() -> (ipV4: String?, ipV6: String?) {
     return (ipv4Address, ipv6Address)
 }
 
-func generateMuxVideoUrl(playbackId: String?) -> String {
+func generateMuxVideoUrl(playbackId: String) -> String {
     return "https://stream.mux.com/$\(playbackId).m3u8"
 }

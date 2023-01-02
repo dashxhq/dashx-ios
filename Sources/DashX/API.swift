@@ -56,8 +56,9 @@ public enum DashXGql {
     ///   - quantity
     ///   - reset
     ///   - custom
-    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, itemId: UUID, pricingId: UUID, quantity: Decimal, reset: Bool, custom: Swift.Optional<JSON?> = nil) {
-      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "itemId": itemId, "pricingId": pricingId, "quantity": quantity, "reset": reset, "custom": custom]
+    ///   - targetEnvironment
+    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, itemId: UUID, pricingId: UUID, quantity: Decimal, reset: Bool, custom: Swift.Optional<JSON?> = nil, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "itemId": itemId, "pricingId": pricingId, "quantity": quantity, "reset": reset, "custom": custom, "targetEnvironment": targetEnvironment]
     }
 
     public var accountUid: Swift.Optional<String?> {
@@ -120,6 +121,15 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "custom")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
       }
     }
   }
@@ -265,8 +275,9 @@ public enum DashXGql {
     ///   - accountUid
     ///   - accountAnonymousUid
     ///   - orderId
-    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, orderId: Swift.Optional<UUID?> = nil) {
-      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "orderId": orderId]
+    ///   - targetEnvironment
+    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, orderId: Swift.Optional<UUID?> = nil, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "orderId": orderId, "targetEnvironment": targetEnvironment]
     }
 
     public var accountUid: Swift.Optional<String?> {
@@ -293,6 +304,15 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "orderId")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
       }
     }
   }
@@ -391,8 +411,9 @@ public enum DashXGql {
 
     /// - Parameters:
     ///   - accountUid
-    public init(accountUid: String) {
-      graphQLMap = ["accountUid": accountUid]
+    ///   - targetEnvironment
+    public init(accountUid: String, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["accountUid": accountUid, "targetEnvironment": targetEnvironment]
     }
 
     public var accountUid: String {
@@ -401,6 +422,15 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "accountUid")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
       }
     }
   }
@@ -416,10 +446,10 @@ public enum DashXGql {
     ///   - name
     ///   - firstName
     ///   - lastName
-    ///   - scope
     ///   - systemContext
-    public init(uid: Swift.Optional<String?> = nil, anonymousUid: Swift.Optional<String?> = nil, email: Swift.Optional<String?> = nil, phone: Swift.Optional<String?> = nil, name: Swift.Optional<String?> = nil, firstName: Swift.Optional<String?> = nil, lastName: Swift.Optional<String?> = nil, scope: Swift.Optional<String?> = nil, systemContext: Swift.Optional<SystemContextInput?> = nil) {
-      graphQLMap = ["uid": uid, "anonymousUid": anonymousUid, "email": email, "phone": phone, "name": name, "firstName": firstName, "lastName": lastName, "scope": scope, "systemContext": systemContext]
+    ///   - targetEnvironment
+    public init(uid: Swift.Optional<String?> = nil, anonymousUid: Swift.Optional<String?> = nil, email: Swift.Optional<String?> = nil, phone: Swift.Optional<String?> = nil, name: Swift.Optional<String?> = nil, firstName: Swift.Optional<String?> = nil, lastName: Swift.Optional<String?> = nil, systemContext: Swift.Optional<SystemContextInput?> = nil, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["uid": uid, "anonymousUid": anonymousUid, "email": email, "phone": phone, "name": name, "firstName": firstName, "lastName": lastName, "systemContext": systemContext, "targetEnvironment": targetEnvironment]
     }
 
     public var uid: Swift.Optional<String?> {
@@ -485,21 +515,21 @@ public enum DashXGql {
       }
     }
 
-    public var scope: Swift.Optional<String?> {
-      get {
-        return graphQLMap["scope"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "scope")
-      }
-    }
-
     public var systemContext: Swift.Optional<SystemContextInput?> {
       get {
         return graphQLMap["systemContext"] as? Swift.Optional<SystemContextInput?> ?? Swift.Optional<SystemContextInput?>.none
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "systemContext")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
       }
     }
   }
@@ -703,9 +733,8 @@ public enum DashXGql {
     ///   - model
     ///   - name
     ///   - kind
-    ///   - token
-    public init(id: String, advertisingId: String, adTrackingEnabled: String, manufacturer: String, model: String, name: String, kind: String, token: String) {
-      graphQLMap = ["id": id, "advertisingId": advertisingId, "adTrackingEnabled": adTrackingEnabled, "manufacturer": manufacturer, "model": model, "name": name, "kind": kind, "token": token]
+    public init(id: String, advertisingId: String, adTrackingEnabled: String, manufacturer: String, model: String, name: String, kind: String) {
+      graphQLMap = ["id": id, "advertisingId": advertisingId, "adTrackingEnabled": adTrackingEnabled, "manufacturer": manufacturer, "model": model, "name": name, "kind": kind]
     }
 
     public var id: String {
@@ -768,15 +797,6 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "kind")
-      }
-    }
-
-    public var token: String {
-      get {
-        return graphQLMap["token"] as! String
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "token")
       }
     }
   }
@@ -992,11 +1012,8 @@ public enum DashXGql {
     /// - Parameters:
     ///   - city
     ///   - country
-    ///   - latitude
-    ///   - longitude
-    ///   - speed
-    public init(city: String, country: String, latitude: Decimal, longitude: Decimal, speed: Decimal) {
-      graphQLMap = ["city": city, "country": country, "latitude": latitude, "longitude": longitude, "speed": speed]
+    public init(city: String, country: String) {
+      graphQLMap = ["city": city, "country": country]
     }
 
     public var city: String {
@@ -1016,33 +1033,6 @@ public enum DashXGql {
         graphQLMap.updateValue(newValue, forKey: "country")
       }
     }
-
-    public var latitude: Decimal {
-      get {
-        return graphQLMap["latitude"] as! Decimal
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "latitude")
-      }
-    }
-
-    public var longitude: Decimal {
-      get {
-        return graphQLMap["longitude"] as! Decimal
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "longitude")
-      }
-    }
-
-    public var speed: Decimal {
-      get {
-        return graphQLMap["speed"] as! Decimal
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "speed")
-      }
-    }
   }
 
   public struct PrepareExternalAssetInput: GraphQLMapConvertible {
@@ -1050,8 +1040,9 @@ public enum DashXGql {
 
     /// - Parameters:
     ///   - externalColumnId
-    public init(externalColumnId: UUID) {
-      graphQLMap = ["externalColumnId": externalColumnId]
+    ///   - targetEnvironment
+    public init(externalColumnId: UUID, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["externalColumnId": externalColumnId, "targetEnvironment": targetEnvironment]
     }
 
     public var externalColumnId: UUID {
@@ -1062,6 +1053,15 @@ public enum DashXGql {
         graphQLMap.updateValue(newValue, forKey: "externalColumnId")
       }
     }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
+      }
+    }
   }
 
   public struct SaveStoredPreferencesInput: GraphQLMapConvertible {
@@ -1070,8 +1070,9 @@ public enum DashXGql {
     /// - Parameters:
     ///   - accountUid
     ///   - preferenceData
-    public init(accountUid: String, preferenceData: JSON) {
-      graphQLMap = ["accountUid": accountUid, "preferenceData": preferenceData]
+    ///   - targetEnvironment
+    public init(accountUid: String, preferenceData: JSON, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["accountUid": accountUid, "preferenceData": preferenceData, "targetEnvironment": targetEnvironment]
     }
 
     public var accountUid: String {
@@ -1089,6 +1090,15 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "preferenceData")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
       }
     }
   }
@@ -1220,8 +1230,9 @@ public enum DashXGql {
     ///   - deviceAdvertisingUid
     ///   - isDeviceAdTrackingEnabled
     ///   - tag
-    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, name: Swift.Optional<String?> = nil, kind: ContactKind, value: String, userAgent: Swift.Optional<String?> = nil, osName: Swift.Optional<String?> = nil, osVersion: Swift.Optional<String?> = nil, deviceModel: Swift.Optional<String?> = nil, deviceManufacturer: Swift.Optional<String?> = nil, deviceUid: Swift.Optional<String?> = nil, deviceAdvertisingUid: Swift.Optional<String?> = nil, isDeviceAdTrackingEnabled: Swift.Optional<Bool?> = nil, tag: Swift.Optional<String?> = nil) {
-      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "name": name, "kind": kind, "value": value, "userAgent": userAgent, "osName": osName, "osVersion": osVersion, "deviceModel": deviceModel, "deviceManufacturer": deviceManufacturer, "deviceUid": deviceUid, "deviceAdvertisingUid": deviceAdvertisingUid, "isDeviceAdTrackingEnabled": isDeviceAdTrackingEnabled, "tag": tag]
+    ///   - targetEnvironment
+    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, name: Swift.Optional<String?> = nil, kind: ContactKind, value: String, userAgent: Swift.Optional<String?> = nil, osName: Swift.Optional<String?> = nil, osVersion: Swift.Optional<String?> = nil, deviceModel: Swift.Optional<String?> = nil, deviceManufacturer: Swift.Optional<String?> = nil, deviceUid: Swift.Optional<String?> = nil, deviceAdvertisingUid: Swift.Optional<String?> = nil, isDeviceAdTrackingEnabled: Swift.Optional<Bool?> = nil, tag: Swift.Optional<String?> = nil, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "name": name, "kind": kind, "value": value, "userAgent": userAgent, "osName": osName, "osVersion": osVersion, "deviceModel": deviceModel, "deviceManufacturer": deviceManufacturer, "deviceUid": deviceUid, "deviceAdvertisingUid": deviceAdvertisingUid, "isDeviceAdTrackingEnabled": isDeviceAdTrackingEnabled, "tag": tag, "targetEnvironment": targetEnvironment]
     }
 
     public var accountUid: Swift.Optional<String?> {
@@ -1347,6 +1358,15 @@ public enum DashXGql {
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "tag")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
       }
     }
   }
