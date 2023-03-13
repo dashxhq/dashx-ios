@@ -176,9 +176,9 @@ class SystemContext: NSObject {
             return DashXGql.SystemContextLocationInput(
                 city: city,
                 country: country,
-                latitude: DashXGql.Decimal(latitude),
-                longitude: DashXGql.Decimal(longitude),
-                speed: DashXGql.Decimal(speed)
+                latitude: DashXGql.BigDecimal(latitude),
+                longitude: DashXGql.BigDecimal(longitude),
+                speed: DashXGql.BigDecimal(speed)
             )
         }
         return nil

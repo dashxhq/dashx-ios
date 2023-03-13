@@ -7,6 +7,7 @@ public extension DashXGql {
     typealias UUID = String
     typealias DateTime = String
     typealias Decimal = String
+    typealias BigDecimal = String
 }
 
 extension String {

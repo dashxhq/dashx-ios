@@ -70,26 +70,27 @@ For detailed usage, refer to the [documentation](https://docs.dashx.com/develope
 
 ### Obtaining GraphQL schema and generating GraphQL operation
 
-- Make sure to install Apollo CLI via npm:
+- Make sure to install Apollo CLI and GraphQL.js via npm:
 
 ```sh
 $ npm i -g apollo
+$ npm i -g graphql
 ```
 
 - In order to generate code, Apollo requires local copy of Graphql schema, to download that:
 
 ```sh
-$ apollo schema:download --endpoint="https://api.dashx.com/graphql" schema.json
+$ apollo schema:download --endpoint="https://api.dashx-staging.com/graphql" schema.json
 ```
 
-This will save a `schama.json` file in your ios directory.
+This will save a `schema.json` file in your ios directory.
 
 - Add Graphql request in `graphql` dir.
 
 - Regenerate `API.swift` using:
 
 ```sh
-$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars API.swift
+$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars Sources/DashX/API.swift
 ```
 
 For example, if you want to generate code for `FetchCart`.
@@ -97,7 +98,7 @@ For example, if you want to generate code for `FetchCart`.
 - Download schema
 
 ```sh
-$ apollo schema:download --endpoint="https://api.dashx.com/graphql" schema.json
+$ apollo schema:download --endpoint="https://api.dashx-staging.com/graphql" schema.json
 ```
 
 - Add request in `graphql` dir with following contents:
@@ -144,7 +145,7 @@ Network.shared.apollo.fetch(query: fetchCartQuery) { result in
 
 ### Publishing
 
-1. Bump up the version number in `DashX.podspec` and `DashX\Constants.swift`
+1. Bump up the version number in `DashX.podspec` and `Sources/DashX/Constants.swift`
 2. Commit the version bump: `Bump version to x.x.x`
 3. Create a tag: `git tag 'x.x.x'`
 4. Push the tag: `git push origin --tags`

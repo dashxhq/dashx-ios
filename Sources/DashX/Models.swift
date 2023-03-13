@@ -8,7 +8,7 @@ public struct Preference: Codable {
     public var whatsapp: Bool?
 }
 
-public struct PrepareExternalAssetResponse: Codable {
+public struct PrepareAssetResponse: Codable {
     public var data: AssetData?
     public var id: String?
 }
@@ -22,15 +22,15 @@ public struct UploadData: Codable {
     public var url: String?
 }
 
-public struct ExternalAssetResponse: Codable {
+public struct AssetResponse: Codable {
     public struct ExternalAssetDataResponse: Codable {
         public var assetData: ExternalAssetData?
-        
+
         enum CodingKeys: String, CodingKey {
             case assetData = "asset"
         }
     }
-    
+
     public var status: String?
     public var data: ExternalAssetDataResponse?
 }
@@ -39,7 +39,7 @@ public struct ExternalAssetData: Codable {
     public var status: String?
     public var url: String?
     public var playbackIds: [PlaybackData]?
-    
+
     enum CodingKeys: String, CodingKey {
         case status
         case url
