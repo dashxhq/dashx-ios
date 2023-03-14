@@ -90,7 +90,7 @@ This will save a `schema.json` file in your ios directory.
 - Regenerate `API.swift` using:
 
 ```sh
-$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars Sources/DashX/API.swift
+$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="Graphql/*.graphql" --passthroughCustomScalars Sources/DashX/API.swift
 ```
 
 For example, if you want to generate code for `FetchCart`.
@@ -115,7 +115,7 @@ query FetchCart($input: FetchCartInput!) {
 - Re-generate API.swift so it includes the `FetchCart` operation
 
 ```sh
-$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="graphql/*.graphql" --passthroughCustomScalars API.swift
+$ apollo client:codegen --target=swift --namespace=DashXGql --localSchemaFile=schema.json --includes="Graphql/*.graphql" --passthroughCustomScalars Sources/DashX/API.swift
 ```
 
 - Now you can use FetchCart operation like so:
