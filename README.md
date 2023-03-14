@@ -143,6 +143,19 @@ Network.shared.apollo.fetch(query: fetchCartQuery) { result in
 }
 ```
 
+- Compile package
+
+**NOTE**: `platforms` key in `Package.swift` only specifies the minimum supported version for ex: `.iOS(...)`.
+
+To restrict the compilation to only one platform, use the following command
+```
+$ xcodebuild -scheme DashX -destination 'generic/platform=iOS'
+```
+instead of
+```
+swift build
+```
+
 ### Publishing
 
 1. Bump up the version number in `DashX.podspec` and `Sources/DashX/Constants.swift`
