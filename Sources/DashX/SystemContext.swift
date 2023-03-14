@@ -168,14 +168,10 @@ class SystemContext: NSObject {
     }
 
     func getSystemContextLocationInput() -> DashXGql.SystemContextLocationInput? {
-        if let city = environment.locationMonitor.city,
-            let country = environment.locationMonitor.country,
-            let latitude = environment.locationMonitor.latitude,
+        if let latitude = environment.locationMonitor.latitude,
             let longitude = environment.locationMonitor.longitude,
             let speed = environment.locationMonitor.speed {
             return DashXGql.SystemContextLocationInput(
-                city: city,
-                country: country,
                 latitude: DashXGql.BigDecimal(latitude),
                 longitude: DashXGql.BigDecimal(longitude),
                 speed: DashXGql.BigDecimal(speed)

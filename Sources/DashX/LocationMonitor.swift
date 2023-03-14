@@ -11,8 +11,6 @@ class LocationMonitor: NSObject {
     static var shared = LocationMonitor()
 
     var locationManager: CLLocationManager!
-    var city: String?
-    var country: String?
     var latitude: Double?
     var longitude: Double?
     var speed: Double?
@@ -59,14 +57,6 @@ extension LocationMonitor: CLLocationManagerDelegate {
             latitude = location.coordinate.latitude
             longitude = location.coordinate.longitude
             speed = location.speed
-            let geocoder = CLGeocoder()
-            geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
-                guard error == nil else { return }
-                if let placemarks = placemarks, let placemark = placemarks.first {
-                    self?.city = placemark.name
-                    self?.country = placemark.country
-                }
-            }
         }
     }
 }
