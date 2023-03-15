@@ -1625,6 +1625,55 @@ public enum DashXGql {
     }
   }
 
+  public struct UnsubscribeContactInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - accountUid
+    ///   - accountAnonymousUid
+    ///   - value
+    ///   - targetEnvironment
+    public init(accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, value: String, targetEnvironment: Swift.Optional<String?> = nil) {
+      graphQLMap = ["accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "value": value, "targetEnvironment": targetEnvironment]
+    }
+
+    public var accountUid: Swift.Optional<String?> {
+      get {
+        return graphQLMap["accountUid"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "accountUid")
+      }
+    }
+
+    public var accountAnonymousUid: Swift.Optional<String?> {
+      get {
+        return graphQLMap["accountAnonymousUid"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "accountAnonymousUid")
+      }
+    }
+
+    public var value: String {
+      get {
+        return graphQLMap["value"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "value")
+      }
+    }
+
+    public var targetEnvironment: Swift.Optional<String?> {
+      get {
+        return graphQLMap["targetEnvironment"] as? Swift.Optional<String?> ?? Swift.Optional<String?>.none
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "targetEnvironment")
+      }
+    }
+  }
+
   public final class AddContentMutation: GraphQLMutation {
     /// The raw GraphQL definition of this operation.
     public let operationDefinition: String =
@@ -3678,6 +3727,110 @@ public enum DashXGql {
           }
           set {
             resultMap.updateValue(newValue, forKey: "success")
+          }
+        }
+      }
+    }
+  }
+
+  public final class UnsubscribeContactMutation: GraphQLMutation {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      mutation UnsubscribeContact($input: UnsubscribeContactInput!) {
+        unsubscribeContact(input: $input) {
+          __typename
+          id
+          value
+        }
+      }
+      """
+
+    public let operationName: String = "UnsubscribeContact"
+
+    public var input: UnsubscribeContactInput
+
+    public init(input: UnsubscribeContactInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Mutation"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("unsubscribeContact", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(UnsubscribeContact.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(unsubscribeContact: UnsubscribeContact) {
+        self.init(unsafeResultMap: ["__typename": "Mutation", "unsubscribeContact": unsubscribeContact.resultMap])
+      }
+
+      public var unsubscribeContact: UnsubscribeContact {
+        get {
+          return UnsubscribeContact(unsafeResultMap: resultMap["unsubscribeContact"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "unsubscribeContact")
+        }
+      }
+
+      public struct UnsubscribeContact: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["Contact"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("id", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("value", type: .nonNull(.scalar(String.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(id: UUID, value: String) {
+          self.init(unsafeResultMap: ["__typename": "Contact", "id": id, "value": value])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var id: UUID {
+          get {
+            return resultMap["id"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "id")
+          }
+        }
+
+        public var value: String {
+          get {
+            return resultMap["value"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "value")
           }
         }
       }
