@@ -147,7 +147,7 @@ Network.shared.apollo.fetch(query: fetchCartQuery) { result in
 
 **NOTE**: `platforms` key in `Package.swift` only specifies the minimum supported version for ex: `.iOS(...)`.
 
-To restrict the compilation to only one platform, use the following command
+To restrict the compilation to only one platform, either set the destination in Xcode to `Any iOS Device` or use the following command
 ```sh
 $ xcodebuild -scheme DashX -destination 'generic/platform=iOS'
 ```
