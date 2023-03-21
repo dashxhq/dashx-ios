@@ -27,6 +27,10 @@ public class DashXClient {
         loadIdentity()
     }
 
+    public func enableLifecycleTracking() {
+        DashXApplicationLifecycleCallbacks().enable()
+    }
+
     public func configure(
         withPublicKey publicKey: String,
         baseURI: String? = nil,
