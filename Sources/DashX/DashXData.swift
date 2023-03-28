@@ -1,13 +1,11 @@
-import Foundation
 import Apollo
+import Foundation
 
 public extension DashXGql {
-    typealias JSON = [String : Any?]
-    typealias Json = [String : Any?]
+    typealias JSON = [String: Any?]
     typealias UUID = String
-    typealias DateTime = String
+    typealias Timestamp = String
     typealias Decimal = String
-    typealias BigDecimal = String
 }
 
 extension String {

@@ -172,9 +172,9 @@ class SystemContext: NSObject {
             let longitude = environment.locationMonitor.longitude,
             let speed = environment.locationMonitor.speed {
             return DashXGql.SystemContextLocationInput(
-                latitude: DashXGql.BigDecimal(latitude),
-                longitude: DashXGql.BigDecimal(longitude),
-                speed: DashXGql.BigDecimal(speed)
+                latitude: DashXGql.Decimal(latitude),
+                longitude: DashXGql.Decimal(longitude),
+                speed: DashXGql.Decimal(speed)
             )
         }
         return nil

@@ -1070,22 +1070,22 @@ public enum DashXGql {
     ///   - city
     ///   - country
     ///   - speed
-    public init(latitude: Swift.Optional<BigDecimal?> = nil, longitude: Swift.Optional<BigDecimal?> = nil, city: Swift.Optional<String?> = nil, country: Swift.Optional<String?> = nil, speed: Swift.Optional<BigDecimal?> = nil) {
+    public init(latitude: Swift.Optional<Decimal?> = nil, longitude: Swift.Optional<Decimal?> = nil, city: Swift.Optional<String?> = nil, country: Swift.Optional<String?> = nil, speed: Swift.Optional<Decimal?> = nil) {
       graphQLMap = ["latitude": latitude, "longitude": longitude, "city": city, "country": country, "speed": speed]
     }
 
-    public var latitude: Swift.Optional<BigDecimal?> {
+    public var latitude: Swift.Optional<Decimal?> {
       get {
-        return graphQLMap["latitude"] as? Swift.Optional<BigDecimal?> ?? Swift.Optional<BigDecimal?>.none
+        return graphQLMap["latitude"] as? Swift.Optional<Decimal?> ?? Swift.Optional<Decimal?>.none
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "latitude")
       }
     }
 
-    public var longitude: Swift.Optional<BigDecimal?> {
+    public var longitude: Swift.Optional<Decimal?> {
       get {
-        return graphQLMap["longitude"] as? Swift.Optional<BigDecimal?> ?? Swift.Optional<BigDecimal?>.none
+        return graphQLMap["longitude"] as? Swift.Optional<Decimal?> ?? Swift.Optional<Decimal?>.none
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "longitude")
@@ -1110,9 +1110,9 @@ public enum DashXGql {
       }
     }
 
-    public var speed: Swift.Optional<BigDecimal?> {
+    public var speed: Swift.Optional<Decimal?> {
       get {
-        return graphQLMap["speed"] as? Swift.Optional<BigDecimal?> ?? Swift.Optional<BigDecimal?>.none
+        return graphQLMap["speed"] as? Swift.Optional<Decimal?> ?? Swift.Optional<Decimal?>.none
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "speed")
@@ -1566,7 +1566,7 @@ public enum DashXGql {
     ///   - data
     ///   - timestamp
     ///   - systemContext
-    public init(event: String, accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, data: Swift.Optional<JSON?> = nil, timestamp: Swift.Optional<DateTime?> = nil, systemContext: Swift.Optional<SystemContextInput?> = nil) {
+    public init(event: String, accountUid: Swift.Optional<String?> = nil, accountAnonymousUid: Swift.Optional<String?> = nil, data: Swift.Optional<JSON?> = nil, timestamp: Swift.Optional<Timestamp?> = nil, systemContext: Swift.Optional<SystemContextInput?> = nil) {
       graphQLMap = ["event": event, "accountUid": accountUid, "accountAnonymousUid": accountAnonymousUid, "data": data, "timestamp": timestamp, "systemContext": systemContext]
     }
 
@@ -1606,9 +1606,9 @@ public enum DashXGql {
       }
     }
 
-    public var timestamp: Swift.Optional<DateTime?> {
+    public var timestamp: Swift.Optional<Timestamp?> {
       get {
-        return graphQLMap["timestamp"] as? Swift.Optional<DateTime?> ?? Swift.Optional<DateTime?>.none
+        return graphQLMap["timestamp"] as? Swift.Optional<Timestamp?> ?? Swift.Optional<Timestamp?>.none
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "timestamp")
@@ -2179,7 +2179,7 @@ public enum DashXGql {
                 GraphQLField("discountType", type: .nonNull(.scalar(CouponDiscountType.self))),
                 GraphQLField("discountAmount", type: .nonNull(.scalar(Decimal.self))),
                 GraphQLField("currencyCode", type: .scalar(String.self)),
-                GraphQLField("expiresAt", type: .scalar(DateTime.self)),
+                GraphQLField("expiresAt", type: .scalar(Timestamp.self)),
               ]
             }
 
@@ -2189,7 +2189,7 @@ public enum DashXGql {
               self.resultMap = unsafeResultMap
             }
 
-            public init(name: String, identifier: String, discountType: CouponDiscountType, discountAmount: Decimal, currencyCode: String? = nil, expiresAt: DateTime? = nil) {
+            public init(name: String, identifier: String, discountType: CouponDiscountType, discountAmount: Decimal, currencyCode: String? = nil, expiresAt: Timestamp? = nil) {
               self.init(unsafeResultMap: ["__typename": "Coupon", "name": name, "identifier": identifier, "discountType": discountType, "discountAmount": discountAmount, "currencyCode": currencyCode, "expiresAt": expiresAt])
             }
 
@@ -2247,9 +2247,9 @@ public enum DashXGql {
               }
             }
 
-            public var expiresAt: DateTime? {
+            public var expiresAt: Timestamp? {
               get {
-                return resultMap["expiresAt"] as? DateTime
+                return resultMap["expiresAt"] as? Timestamp
               }
               set {
                 resultMap.updateValue(newValue, forKey: "expiresAt")
@@ -2903,7 +2903,7 @@ public enum DashXGql {
                 GraphQLField("discountType", type: .nonNull(.scalar(CouponDiscountType.self))),
                 GraphQLField("discountAmount", type: .nonNull(.scalar(Decimal.self))),
                 GraphQLField("currencyCode", type: .scalar(String.self)),
-                GraphQLField("expiresAt", type: .scalar(DateTime.self)),
+                GraphQLField("expiresAt", type: .scalar(Timestamp.self)),
               ]
             }
 
@@ -2913,7 +2913,7 @@ public enum DashXGql {
               self.resultMap = unsafeResultMap
             }
 
-            public init(name: String, identifier: String, discountType: CouponDiscountType, discountAmount: Decimal, currencyCode: String? = nil, expiresAt: DateTime? = nil) {
+            public init(name: String, identifier: String, discountType: CouponDiscountType, discountAmount: Decimal, currencyCode: String? = nil, expiresAt: Timestamp? = nil) {
               self.init(unsafeResultMap: ["__typename": "Coupon", "name": name, "identifier": identifier, "discountType": discountType, "discountAmount": discountAmount, "currencyCode": currencyCode, "expiresAt": expiresAt])
             }
 
@@ -2971,9 +2971,9 @@ public enum DashXGql {
               }
             }
 
-            public var expiresAt: DateTime? {
+            public var expiresAt: Timestamp? {
               get {
-                return resultMap["expiresAt"] as? DateTime
+                return resultMap["expiresAt"] as? Timestamp
               }
               set {
                 resultMap.updateValue(newValue, forKey: "expiresAt")
@@ -3293,8 +3293,8 @@ public enum DashXGql {
             GraphQLField("storageProviderId", type: .scalar(UUID.self)),
             GraphQLField("uploadStatus", type: .nonNull(.scalar(AssetUploadStatus.self))),
             GraphQLField("data", type: .nonNull(.scalar(JSON.self))),
-            GraphQLField("createdAt", type: .nonNull(.scalar(DateTime.self))),
-            GraphQLField("updatedAt", type: .nonNull(.scalar(DateTime.self))),
+            GraphQLField("createdAt", type: .nonNull(.scalar(Timestamp.self))),
+            GraphQLField("updatedAt", type: .nonNull(.scalar(Timestamp.self))),
           ]
         }
 
@@ -3304,7 +3304,7 @@ public enum DashXGql {
           self.resultMap = unsafeResultMap
         }
 
-        public init(id: UUID, resourceId: UUID? = nil, attributeId: UUID? = nil, storageProviderId: UUID? = nil, uploadStatus: AssetUploadStatus, data: JSON, createdAt: DateTime, updatedAt: DateTime) {
+        public init(id: UUID, resourceId: UUID? = nil, attributeId: UUID? = nil, storageProviderId: UUID? = nil, uploadStatus: AssetUploadStatus, data: JSON, createdAt: Timestamp, updatedAt: Timestamp) {
           self.init(unsafeResultMap: ["__typename": "Asset", "id": id, "resourceId": resourceId, "attributeId": attributeId, "storageProviderId": storageProviderId, "uploadStatus": uploadStatus, "data": data, "createdAt": createdAt, "updatedAt": updatedAt])
         }
 
@@ -3371,18 +3371,18 @@ public enum DashXGql {
           }
         }
 
-        public var createdAt: DateTime {
+        public var createdAt: Timestamp {
           get {
-            return resultMap["createdAt"]! as! DateTime
+            return resultMap["createdAt"]! as! Timestamp
           }
           set {
             resultMap.updateValue(newValue, forKey: "createdAt")
           }
         }
 
-        public var updatedAt: DateTime {
+        public var updatedAt: Timestamp {
           get {
-            return resultMap["updatedAt"]! as! DateTime
+            return resultMap["updatedAt"]! as! Timestamp
           }
           set {
             resultMap.updateValue(newValue, forKey: "updatedAt")
