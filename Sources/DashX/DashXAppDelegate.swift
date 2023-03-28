@@ -17,7 +17,7 @@ class DashXAppDelegate: NSObject {
                 return
             }
 
-            if let originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector)  {
+            if let originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector) {
                 // exchange implementation
                 method_exchangeImplementations(originalMethod, swizzledMethod)
             } else {
@@ -63,7 +63,7 @@ class DashXAppDelegate: NSObject {
                 let request = UNNotificationRequest(identifier: identifier, content: notificationContent, trigger: nil)
                 let notificationCenter = UNUserNotificationCenter.current()
                 notificationCenter.add(request)
-// TODO Finish the implementation
+                // TODO: Finish the implementation
 //                let data = ["data": userInfo]
             }
         }

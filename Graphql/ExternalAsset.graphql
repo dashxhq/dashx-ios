@@ -1,8 +1,9 @@
-query ExternalAsset($id: UUID!) {
-    externalAsset(id: $id) {
+query Asset($id: UUID!) {
+    asset(id: $id) {
         id
-        externalColumnId
-        status
+        resourceId
+        attributeId
+        uploadStatus
         data
     }
 }
