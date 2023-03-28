@@ -9,11 +9,11 @@ public struct Preference: Codable {
 }
 
 public struct PrepareAssetResponse: Codable {
-    public var data: AssetData?
+    public var data: ResponseAssetData?
     public var id: String?
 }
 
-public struct AssetData: Codable {
+public struct ResponseAssetData: Codable {
     public var upload: UploadData?
 }
 
