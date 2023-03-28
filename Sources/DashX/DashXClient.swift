@@ -233,6 +233,39 @@ public class DashXClient {
         }
     }
 
+    public func unsubscribe() {
+        let preferences = UserDefaults.standard
+        let deviceTokenKey = Constants.USER_PREFERENCES_KEY_DEVICE_TOKEN
+        let savedToken = preferences.string(forKey: deviceTokenKey)
+
+        if savedToken == nil {
+            DashXLog.d(tag: #function, "unsubscribe() called without subscribing first")
+            return
+        }
+
+        let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
+            accountUid: self.accountUid,
+            accountAnonymousUid: self.accountAnonymousUid!,
+            value: self.deviceToken!
+        )
+
+        DashXLog.d(tag: #function, "Calling unsubscribe with \(unsubscribeContactInput)")
+
+        let unsubscribeContactMutation = DashXGql.UnsubscribeContactMutation(input: unsubscribeContactInput)
+
+        Network.shared.apollo.perform(mutation: unsubscribeContactMutation) { result in
+            switch result {
+            case .success(let graphQLResult):
+                if graphQLResult.data != nil {
+                    preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: deviceTokenKey)
+                    DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
+                }
+            case .failure(let error):
+                DashXLog.d(tag: #function, "Encountered an error during unsubscribe(): \(error)")
+            }
+        }
+    }
+
     public func fetchStoredPreferences(
         successCallback: @escaping SuccessCallback,
         failureCallback: @escaping FailureCallback
