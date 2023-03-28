@@ -8,43 +8,43 @@ public struct Preference: Codable {
     public var whatsapp: Bool?
 }
 
-// public struct PrepareAssetResponse: Codable {
-//     public var data: AssetData?
-//     public var id: String?
-// }
+public struct PrepareAssetResponse: Codable {
+    public var data: AssetData?
+    public var id: String?
+}
 
-// public struct AssetData: Codable {
-//     public var upload: UploadData?
-// }
+public struct AssetData: Codable {
+    public var upload: UploadData?
+}
 
-// public struct UploadData: Codable {
-//     public var headers: [String: String]?
-//     public var url: String?
-// }
+public struct UploadData: Codable {
+    public var headers: [String: String]?
+    public var url: String?
+}
 
-// public struct AssetResponse: Codable {
-//     public struct AssetDataResponse: Codable {
-//         public var assetData: AssetData?
+public struct AssetResponse: Codable {
+    public struct AssetDataResponse: Codable {
+        public var assetData: AssetData?
+        
+        enum CodingKeys: String, CodingKey {
+            case assetData = "asset"
+        }
+    }
+    
+    public var status: String?
+    public var data: AssetDataResponse?
+}
 
-//         enum CodingKeys: String, CodingKey {
-//             case assetData = "asset"
-//         }
-//     }
-
-//     public var status: String?
-//     public var data: AssetDataResponse?
-// }
-
-// public struct AssetData: Codable {
-//     public var status: String?
-//     public var url: String?
-//     public var playbackIds: [PlaybackData]?
-
-//     enum CodingKeys: String, CodingKey {
-//         case status
-//         case url
-//     }
-// }
+public struct AssetData: Codable {
+    public var status: String?
+    public var url: String?
+    public var playbackIds: [PlaybackData]?
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case url
+    }
+}
 
 public struct PlaybackData: Codable {
     public var id: String?
