@@ -8,55 +8,58 @@ import Foundation
 import CoreLocation
 
 class LocationMonitor: NSObject {
-    static var shared = LocationMonitor()
-
-    var locationManager: CLLocationManager!
-    var latitude: Double?
-    var longitude: Double?
-    var speed: Double?
-
-    override init() {
-        locationManager = CLLocationManager()
-        super.init()
-        locationManager.delegate = self
+    static let shared = LocationMonitor()
+    
+    private var locationManager: CLLocationManager!
+    private var latitude: Double?
+    private var longitude: Double?
+    private var speed: Double?
+    
+    public var getLatitude: Double? {
+        return latitude
     }
-
-    func startMonitoring() {
+    
+    public var getLongitude: Double? {
+        return longitude
+    }
+    
+    public var getSpeed: Double? {
+        return speed
+    }
+    
+    private var authStatus: CLAuthorizationStatus {
+        if #available(iOS 14.0, *) {
+            return locationManager.authorizationStatus
+        } else {
+            return CLLocationManager.authorizationStatus()
+        }
+    }
+    
+    override init() {
+        super.init()
+        locationManager = CLLocationManager()
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.distanceFilter = kCLLocationAccuracyHundredMeters
-        locationManager.startUpdatingLocation()
     }
-
-    func stopMonitoring() {
-        locationManager.stopUpdatingLocation()
-    }
-}
-
-extension LocationMonitor: CLLocationManagerDelegate {
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        var authStatus = CLAuthorizationStatus.notDetermined
-        if #available(iOS 14.0, *) {
-            authStatus = manager.authorizationStatus
-        } else {
-            authStatus = CLLocationManager.authorizationStatus()
-        }
+    
+    public func prepareLocationInfo() {
         switch authStatus {
-        case .authorized, .authorizedAlways, .authorizedWhenInUse:
-            startMonitoring()
-            break
-        case .denied:
-            stopMonitoring()
-            break
+        case .authorizedAlways, .authorizedWhenInUse:
+            setLocationInfo()
+        case .restricted, .denied:
+            clearLocationInfo()
         default:
             break
         }
     }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.first {
-            latitude = location.coordinate.latitude
-            longitude = location.coordinate.longitude
-            speed = location.speed
-        }
+    
+    private func setLocationInfo() {
+        latitude = locationManager.location?.coordinate.latitude
+        longitude = locationManager.location?.coordinate.longitude
+        speed = locationManager.location?.speed
+    }
+    
+    private func clearLocationInfo() {
+        (latitude, longitude, speed) = (nil, nil, nil)
     }
 }
