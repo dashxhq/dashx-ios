@@ -15,7 +15,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         notificationCenter.addObserver(self, selector: #selector(appResumed), name: UIApplication.willEnterForegroundNotification, object: nil)
 
         NSSetUncaughtExceptionHandler { exception in
-            DashXClient.instance.track(Constants.INTERNAL_EVENT_APP_CRASHED, withData: [ "exception": exception.reason as Any ])
+            DashXClient.instance.track(Constants.INTERNAL_EVENT_APP_CRASHED, withData: ["exception": exception.reason as Any])
         }
 
         appOpened()
@@ -24,14 +24,14 @@ class DashXApplicationLifecycleCallbacks: NSObject {
     func getAppBuildInfo() -> [String: Any] {
         let currentRelease = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
         let currentBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String
-        return [ "version": currentRelease, "build": currentBuild ]
+        return ["version": currentRelease, "build": currentBuild]
     }
 
     @objc
     func appBackgrounded() {
         let sessionLength = Date.timeIntervalSinceReferenceDate - startSession!
 
-        dashXClient.track(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, withData: [ "session_length": sessionLength ])
+        dashXClient.track(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, withData: ["session_length": sessionLength])
     }
 
     @objc
@@ -59,7 +59,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
     @objc
     func appResumed() {
         startSession = Date.timeIntervalSinceReferenceDate
-        let properties = getAppBuildInfo().merging([ "from_background": true ]) { (current, _) in current }
+        let properties = getAppBuildInfo().merging(["from_background": true]) { current, _ in current }
 
         dashXClient.track(Constants.INTERNAL_EVENT_APP_OPENED, withData: properties as NSDictionary)
     }

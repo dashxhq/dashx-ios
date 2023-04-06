@@ -1,4 +1,5 @@
 import Apollo
+import FirebaseMessaging
 import Foundation
 import UIKit
 
@@ -9,6 +10,7 @@ enum DashXClientError: Error {
     case noArgsInIdentify
     case assetIsNotReady
     case assetIsNotUploaded
+    case customError(message: String)
 }
 
 // Shared instance to be used by the SDK users
@@ -27,8 +29,23 @@ public class DashXClient {
         self.loadIdentity()
     }
 
-    public func enableLifecycleTracking() {
-        DashXApplicationLifecycleCallbacks().enable()
+    internal func setDeviceToken(to: String) {
+        self.deviceToken = to
+
+        if self.mustSubscribe {
+            self.subscribe()
+        }
+    }
+
+    // https://stackoverflow.com/a/11197770
+    private func getDeviceModel() -> String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        return machineMirror.children.reduce("") { identifier, element in
+            guard let value = element.value as? Int8, value != 0 else { return identifier }
+            return identifier + String(UnicodeScalar(UInt8(value)))
+        }
     }
 
     public func configure(
@@ -37,8 +54,6 @@ public class DashXClient {
         targetEnvironment: String? = nil,
         libraryInfo: LibraryInfo? = nil
     ) {
-        DashXAppDelegate.swizzleDidReceiveRemoteNotificationFetchCompletionHandler()
-
         ConfigInterceptor.shared.publicKey = publicKey
 
         if let baseURI = baseURI {
@@ -54,7 +69,35 @@ public class DashXClient {
         }
     }
 
-    // MARK: - User Manager
+    public func enableLifecycleTracking() {
+        DashXApplicationLifecycleCallbacks().enable()
+    }
+
+    // MARK: User Management
+
+    private func loadIdentity() {
+        let preferences = UserDefaults.standard
+
+        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        self.accountAnonymousUid = self.generateAnonymousUid()
+
+        // Not setting this for now.
+        // ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+    }
+
+    private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
+        let preferences = UserDefaults.standard
+        let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID
+        let storedAnonymousUid = preferences.string(forKey: anonymousUidKey)
+
+        if !withRegenerate, storedAnonymousUid != nil {
+            return storedAnonymousUid
+        } else {
+            let uniqueIdentifier = UUID().uuidString
+            preferences.set(uniqueIdentifier, forKey: anonymousUidKey)
+            return uniqueIdentifier
+        }
+    }
 
     public func setIdentity(uid: String, token: String) {
         let preferences = UserDefaults.standard
@@ -107,44 +150,12 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
 
-        self.accountUid = nil
+//        self.accountUid = nil
         self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
         ConfigInterceptor.shared.identityToken = nil
     }
 
-    private func loadIdentity() {
-        let preferences = UserDefaults.standard
-
-        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
-        self.accountAnonymousUid = self.generateAnonymousUid()
-
-        // Not setting this for now.
-        // ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
-    }
-
-    private func setDeviceToken(to: String) {
-        self.deviceToken = to
-
-        if self.mustSubscribe {
-            self.subscribe()
-        }
-    }
-
-    private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
-        let preferences = UserDefaults.standard
-        let anonymousUidKey = Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID
-        let storedAnonymousUid = preferences.string(forKey: anonymousUidKey)
-
-        if !withRegenerate, storedAnonymousUid != nil {
-            return storedAnonymousUid
-        } else {
-            let uniqueIdentifier = UUID().uuidString
-            preferences.set(uniqueIdentifier, forKey: anonymousUidKey)
-            return uniqueIdentifier
-        }
-    }
-
-    // MARK: - Analytics
+    // MARK: Analytics
 
     public func track(_ event: String, withData: NSDictionary? = nil) {
         let trackEventInput = DashXGql.TrackEventInput(
@@ -175,18 +186,7 @@ public class DashXClient {
         self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties?.merging(["name": screenName], uniquingKeysWith: { _, new in new }) as NSDictionary?)
     }
 
-    // https://stackoverflow.com/a/11197770
-    func getDeviceModel() -> String {
-        var systemInfo = utsname()
-        uname(&systemInfo)
-        let machineMirror = Mirror(reflecting: systemInfo.machine)
-        return machineMirror.children.reduce("") { identifier, element in
-            guard let value = element.value as? Int8, value != 0 else { return identifier }
-            return identifier + String(UnicodeScalar(UInt8(value)))
-        }
-    }
-
-    // MARK: - Messaging
+    // MARK: Contact Management
 
     public func subscribe() {
         if self.deviceToken == nil {
@@ -221,8 +221,13 @@ public class DashXClient {
         let subscribeContactMutation = DashXGql.SubscribeContactMutation(input: subscribeContactInput)
 
         Network.shared.apollo.perform(mutation: subscribeContactMutation) { result in
+            print("printing result \(result)")
             switch result {
             case .success(let graphQLResult):
+                if graphQLResult.errors != nil {
+                    DashXLog.d(tag: #function, "Encountered GraphQL errors during subscribe(): \(String(describing: graphQLResult.errors))")
+                }
+
                 if graphQLResult.data != nil {
                     preferences.set(graphQLResult.data?.subscribeContact.value, forKey: deviceTokenKey)
                     DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
@@ -243,28 +248,36 @@ public class DashXClient {
             return
         }
 
-        let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
-            accountUid: self.accountUid,
-            accountAnonymousUid: self.accountAnonymousUid!,
-            value: self.deviceToken!
-        )
+        Messaging.messaging().deleteToken { result in
+            let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
+                accountUid: self.accountUid,
+                accountAnonymousUid: self.accountAnonymousUid!,
+                value: self.deviceToken!
+            )
 
-        DashXLog.d(tag: #function, "Calling unsubscribe with \(unsubscribeContactInput)")
+            DashXLog.d(tag: #function, "Calling unsubscribe with \(unsubscribeContactInput)")
 
-        let unsubscribeContactMutation = DashXGql.UnsubscribeContactMutation(input: unsubscribeContactInput)
+            let unsubscribeContactMutation = DashXGql.UnsubscribeContactMutation(input: unsubscribeContactInput)
 
-        Network.shared.apollo.perform(mutation: unsubscribeContactMutation) { result in
-            switch result {
-            case .success(let graphQLResult):
-                if graphQLResult.data != nil {
-                    preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: deviceTokenKey)
-                    DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
+            Network.shared.apollo.perform(mutation: unsubscribeContactMutation) { result in
+                switch result {
+                case .success(let graphQLResult):
+                    if graphQLResult.errors != nil {
+                        DashXLog.d(tag: #function, "Encountered GraphQL errors during unsubscribe(): \(String(describing: graphQLResult.errors))")
+                    }
+
+                    if graphQLResult.data != nil {
+                        preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: deviceTokenKey)
+                        DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
+                    }
+                case .failure(let error):
+                    DashXLog.d(tag: #function, "Encountered an error during unsubscribe(): \(error)")
                 }
-            case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during unsubscribe(): \(error)")
             }
         }
     }
+
+    // MARK: Preferences
 
     public func fetchStoredPreferences(
         successCallback: @escaping SuccessCallback,
@@ -283,9 +296,16 @@ public class DashXClient {
         Network.shared.apollo.fetch(query: fetchStoredPreferencesQuery, cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
             case .success(let graphQLResult):
-                let json = graphQLResult.data?.fetchStoredPreferences.preferenceData
-                DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(String(describing: json))")
-                successCallback(json)
+                if graphQLResult.errors != nil {
+                    DashXLog.d(tag: #function, "Encountered GraphQL errors during fetchStoredPreferences(): \(String(describing: graphQLResult.errors))")
+                    failureCallback(DashXClientError.customError(message: "Unable to fetch stored preferences"))
+                }
+
+                if graphQLResult.data != nil {
+                    let json = graphQLResult.data?.fetchStoredPreferences.preferenceData
+                    DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(String(describing: json))")
+                    successCallback(json)
+                }
             case .failure(let error):
                 DashXLog.d(tag: #function, "Encountered an error during fetchStoredPreferences(): \(error)")
                 failureCallback(error)
@@ -321,7 +341,7 @@ public class DashXClient {
         }
     }
 
-    // MARK: - Billing
+    // MARK: Billing
 
     public func addItemToCart(
         itemId: String,
@@ -378,7 +398,7 @@ public class DashXClient {
         }
     }
 
-    // MARK: - Core (File Uploads)
+    // MARK: File Uploads
 
     public func uploadAsset(
         fileURL: URL,
@@ -537,5 +557,28 @@ public class DashXClient {
                 failureCallback(error)
             }
         }
+    }
+
+    // MARK: Request pemissions for Notifications
+
+    public func requestNotificationPermission(completion: @escaping (UNAuthorizationStatus) -> ()) {
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: [.alert, .badge, .sound],
+            completionHandler: { _, _ in
+
+                // Get the full status of the permission
+                self.getNotificationPermissionStatus { permission in
+                    completion(permission)
+                }
+            }
+        )
+    }
+
+    public func getNotificationPermissionStatus(completion: @escaping (UNAuthorizationStatus) -> ()) {
+        UNUserNotificationCenter.current().getNotificationSettings(completionHandler: { settings in
+            DispatchQueue.main.async {
+                completion(settings.authorizationStatus)
+            }
+        })
     }
 }

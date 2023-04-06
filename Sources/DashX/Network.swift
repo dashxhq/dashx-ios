@@ -1,12 +1,12 @@
-import Foundation
 import Apollo
+import Foundation
 
 class Network {
     static let shared = Network()
     private var baseUri: String = "https://api.dashx.com/graphql"
 
     func setBaseURI(to: String) {
-      self.baseUri = to
+        self.baseUri = to
     }
 
     private(set) lazy var apollo: ApolloClient = {
@@ -42,8 +42,8 @@ class ConfigInterceptor: ApolloInterceptor {
         chain: RequestChain,
         request: HTTPRequest<Operation>,
         response: HTTPResponse<Operation>?,
-        completion: @escaping (Result<GraphQLResult<Operation.Data>, Error>) -> Void) {
-
+        completion: @escaping (Result<GraphQLResult<Operation.Data>, Error>) -> Void
+    ) {
         if let publicKey = self.publicKey {
             request.addHeader(name: "X-PUBLIC-KEY", value: "\(publicKey)")
         }
