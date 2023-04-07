@@ -1,6 +1,12 @@
 import Apollo
 import Foundation
 
+struct DashXNotificationData: Decodable {
+    let id: String
+    let title: String
+    let body: String
+}
+
 public extension DashXGql {
     typealias JSON = [String: Any?]
     typealias UUID = String

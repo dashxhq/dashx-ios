@@ -1,8 +1,8 @@
 import Apollo
+import CoreLocation
 import FirebaseMessaging
 import Foundation
 import UIKit
-import CoreLocation
 
 public typealias SuccessCallback = (Any?) -> ()
 public typealias FailureCallback = (Error) -> ()
@@ -74,7 +74,7 @@ public class DashXClient {
         DashXApplicationLifecycleCallbacks().enable()
     }
 
-    // MARK: User Management
+    // MARK: - User Management
 
     private func loadIdentity() {
         let preferences = UserDefaults.standard
@@ -151,12 +151,12 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
 
-//        self.accountUid = nil
+        self.accountUid = nil
         self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
         ConfigInterceptor.shared.identityToken = nil
     }
 
-    // MARK: Analytics
+    // MARK: - Analytics
 
     public func track(_ event: String, withData: NSDictionary? = nil) {
         let systemContext = SystemContext.shared.getSystemContextInput()
@@ -188,7 +188,7 @@ public class DashXClient {
         self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties?.merging(["name": screenName], uniquingKeysWith: { _, new in new }) as NSDictionary?)
     }
 
-    // MARK: Contact Management
+    // MARK: - Contact Management
 
     public func subscribe() {
         if self.deviceToken == nil {
@@ -223,7 +223,6 @@ public class DashXClient {
         let subscribeContactMutation = DashXGql.SubscribeContactMutation(input: subscribeContactInput)
 
         Network.shared.apollo.perform(mutation: subscribeContactMutation) { result in
-            print("printing result \(result)")
             switch result {
             case .success(let graphQLResult):
                 if graphQLResult.errors != nil {
@@ -279,7 +278,7 @@ public class DashXClient {
         }
     }
 
-    // MARK: Preferences
+    // MARK: - Preferences
 
     public func fetchStoredPreferences(
         successCallback: @escaping SuccessCallback,
@@ -343,7 +342,7 @@ public class DashXClient {
         }
     }
 
-    // MARK: Billing
+    // MARK: - Billing
 
     public func addItemToCart(
         itemId: String,
@@ -400,7 +399,7 @@ public class DashXClient {
         }
     }
 
-    // MARK: File Uploads
+    // MARK: - File Uploads
 
     public func uploadAsset(
         fileURL: URL,
@@ -561,7 +560,7 @@ public class DashXClient {
         }
     }
 
-    // MARK: Request pemissions for Notifications
+    // MARK: - Request pemissions for Notifications
 
     public func requestNotificationPermission(completion: @escaping (UNAuthorizationStatus) -> ()) {
         UNUserNotificationCenter.current().requestAuthorization(
@@ -584,7 +583,7 @@ public class DashXClient {
         })
     }
 
-    // MARK: Request permission for Location
+    // MARK: - Request permission for Location
 
     public func requestLocationPermission() {
         CLLocationManager().requestWhenInUseAuthorization()
