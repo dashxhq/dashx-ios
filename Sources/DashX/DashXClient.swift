@@ -1,6 +1,7 @@
 import Apollo
 import Foundation
 import UIKit
+import CoreLocation
 
 public typealias SuccessCallback = (Any?) -> ()
 public typealias FailureCallback = (Error) -> ()
@@ -538,5 +539,11 @@ public class DashXClient {
                 failureCallback(error)
             }
         }
+    }
+    
+    // MARK: Request permission for Location
+    
+    public func requestLocationPermission() {
+        CLLocationManager().requestWhenInUseAuthorization()
     }
 }
