@@ -158,12 +158,13 @@ public class DashXClient {
     // MARK: Analytics
 
     public func track(_ event: String, withData: NSDictionary? = nil) {
+        let systemContext = SystemContext.shared.getSystemContextInput()
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
             accountUid: self.accountUid,
             accountAnonymousUid: self.accountAnonymousUid,
             data: withData as? [String: JSONDecodable?],
-            systemContext: SystemContext.shared.getSystemContextInput()
+            systemContext: systemContext
         )
 
         DashXLog.d(tag: #function, "Calling track with \(trackEventInput)")
