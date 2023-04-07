@@ -2,6 +2,7 @@ import Apollo
 import FirebaseMessaging
 import Foundation
 import UIKit
+import CoreLocation
 
 public typealias SuccessCallback = (Any?) -> ()
 public typealias FailureCallback = (Error) -> ()
@@ -581,5 +582,11 @@ public class DashXClient {
                 completion(settings.authorizationStatus)
             }
         })
+    }
+
+    // MARK: Request permission for Location
+
+    public func requestLocationPermission() {
+        CLLocationManager().requestWhenInUseAuthorization()
     }
 }
