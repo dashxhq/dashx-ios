@@ -73,23 +73,13 @@ https://github.com/dashxhq/dashx-ios.git
 
 &emsp;
 
-# Getting Started
-
-These are all the available features of the SDK.
-
-|   | Feature                                   | Description                                                                                                                |
-|---|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| 1 | [`Event Tracking`](/docs/EventTracking.md) | Event Tracking |
-| 2 | [`Push Notifications`](/docs/PushNotifications.md) | Automatically manages push notification device tokens and gives convenient functions for handling push notification receiving and clicking. |
-| 3 | [`Contact Management`](/docs/ContactManagement.md) | Contact Management|
-
 # Usage
 
 For detailed usage, refer to the [documentation](https://docs.dashx.com/developer).
 
 &emsp;
 
-# [Contributing](/docs/Contributing.md)
+# [Contributing](/docs/CONTRIBUTING.md)
 
 &emsp;
 
