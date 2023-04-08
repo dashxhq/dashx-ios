@@ -5,7 +5,7 @@ extension URL {
     func mimeType() -> String {
         let url = NSURL(fileURLWithPath: path)
         let pathExtension = url.pathExtension
-        
+
         if let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, pathExtension! as NSString, nil)?.takeRetainedValue() {
             if let mimetype = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue() {
                 return mimetype as String
@@ -19,7 +19,7 @@ let swizzler: (AnyClass, AnyClass, Selector, Selector) -> Void = { mainClass, sw
     guard let swizzledMethod = class_getInstanceMethod(swizzledClass, swizzledSelector) else {
         return
     }
-    
+
     if let originalMethod = class_getInstanceMethod(mainClass, originalSelector) {
         method_exchangeImplementations(originalMethod, swizzledMethod)
     } else {
@@ -30,13 +30,14 @@ let swizzler: (AnyClass, AnyClass, Selector, Selector) -> Void = { mainClass, sw
 func getIPAddress() -> (ipV4: String?, ipV6: String?) {
     var ipv4Address: String?
     var ipv6Address: String?
-    
+
     var ifaddr: UnsafeMutablePointer<ifaddrs>?
     guard getifaddrs(&ifaddr) == 0,
-          let firstAddr = ifaddr else {
+          let firstAddr = ifaddr
+    else {
         return (ipv4Address, ipv6Address)
     }
-    
+
     for ifptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
         let interface = ifptr.pointee
         let name = String(cString: interface.ifa_name)
@@ -53,14 +54,14 @@ func getIPAddress() -> (ipV4: String?, ipV6: String?) {
             )
             if let address = String(cString: hostname).split(separator: "%").first {
                 let addrFamily = interface.ifa_addr.pointee.sa_family
-                if addrFamily == UInt8(AF_INET) && ipv4Address == nil {
+                if addrFamily == UInt8(AF_INET), ipv4Address == nil {
                     ipv4Address = "\(address)"
                 }
-                if addrFamily == UInt8(AF_INET6) && ipv6Address == nil {
+                if addrFamily == UInt8(AF_INET6), ipv6Address == nil {
                     ipv6Address = "\(address)"
                 }
             }
-            if ipv4Address != nil && ipv6Address != nil {
+            if ipv4Address != nil, ipv6Address != nil {
                 break
             }
         }

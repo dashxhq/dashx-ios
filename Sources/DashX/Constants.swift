@@ -16,9 +16,10 @@ struct Constants {
     static let INTERNAL_EVENT_APP_SCREEN_VIEWED = "Screen Viewed"
     static let CONTENT_TYPE = "Content-Type"
     static let GCS_ASSET_UPLOAD_HEADER_KEY = "x-goog-meta-origin-id"
+    static let DASHX_NOTIFICATION_DATA_KEY = "dashx"
 }
 
-public struct UserAttributes {
+public enum UserAttributes {
     public static let UID = "uid"
     public static let ANONYMOUS_UID = "anonymousUid"
     public static let EMAIL = "email"

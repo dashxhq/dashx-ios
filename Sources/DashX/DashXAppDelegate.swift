@@ -1,73 +1,105 @@
+import FirebaseCore
+import FirebaseMessaging
 import Foundation
 import UIKit
 
 @objc(DashXAppDelegate)
-class DashXAppDelegate: NSObject {
-    static func swizzleDidReceiveRemoteNotificationFetchCompletionHandler() {
-        // To remove the warning -[UIApplication delegate] must be called from main thread only
-        // and to call the UI controlling method from the main thread, use `DispatchQueue.main.async`
-        DispatchQueue.main.async {
-            let appDelegate = UIApplication.shared.delegate
-            let appDelegateClass: AnyClass? = object_getClass(appDelegate)
+open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+    // MARK: Getters
 
-            let originalSelector = #selector(UIApplicationDelegate.application(_:didReceiveRemoteNotification:fetchCompletionHandler:))
-            let swizzledSelector = #selector(DashXAppDelegate.self.handleMessage(_:didReceiveRemoteNotification:fetchCompletionHandler:))
+    private var app: UIApplication = .shared
 
-            guard let swizzledMethod = class_getInstanceMethod(DashXAppDelegate.self, swizzledSelector) else {
-                return
-            }
+    private var dashXClient = DashXClient.instance
 
-            if let originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector) {
-                // exchange implementation
-                method_exchangeImplementations(originalMethod, swizzledMethod)
-            } else {
-                // add implementation
-                class_addMethod(appDelegateClass, swizzledSelector, method_getImplementation(swizzledMethod), method_getTypeEncoding(swizzledMethod))
-            }
-        }
+    // MARK: Init
+
+    override init() {
+        super.init()
+
+        UNUserNotificationCenter.current().delegate = self
+
+        // Register to ensure device token can be fetched
+        app.registerForRemoteNotifications()
     }
 
-    // Based on - https://firebase.google.com/docs/cloud-messaging/ios/receive
-    @objc
-    func handleMessage(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        DashXLog.d(tag: #function, "Received APN: \(userInfo)")
+    // MARK: - Device Token Management
 
-        let state = UIApplication.shared.applicationState
-        // Do Nothing when app is in foreground
-        if state == .active {
-            completionHandler(.noData)
+    public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        DashXLog.d(tag: #function, "Unable to register for remote notifications: \(error.localizedDescription)")
+    }
+
+    public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    // Firebase Token
+    public func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let token = fcmToken else {
+            DashXLog.d(tag: #function, "FCM token is empty")
             return
         }
 
-        if let dashx = userInfo["dashx"] as? String {
-            let maybeDashxDictionary = dashx.convertToDictionary()
+        DashXLog.d(tag: #function, "FCM token is \(token)")
+        dashXClient.setDeviceToken(to: token)
+    }
 
-            let notificationContent = UNMutableNotificationContent()
-            notificationContent.sound = UNNotificationSound.default
+    // MARK: - Push Notifications
 
-            if let parsedDashxDictionary = maybeDashxDictionary {
-                guard let identifier = parsedDashxDictionary["id"] as? String else {
-                    completionHandler(.newData)
-                    // Do not handle non-DashX notifications
-                    return
-                }
+    public func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let message = notification.request.content.userInfo
 
-                if let parsedTitle = parsedDashxDictionary["title"] as? String {
-                    notificationContent.title = parsedTitle
-                }
+        // Pass notification reciept information to Firebase
+        Messaging.messaging().appDidReceiveMessage(message)
 
-                if let parsedBody = parsedDashxDictionary["body"] as? String {
-                    notificationContent.body = parsedBody
-                }
+        let presentationOptions = notificationDeliveredInForeground(message: message)
 
-                let request = UNNotificationRequest(identifier: identifier, content: notificationContent, trigger: nil)
-                let notificationCenter = UNUserNotificationCenter.current()
-                notificationCenter.add(request)
-                // TODO: Finish the implementation
-//                let data = ["data": userInfo]
+        completionHandler(presentationOptions)
+    }
+
+    public func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let message = response.notification.request.content.userInfo
+
+        // Pass notification reciept information to Firebase
+        Messaging.messaging().appDidReceiveMessage(message)
+
+        notificationClicked(message: message)
+        completionHandler()
+    }
+
+    public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        // Pass notification reciept information to Firebase
+        Messaging.messaging().appDidReceiveMessage(userInfo)
+
+        guard case let stringData as String = userInfo[Constants.DASHX_NOTIFICATION_DATA_KEY] else {
+            // Do not handle non-DashX notifications
+            completionHandler(.failed)
+            return
+        }
+
+        if let jsonData = stringData.data(using: .utf8) {
+            do {
+                let dashxData = try JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
+
+                let notificationContent = UNMutableNotificationContent()
+                notificationContent.sound = UNNotificationSound.default
+                notificationContent.title = dashxData.title
+                notificationContent.body = dashxData.body
+                notificationContent.userInfo = userInfo
+
+                let request = UNNotificationRequest(identifier: dashxData.id, content: notificationContent, trigger: nil)
+
+                UNUserNotificationCenter.current().add(request)
+            } catch {
+                DashXLog.d(tag: #function, "Unable to parse DashX notification data \(error)")
             }
         }
 
         completionHandler(.newData)
     }
+
+    // MARK: - Functions
+
+    open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
+
+    open func notificationClicked(message: [AnyHashable: Any]) {}
 }

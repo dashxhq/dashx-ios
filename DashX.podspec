@@ -131,5 +131,5 @@ Pod::Spec.new do |spec|
   # ――― Dependencies ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
 
   spec.dependency 'Apollo', '~> 0.51.2'
-
+  spec.dependency 'FirebaseMessaging', '~> 10.5.0'
 end
