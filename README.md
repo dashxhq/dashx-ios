@@ -22,26 +22,27 @@
 
 _DashX SDK for iOS_
 
-&emsp;
+# Install
 
-# Installation
+The minimum supported version for iOS is 12.0. To set the Minimum SDK target,
+1. Open your iOS project in XCode
+2. Select your Target > **General** > **Deployment Info** > Ensure that the version is set to 12.0+
 
 ### Using Cocoapods
 
-1. Open your iOS project and increase the min SDK target to iOS 12.0+
-2. Update Podfile
+1. Update your Podfile:
 
 ```ruby
-platform :ios, '12.0'
-..
+platform :ios, '12.0' # must be 12 or higher
+# ...
 target 'YOUR_TARGET_NAME' do
-    ..
+    # ...
     pod 'DashX'
-    ..
+    # ...
 end
 ```
 
-3. Open terminal in root directory and run
+2. Open Terminal in your project's root directory and run:
 
 ```sh
 pod install
@@ -63,31 +64,13 @@ carthage update
 
 ## Using Swift Package Manager
 
-1. Open your iOS project and increase the min SDK target to iOS 12.0+
-2. In your Xcode project, go to File > Add Packages
-3. Paste the following url in "Search or Enter Package URL"
+1. In your Xcode project, go to **File** > **Add Packages**
+2. Paste the following URL in "Search or Enter Package URL":
 
 ```
 https://github.com/dashxhq/dashx-ios.git
 ```
 
-&emsp;
-
 # Usage
 
 For detailed usage, refer to the [documentation](https://docs.dashx.com/developer).
-
-&emsp;
-
-# [Contributing](/docs/CONTRIBUTING.md)
-
-&emsp;
-
-# Publishing
-
-1. Bump up the version number in `DashX.podspec` and `Sources/DashX/Constants.swift`
-2. Commit the version bump: `Bump version to x.x.x`
-3. Create a tag: `git tag 'x.x.x'`
-4. Push the tag: `git push origin --tags`
-
-The GitHub Workflow will take care of the rest.
