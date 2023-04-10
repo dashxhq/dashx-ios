@@ -22,7 +22,7 @@
 
 _DashX SDK for iOS_
 
-# Install
+## Install
 
 The minimum supported version for iOS is 12.0. To set the Minimum SDK target,
 1. Open your iOS project in XCode
@@ -62,7 +62,7 @@ Run the following command:
 carthage update
 ```
 
-## Using Swift Package Manager
+### Using Swift Package Manager
 
 1. In your Xcode project, go to **File** > **Add Packages**
 2. Paste the following URL in "Search or Enter Package URL":
@@ -71,6 +71,6 @@ carthage update
 https://github.com/dashxhq/dashx-ios.git
 ```
 
-# Usage
+## Usage
 
 For detailed usage, refer to the [documentation](https://docs.dashx.com/developer).
