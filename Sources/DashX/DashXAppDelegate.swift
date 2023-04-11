@@ -4,7 +4,7 @@ import Foundation
 import UIKit
 
 @objc(DashXAppDelegate)
-open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     // MARK: Getters
 
     private var app: UIApplication = .shared
@@ -22,25 +22,14 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         app.registerForRemoteNotifications()
     }
 
-    // MARK: - Device Token Management
+    // MARK: - APNS Token Management
 
     public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         DashXLog.d(tag: #function, "Unable to register for remote notifications: \(error.localizedDescription)")
     }
 
     public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        Messaging.messaging().apnsToken = deviceToken
-    }
-
-    // Firebase Token
-    public func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        guard let token = fcmToken else {
-            DashXLog.d(tag: #function, "FCM token is empty")
-            return
-        }
-
-        DashXLog.d(tag: #function, "FCM token is \(token)")
-        dashXClient.setDeviceToken(to: token)
+        dashXClient.setAPNSToken(to: deviceToken)
     }
 
     // MARK: - Push Notifications
@@ -97,7 +86,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         completionHandler(.newData)
     }
 
-    // MARK: - Functions
+    // MARK: - Push Notifications handlers
 
     open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
 

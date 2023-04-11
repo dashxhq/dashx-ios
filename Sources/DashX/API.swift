@@ -229,45 +229,6 @@ public enum DashXGql {
     }
   }
 
-  public struct EditContentInput: GraphQLMapConvertible {
-    public var graphQLMap: GraphQLMap
-
-    /// - Parameters:
-    ///   - contentType
-    ///   - content
-    ///   - data
-    public init(contentType: String, content: String, data: JSON) {
-      graphQLMap = ["contentType": contentType, "content": content, "data": data]
-    }
-
-    public var contentType: String {
-      get {
-        return graphQLMap["contentType"] as! String
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "contentType")
-      }
-    }
-
-    public var content: String {
-      get {
-        return graphQLMap["content"] as! String
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "content")
-      }
-    }
-
-    public var data: JSON {
-      get {
-        return graphQLMap["data"] as! JSON
-      }
-      set {
-        graphQLMap.updateValue(newValue, forKey: "data")
-      }
-    }
-  }
-
   public enum AssetUploadStatus: RawRepresentable, Equatable, Hashable, CaseIterable, Apollo.JSONDecodable, Apollo.JSONEncodable {
     public typealias RawValue = String
     case pending
@@ -320,6 +281,45 @@ public enum DashXGql {
         .canceled,
         .timedOut,
       ]
+    }
+  }
+
+  public struct EditContentInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - contentType
+    ///   - content
+    ///   - data
+    public init(contentType: String, content: String, data: JSON) {
+      graphQLMap = ["contentType": contentType, "content": content, "data": data]
+    }
+
+    public var contentType: String {
+      get {
+        return graphQLMap["contentType"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "contentType")
+      }
+    }
+
+    public var content: String {
+      get {
+        return graphQLMap["content"] as! String
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "content")
+      }
+    }
+
+    public var data: JSON {
+      get {
+        return graphQLMap["data"] as! JSON
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "data")
+      }
     }
   }
 
@@ -2261,132 +2261,6 @@ public enum DashXGql {
     }
   }
 
-  public final class EditContentMutation: GraphQLMutation {
-    /// The raw GraphQL definition of this operation.
-    public let operationDefinition: String =
-      """
-      mutation EditContent($input: EditContentInput!) {
-        editContent(input: $input) {
-          __typename
-          id
-          position
-          identifier
-          data
-        }
-      }
-      """
-
-    public let operationName: String = "EditContent"
-
-    public var input: EditContentInput
-
-    public init(input: EditContentInput) {
-      self.input = input
-    }
-
-    public var variables: GraphQLMap? {
-      return ["input": input]
-    }
-
-    public struct Data: GraphQLSelectionSet {
-      public static let possibleTypes: [String] = ["Mutation"]
-
-      public static var selections: [GraphQLSelection] {
-        return [
-          GraphQLField("editContent", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(EditContent.selections))),
-        ]
-      }
-
-      public private(set) var resultMap: ResultMap
-
-      public init(unsafeResultMap: ResultMap) {
-        self.resultMap = unsafeResultMap
-      }
-
-      public init(editContent: EditContent) {
-        self.init(unsafeResultMap: ["__typename": "Mutation", "editContent": editContent.resultMap])
-      }
-
-      public var editContent: EditContent {
-        get {
-          return EditContent(unsafeResultMap: resultMap["editContent"]! as! ResultMap)
-        }
-        set {
-          resultMap.updateValue(newValue.resultMap, forKey: "editContent")
-        }
-      }
-
-      public struct EditContent: GraphQLSelectionSet {
-        public static let possibleTypes: [String] = ["CustomContent"]
-
-        public static var selections: [GraphQLSelection] {
-          return [
-            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
-            GraphQLField("id", type: .nonNull(.scalar(UUID.self))),
-            GraphQLField("position", type: .nonNull(.scalar(Int.self))),
-            GraphQLField("identifier", type: .nonNull(.scalar(String.self))),
-            GraphQLField("data", type: .nonNull(.scalar(JSON.self))),
-          ]
-        }
-
-        public private(set) var resultMap: ResultMap
-
-        public init(unsafeResultMap: ResultMap) {
-          self.resultMap = unsafeResultMap
-        }
-
-        public init(id: UUID, position: Int, identifier: String, data: JSON) {
-          self.init(unsafeResultMap: ["__typename": "CustomContent", "id": id, "position": position, "identifier": identifier, "data": data])
-        }
-
-        public var __typename: String {
-          get {
-            return resultMap["__typename"]! as! String
-          }
-          set {
-            resultMap.updateValue(newValue, forKey: "__typename")
-          }
-        }
-
-        public var id: UUID {
-          get {
-            return resultMap["id"]! as! UUID
-          }
-          set {
-            resultMap.updateValue(newValue, forKey: "id")
-          }
-        }
-
-        public var position: Int {
-          get {
-            return resultMap["position"]! as! Int
-          }
-          set {
-            resultMap.updateValue(newValue, forKey: "position")
-          }
-        }
-
-        public var identifier: String {
-          get {
-            return resultMap["identifier"]! as! String
-          }
-          set {
-            resultMap.updateValue(newValue, forKey: "identifier")
-          }
-        }
-
-        public var data: JSON {
-          get {
-            return resultMap["data"]! as! JSON
-          }
-          set {
-            resultMap.updateValue(newValue, forKey: "data")
-          }
-        }
-      }
-    }
-  }
-
   public final class AssetQuery: GraphQLQuery {
     /// The raw GraphQL definition of this operation.
     public let operationDefinition: String =
@@ -2509,6 +2383,132 @@ public enum DashXGql {
           }
           set {
             resultMap.updateValue(newValue, forKey: "uploadStatus")
+          }
+        }
+
+        public var data: JSON {
+          get {
+            return resultMap["data"]! as! JSON
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "data")
+          }
+        }
+      }
+    }
+  }
+
+  public final class EditContentMutation: GraphQLMutation {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      mutation EditContent($input: EditContentInput!) {
+        editContent(input: $input) {
+          __typename
+          id
+          position
+          identifier
+          data
+        }
+      }
+      """
+
+    public let operationName: String = "EditContent"
+
+    public var input: EditContentInput
+
+    public init(input: EditContentInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Mutation"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("editContent", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(EditContent.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(editContent: EditContent) {
+        self.init(unsafeResultMap: ["__typename": "Mutation", "editContent": editContent.resultMap])
+      }
+
+      public var editContent: EditContent {
+        get {
+          return EditContent(unsafeResultMap: resultMap["editContent"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "editContent")
+        }
+      }
+
+      public struct EditContent: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["CustomContent"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("id", type: .nonNull(.scalar(UUID.self))),
+            GraphQLField("position", type: .nonNull(.scalar(Int.self))),
+            GraphQLField("identifier", type: .nonNull(.scalar(String.self))),
+            GraphQLField("data", type: .nonNull(.scalar(JSON.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(id: UUID, position: Int, identifier: String, data: JSON) {
+          self.init(unsafeResultMap: ["__typename": "CustomContent", "id": id, "position": position, "identifier": identifier, "data": data])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var id: UUID {
+          get {
+            return resultMap["id"]! as! UUID
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "id")
+          }
+        }
+
+        public var position: Int {
+          get {
+            return resultMap["position"]! as! Int
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "position")
+          }
+        }
+
+        public var identifier: String {
+          get {
+            return resultMap["identifier"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "identifier")
           }
         }
 

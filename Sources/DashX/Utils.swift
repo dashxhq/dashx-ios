@@ -1,3 +1,5 @@
+import AdSupport
+import AppTrackingTransparency
 import Foundation
 import MobileCoreServices
 
@@ -12,6 +14,12 @@ extension URL {
             }
         }
         return "application/octet-stream"
+    }
+}
+
+extension Data {
+    var string: String {
+        return map { String(format: "%02.2hhx", $0) }.joined()
     }
 }
 

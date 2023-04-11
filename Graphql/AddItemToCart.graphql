@@ -1,5 +1,5 @@
 mutation AddItemToCart($input: AddItemToCartInput!) {
-  addItemToCart(input:$input) {
+  addItemToCart(input: $input) {
     id
     status
     subtotal

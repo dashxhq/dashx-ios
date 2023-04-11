@@ -1,4 +1,5 @@
 import Apollo
+import AppTrackingTransparency
 import CoreLocation
 import FirebaseMessaging
 import Foundation
@@ -14,6 +15,12 @@ enum DashXClientError: Error {
     case customError(message: String)
 }
 
+public enum LocationPermissionType {
+    case always
+    case whenInUse
+    case current
+}
+
 // Shared instance to be used by the SDK users
 public let DashX = DashXClient.instance
 
@@ -22,20 +29,22 @@ public class DashXClient {
 
     private var accountAnonymousUid: String?
     private var accountUid: String?
-    private var deviceToken: String?
+
+    private var apnsToken: String?
+    private var fcmToken: String?
 
     private var mustSubscribe: Bool = false
+
+    internal var isAdTrackingEnabled: Bool = false
 
     private init() {
         self.loadIdentity()
     }
 
-    internal func setDeviceToken(to: String) {
-        self.deviceToken = to
+    internal func setAPNSToken(to: Data) {
+        DashXLog.d(tag: #function, "APNS Token is \(to.string)")
 
-        if self.mustSubscribe {
-            self.subscribe()
-        }
+        self.apnsToken = to.string
     }
 
     // https://stackoverflow.com/a/11197770
@@ -70,8 +79,27 @@ public class DashXClient {
         }
     }
 
+    public func setFCMToken(to: String) {
+        DashXLog.d(tag: #function, "FCM Token is \(to)")
+        self.fcmToken = to
+
+        if self.mustSubscribe {
+            self.subscribe()
+        }
+    }
+
     public func enableLifecycleTracking() {
         DashXApplicationLifecycleCallbacks().enable()
+    }
+
+    // MARK: - Ad Tracking
+
+    // Ad-tracking affects two keys under the systemContext object of every event:
+    //
+    // device.adTrackingEnabled
+    // device.advertisingId
+    public func enableAdTracking() {
+        self.isAdTrackingEnabled = true
     }
 
     // MARK: - User Management
@@ -191,7 +219,7 @@ public class DashXClient {
     // MARK: - Contact Management
 
     public func subscribe() {
-        if self.deviceToken == nil {
+        if self.fcmToken == nil {
             self.mustSubscribe = true
             return
         }
@@ -199,10 +227,10 @@ public class DashXClient {
         self.mustSubscribe = false
 
         let preferences = UserDefaults.standard
-        let deviceTokenKey = Constants.USER_PREFERENCES_KEY_DEVICE_TOKEN
+        let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
 
-        if preferences.string(forKey: deviceTokenKey) == self.deviceToken {
-            DashXLog.d(tag: #function, "Already subscribed: \(String(describing: self.deviceToken))")
+        if preferences.string(forKey: fcmTokenKey) == self.fcmToken {
+            DashXLog.d(tag: #function, "Already subscribed: \(String(describing: self.fcmToken))")
             return
         }
 
@@ -211,7 +239,7 @@ public class DashXClient {
             accountAnonymousUid: self.accountAnonymousUid!,
             name: UIDevice.current.model,
             kind: .ios,
-            value: self.deviceToken!,
+            value: self.fcmToken!,
             osName: UIDevice.current.systemName,
             osVersion: UIDevice.current.systemVersion,
             deviceModel: self.getDeviceModel(),
@@ -230,7 +258,7 @@ public class DashXClient {
                 }
 
                 if graphQLResult.data != nil {
-                    preferences.set(graphQLResult.data?.subscribeContact.value, forKey: deviceTokenKey)
+                    preferences.set(graphQLResult.data?.subscribeContact.value, forKey: fcmTokenKey)
                     DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
                 }
             case .failure(let error):
@@ -241,8 +269,8 @@ public class DashXClient {
 
     public func unsubscribe() {
         let preferences = UserDefaults.standard
-        let deviceTokenKey = Constants.USER_PREFERENCES_KEY_DEVICE_TOKEN
-        let savedToken = preferences.string(forKey: deviceTokenKey)
+        let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
+        let savedToken = preferences.string(forKey: fcmTokenKey)
 
         if savedToken == nil {
             DashXLog.d(tag: #function, "unsubscribe() called without subscribing first")
@@ -253,7 +281,7 @@ public class DashXClient {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
                 accountUid: self.accountUid,
                 accountAnonymousUid: self.accountAnonymousUid!,
-                value: self.deviceToken!
+                value: self.fcmToken!
             )
 
             DashXLog.d(tag: #function, "Calling unsubscribe with \(unsubscribeContactInput)")
@@ -268,7 +296,7 @@ public class DashXClient {
                     }
 
                     if graphQLResult.data != nil {
-                        preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: deviceTokenKey)
+                        preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: fcmTokenKey)
                         DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
                     }
                 case .failure(let error):
@@ -585,7 +613,14 @@ public class DashXClient {
 
     // MARK: - Request permission for Location
 
-    public func requestLocationPermission() {
-        CLLocationManager().requestWhenInUseAuthorization()
+    public func requestLocationPermission(locationPermissionType: LocationPermissionType = .always) {
+        switch locationPermissionType {
+        case .always:
+            CLLocationManager().requestAlwaysAuthorization()
+        case .whenInUse:
+            CLLocationManager().requestWhenInUseAuthorization()
+        case .current:
+            CLLocationManager().requestLocation()
+        }
     }
 }

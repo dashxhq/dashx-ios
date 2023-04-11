@@ -1,19 +1,18 @@
-import Foundation
-import UIKit
 import AdSupport
 import AppTrackingTransparency
-import CoreBluetooth
-import CoreTelephony
-import Network
 import CoreLocation
+import Foundation
+import Network
+import SystemConfiguration
+import UIKit
 
 struct SystemContextEnvironment {
     let locale: Locale
     let timeZone: TimeZone
     let bundle: Bundle
     let device: UIDevice
-    let advertisingManager: ASIdentifierManager
-    let cbCentralManager: CBCentralManager
+    let advertisingMonitor: AdvertisingMonitor
+    let bluetoothMonitor: BluetoothMonitor
     let networkMonitor: NetworkMonitor
     let screen: UIScreen
     let locationMonitor: LocationMonitor
@@ -23,18 +22,12 @@ struct SystemContextEnvironment {
         timeZone: TimeZone.current,
         bundle: Bundle.main,
         device: UIDevice.current,
-        advertisingManager: ASIdentifierManager.shared(),
-        cbCentralManager: CBCentralManager.shared,
+        advertisingMonitor: AdvertisingMonitor.shared,
+        bluetoothMonitor: BluetoothMonitor.shared,
         networkMonitor: NetworkMonitor.shared,
         screen: UIScreen.main,
         locationMonitor: LocationMonitor.shared
     )
-}
-
-extension CBCentralManager {
-    static var shared: CBCentralManager {
-        return CBCentralManager()
-    }
 }
 
 public struct LibraryInfo {
@@ -51,7 +44,7 @@ public struct LibraryInfo {
 }
 
 class SystemContext: NSObject {
-    static var shared: SystemContext = SystemContext()
+    static var shared: SystemContext = .init()
     private let environment: SystemContextEnvironment
 
     private var libraryInfo: LibraryInfo? = nil
@@ -60,21 +53,17 @@ class SystemContext: NSObject {
         self.environment = environment
 
         super.init()
-        setupCBCentralManager()
     }
 
     func setLibraryInfo(libraryInfo: LibraryInfo) {
         self.libraryInfo = libraryInfo
     }
 
-    func setupCBCentralManager() {
-        environment.cbCentralManager.delegate = self
-    }
-
     func getSystemContextInput() -> DashXGql.SystemContextInput? {
         let ipAddresses = getIPAddress()
         if let ipV4 = ipAddresses.ipV4,
-           let locale = environment.locale.regionCode {
+           let locale = environment.locale.regionCode
+        {
             let ipV6 = ipAddresses.ipV6
 
             return DashXGql.SystemContextInput(
@@ -100,7 +89,8 @@ class SystemContext: NSObject {
         if let bundleName = environment.bundle.object(forInfoDictionaryKey: "CFBundleName") as? String,
            let bundleVersion = environment.bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
            let bundleShortVersion = environment.bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
-           let namespace = environment.bundle.bundleIdentifier {
+           let namespace = environment.bundle.bundleIdentifier
+        {
             return DashXGql.SystemContextAppInput(
                 name: bundleName,
                 version: bundleShortVersion,
@@ -112,18 +102,11 @@ class SystemContext: NSObject {
     }
 
     func getSystemContextDeviceInput() -> DashXGql.SystemContextDeviceInput? {
-        var isAdTrackingEnabled = false
-        if #available(iOS 14, *) {
-            isAdTrackingEnabled = ATTrackingManager.trackingAuthorizationStatus == .authorized
-        } else {
-            isAdTrackingEnabled = environment.advertisingManager.isAdvertisingTrackingEnabled
-        }
-
         if let id = environment.device.identifierForVendor?.uuidString {
             return DashXGql.SystemContextDeviceInput(
                 id: id,
-                advertisingId: environment.advertisingManager.advertisingIdentifier.uuidString,
-                adTrackingEnabled: "\(isAdTrackingEnabled)",
+                advertisingId: environment.advertisingMonitor.advertisingId,
+                adTrackingEnabled: "\(environment.advertisingMonitor.isAdTrackingEnabled)",
                 manufacturer: "Apple",
                 model: environment.device.model,
                 name: environment.device.name,
@@ -145,18 +128,19 @@ class SystemContext: NSObject {
     }
 
     func getSystemContextNetworkInput() -> DashXGql.SystemContextNetworkInput? {
-        let networkInfo = CTTelephonyNetworkInfo()
-        if let carrierName = networkInfo.serviceSubscriberCellularProviders?.first?.value.carrierName {
-            let cellularReachabilityStatus = environment.networkMonitor.isReachableOnCellular
-            let wifiReachabilityStatus = environment.networkMonitor.isReachableOnWifi
-            return DashXGql.SystemContextNetworkInput(
-                bluetooth: environment.cbCentralManager.state == .poweredOn,
-                carrier: carrierName,
-                cellular: cellularReachabilityStatus,
-                wifi: wifiReachabilityStatus
-            )
-        }
-        return nil
+        // networkInfo.serviceSubscriberCellularProviders?.first?.value.carrierName
+        // CTCarrier is 'Deprecated with no replacement' - https://developer.apple.com/documentation/coretelephony/ctcarrier
+        let carrierName = "--"
+        let isCellularEnabled = environment.networkMonitor.isReachableOnCellular
+        let isWifiEnabled = environment.networkMonitor.isReachableOnWifi
+        let isBluetoothEnabled = environment.bluetoothMonitor.isBluetoothEnabled
+
+        return DashXGql.SystemContextNetworkInput(
+            bluetooth: isBluetoothEnabled,
+            carrier: carrierName,
+            cellular: isCellularEnabled,
+            wifi: isWifiEnabled
+        )
     }
 
     func getSystemContextScreenInput() -> DashXGql.SystemContextScreenInput {
@@ -170,8 +154,9 @@ class SystemContext: NSObject {
     func getSystemContextLocationInput() -> DashXGql.SystemContextLocationInput? {
         environment.locationMonitor.prepareLocationInfo()
         if let latitude = environment.locationMonitor.getLatitude,
-            let longitude = environment.locationMonitor.getLongitude,
-            let speed = environment.locationMonitor.getSpeed {
+           let longitude = environment.locationMonitor.getLongitude,
+           let speed = environment.locationMonitor.getSpeed
+        {
             return DashXGql.SystemContextLocationInput(
                 latitude: DashXGql.Decimal(latitude),
                 longitude: DashXGql.Decimal(longitude),
@@ -180,8 +165,4 @@ class SystemContext: NSObject {
         }
         return nil
     }
-}
-
-extension SystemContext: CBCentralManagerDelegate {
-    func centralManagerDidUpdateState(_ central: CBCentralManager) { }
 }
