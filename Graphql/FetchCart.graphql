@@ -1,5 +1,5 @@
 query FetchCart($input: FetchCartInput!) {
-  fetchCart(input:$input) {
+  fetchCart(input: $input) {
     id
     status
     subtotal
