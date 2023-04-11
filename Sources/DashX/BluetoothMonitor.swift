@@ -1,7 +1,6 @@
 import CoreBluetooth
 import Foundation
 
-// Stop monitoring when there is no need
 class BluetoothMonitor: NSObject {
     static let shared = BluetoothMonitor()
 
