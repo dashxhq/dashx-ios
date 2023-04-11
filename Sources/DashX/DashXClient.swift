@@ -181,6 +181,25 @@ public class DashXClient {
             }
         }
     }
+    
+    public func trackNotification(_ id: String, _ notificationStatus: DashXGql.TrackNotificationStatus, _ timeStamp: String) {
+        let trackNotificationInput = DashXGql.TrackNotificationInput(id: id,
+                                                                     status: notificationStatus,
+                                                                     timestamp: timeStamp)
+        
+        DashXLog.d(tag: #function, "Calling trackNotification with \(trackNotificationInput)")
+        
+        let trackNotificationMutation = DashXGql.TrackNotificationMutation(input: trackNotificationInput)
+        
+        Network.shared.apollo.perform(mutation: trackNotificationMutation) { result in
+            switch result {
+            case .success(let graphQLResult):
+                DashXLog.d(tag: #function, "Sent track Notification with \(String(describing: graphQLResult.data))")
+            case .failure(let error):
+                DashXLog.d(tag: #function, "Encountered an error during trackNotification(): \(error)")
+            }
+        }
+    }
 
     public func screen(_ screenName: String, withData: NSDictionary?) {
         let properties = withData as? [String: Any]
@@ -587,5 +606,16 @@ public class DashXClient {
 
     public func requestLocationPermission() {
         CLLocationManager().requestWhenInUseAuthorization()
+    }
+    
+    // MARK: - Get ID of Notification
+    
+    public func getNotificationID(_ message: [AnyHashable : Any]) -> String? {
+        if let theJSONString = message["dashx"] as? String,
+           let theJSONData = theJSONString.convertToDictionary(),
+           let id = theJSONData["id"] as? String {
+            return id
+        }
+        return nil
     }
 }

@@ -22,3 +22,12 @@ extension String {
         return nil
     }
 }
+
+extension ISO8601DateFormatter {
+    static var timeStamp: DashXGql.Timestamp {
+        struct Static {
+            static let instance = ISO8601DateFormatter()
+        }
+        return Static.instance.string(from: Date())
+    }
+}
