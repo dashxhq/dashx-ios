@@ -39,9 +39,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
-        
+
         dashXClient.trackNotification(message: message, event: .delivered)
-        
+
         let presentationOptions = notificationDeliveredInForeground(message: message)
 
         completionHandler(presentationOptions)
@@ -52,9 +52,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
-        
+
         dashXClient.trackNotification(message: message, event: .clicked)
-        
+
         notificationClicked(message: message)
         completionHandler()
     }
@@ -63,29 +63,21 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(userInfo)
 
-        guard case let stringData as String = userInfo[Constants.DASHX_NOTIFICATION_DATA_KEY] else {
-            // Do not handle non-DashX notifications
+        guard let dashxData = userInfo.dashxNotificationData() else {
+            DashXLog.d(tag: #function, "Unable to parse DashX notification data")
             completionHandler(.failed)
             return
         }
 
-        if let jsonData = stringData.data(using: .utf8) {
-            do {
-                let dashxData = try JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
+        let notificationContent = UNMutableNotificationContent()
+        notificationContent.sound = UNNotificationSound.default
+        notificationContent.title = dashxData.title
+        notificationContent.body = dashxData.body
+        notificationContent.userInfo = userInfo
 
-                let notificationContent = UNMutableNotificationContent()
-                notificationContent.sound = UNNotificationSound.default
-                notificationContent.title = dashxData.title
-                notificationContent.body = dashxData.body
-                notificationContent.userInfo = userInfo
+        let request = UNNotificationRequest(identifier: dashxData.id, content: notificationContent, trigger: nil)
 
-                let request = UNNotificationRequest(identifier: dashxData.id, content: notificationContent, trigger: nil)
-
-                UNUserNotificationCenter.current().add(request)
-            } catch {
-                DashXLog.d(tag: #function, "Unable to parse DashX notification data \(error)")
-            }
-        }
+        UNUserNotificationCenter.current().add(request)
 
         completionHandler(.newData)
     }
