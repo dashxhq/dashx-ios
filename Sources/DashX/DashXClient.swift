@@ -608,21 +608,10 @@ public class DashXClient {
         CLLocationManager().requestWhenInUseAuthorization()
     }
     
-    // MARK: - Get ID of Notification
-    
-    private func getNotificationID(_ message: [AnyHashable : Any]) -> String? {
-        if let theJSONString = message[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String,
-           let theJSONData = theJSONString.convertToDictionary(),
-           let id = theJSONData["id"] as? String {
-            return id
-        }
-        return nil
-    }
-    
     // MARK: - Track Notification
     
-    public func trackNotification(message: [AnyHashable : Any], event: DashXGql.TrackNotificationStatus) {
-        if let id = getNotificationID(message) {
+    public func trackNotification(message: DashXNotificationMessage, event: DashXGql.TrackNotificationStatus) {
+        if let id = message.dashxNotificationId() {
             trackNotification(id, event, ISO8601DateFormatter.timeStamp)
         }
     }
