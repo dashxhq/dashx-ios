@@ -209,6 +209,25 @@ public class DashXClient {
             }
         }
     }
+    
+    private func trackNotification(_ id: String, _ notificationStatus: DashXGql.TrackNotificationStatus, _ timeStamp: String) {
+        let trackNotificationInput = DashXGql.TrackNotificationInput(id: id,
+                                                                     status: notificationStatus,
+                                                                     timestamp: timeStamp)
+        
+        DashXLog.d(tag: #function, "Calling trackNotification with \(trackNotificationInput)")
+        
+        let trackNotificationMutation = DashXGql.TrackNotificationMutation(input: trackNotificationInput)
+        
+        Network.shared.apollo.perform(mutation: trackNotificationMutation) { result in
+            switch result {
+            case .success(let graphQLResult):
+                DashXLog.d(tag: #function, "Sent track Notification with \(String(describing: graphQLResult.data))")
+            case .failure(let error):
+                DashXLog.d(tag: #function, "Encountered an error during trackNotification(): \(error)")
+            }
+        }
+    }
 
     public func screen(_ screenName: String, withData: NSDictionary?) {
         let properties = withData as? [String: Any]
@@ -621,6 +640,14 @@ public class DashXClient {
             CLLocationManager().requestWhenInUseAuthorization()
         case .current:
             CLLocationManager().requestLocation()
+        }
+    }
+    
+    // MARK: - Track Notification
+    
+    public func trackNotification(message: DashXNotificationMessage, event: DashXGql.TrackNotificationStatus) {
+        if let id = message.dashxNotificationId() {
+            trackNotification(id, event, ISO8601DateFormatter.timeStamp)
         }
     }
 }

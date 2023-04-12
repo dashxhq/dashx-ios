@@ -39,7 +39,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
-
+        
+        dashXClient.trackNotification(message: message, event: .delivered)
+        
         let presentationOptions = notificationDeliveredInForeground(message: message)
 
         completionHandler(presentationOptions)
@@ -50,7 +52,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
-
+        
+        dashXClient.trackNotification(message: message, event: .clicked)
+        
         notificationClicked(message: message)
         completionHandler()
     }

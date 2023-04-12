@@ -1625,6 +1625,90 @@ public enum DashXGql {
     }
   }
 
+  public struct TrackNotificationInput: GraphQLMapConvertible {
+    public var graphQLMap: GraphQLMap
+
+    /// - Parameters:
+    ///   - id
+    ///   - status
+    ///   - timestamp
+    public init(id: UUID, status: TrackNotificationStatus, timestamp: Timestamp) {
+      graphQLMap = ["id": id, "status": status, "timestamp": timestamp]
+    }
+
+    public var id: UUID {
+      get {
+        return graphQLMap["id"] as! UUID
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "id")
+      }
+    }
+
+    public var status: TrackNotificationStatus {
+      get {
+        return graphQLMap["status"] as! TrackNotificationStatus
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "status")
+      }
+    }
+
+    public var timestamp: Timestamp {
+      get {
+        return graphQLMap["timestamp"] as! Timestamp
+      }
+      set {
+        graphQLMap.updateValue(newValue, forKey: "timestamp")
+      }
+    }
+  }
+
+  public enum TrackNotificationStatus: RawRepresentable, Equatable, Hashable, CaseIterable, Apollo.JSONDecodable, Apollo.JSONEncodable {
+    public typealias RawValue = String
+    case delivered
+    case opened
+    case clicked
+    /// Auto generated constant for unknown enum values
+    case __unknown(RawValue)
+
+    public init?(rawValue: RawValue) {
+      switch rawValue {
+        case "DELIVERED": self = .delivered
+        case "OPENED": self = .opened
+        case "CLICKED": self = .clicked
+        default: self = .__unknown(rawValue)
+      }
+    }
+
+    public var rawValue: RawValue {
+      switch self {
+        case .delivered: return "DELIVERED"
+        case .opened: return "OPENED"
+        case .clicked: return "CLICKED"
+        case .__unknown(let value): return value
+      }
+    }
+
+    public static func == (lhs: TrackNotificationStatus, rhs: TrackNotificationStatus) -> Bool {
+      switch (lhs, rhs) {
+        case (.delivered, .delivered): return true
+        case (.opened, .opened): return true
+        case (.clicked, .clicked): return true
+        case (.__unknown(let lhsValue), .__unknown(let rhsValue)): return lhsValue == rhsValue
+        default: return false
+      }
+    }
+
+    public static var allCases: [TrackNotificationStatus] {
+      return [
+        .delivered,
+        .opened,
+        .clicked,
+      ]
+    }
+  }
+
   public struct UnsubscribeContactInput: GraphQLMapConvertible {
     public var graphQLMap: GraphQLMap
 
@@ -3710,6 +3794,99 @@ public enum DashXGql {
 
         public init(success: Bool) {
           self.init(unsafeResultMap: ["__typename": "TrackEventResponse", "success": success])
+        }
+
+        public var __typename: String {
+          get {
+            return resultMap["__typename"]! as! String
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "__typename")
+          }
+        }
+
+        public var success: Bool {
+          get {
+            return resultMap["success"]! as! Bool
+          }
+          set {
+            resultMap.updateValue(newValue, forKey: "success")
+          }
+        }
+      }
+    }
+  }
+
+  public final class TrackNotificationMutation: GraphQLMutation {
+    /// The raw GraphQL definition of this operation.
+    public let operationDefinition: String =
+      """
+      mutation TrackNotification($input: TrackNotificationInput!) {
+        trackNotification(input: $input) {
+          __typename
+          success
+        }
+      }
+      """
+
+    public let operationName: String = "TrackNotification"
+
+    public var input: TrackNotificationInput
+
+    public init(input: TrackNotificationInput) {
+      self.input = input
+    }
+
+    public var variables: GraphQLMap? {
+      return ["input": input]
+    }
+
+    public struct Data: GraphQLSelectionSet {
+      public static let possibleTypes: [String] = ["Mutation"]
+
+      public static var selections: [GraphQLSelection] {
+        return [
+          GraphQLField("trackNotification", arguments: ["input": GraphQLVariable("input")], type: .nonNull(.object(TrackNotification.selections))),
+        ]
+      }
+
+      public private(set) var resultMap: ResultMap
+
+      public init(unsafeResultMap: ResultMap) {
+        self.resultMap = unsafeResultMap
+      }
+
+      public init(trackNotification: TrackNotification) {
+        self.init(unsafeResultMap: ["__typename": "Mutation", "trackNotification": trackNotification.resultMap])
+      }
+
+      public var trackNotification: TrackNotification {
+        get {
+          return TrackNotification(unsafeResultMap: resultMap["trackNotification"]! as! ResultMap)
+        }
+        set {
+          resultMap.updateValue(newValue.resultMap, forKey: "trackNotification")
+        }
+      }
+
+      public struct TrackNotification: GraphQLSelectionSet {
+        public static let possibleTypes: [String] = ["TrackNotificationResponse"]
+
+        public static var selections: [GraphQLSelection] {
+          return [
+            GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLField("success", type: .nonNull(.scalar(Bool.self))),
+          ]
+        }
+
+        public private(set) var resultMap: ResultMap
+
+        public init(unsafeResultMap: ResultMap) {
+          self.resultMap = unsafeResultMap
+        }
+
+        public init(success: Bool) {
+          self.init(unsafeResultMap: ["__typename": "TrackNotificationResponse", "success": success])
         }
 
         public var __typename: String {
