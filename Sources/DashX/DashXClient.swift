@@ -182,7 +182,7 @@ public class DashXClient {
         }
     }
     
-    public func trackNotification(_ id: String, _ notificationStatus: DashXGql.TrackNotificationStatus, _ timeStamp: String) {
+    private func trackNotification(_ id: String, _ notificationStatus: DashXGql.TrackNotificationStatus, _ timeStamp: String) {
         let trackNotificationInput = DashXGql.TrackNotificationInput(id: id,
                                                                      status: notificationStatus,
                                                                      timestamp: timeStamp)
@@ -610,12 +610,20 @@ public class DashXClient {
     
     // MARK: - Get ID of Notification
     
-    public func getNotificationID(_ message: [AnyHashable : Any]) -> String? {
-        if let theJSONString = message["dashx"] as? String,
+    private func getNotificationID(_ message: [AnyHashable : Any]) -> String? {
+        if let theJSONString = message[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String,
            let theJSONData = theJSONString.convertToDictionary(),
            let id = theJSONData["id"] as? String {
             return id
         }
         return nil
+    }
+    
+    // MARK: - Track Notification
+    
+    public func trackNotification(message: [AnyHashable : Any], event: DashXGql.TrackNotificationStatus) {
+        if let id = getNotificationID(message) {
+            trackNotification(id, event, ISO8601DateFormatter.timeStamp)
+        }
     }
 }
