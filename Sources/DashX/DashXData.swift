@@ -8,7 +8,7 @@ struct DashXNotificationData: Decodable {
     let image: String?
 }
 
-public typealias DashXNotificationMessage = [AnyHashable : Any]
+public typealias DashXNotificationMessage = [AnyHashable: Any]
 
 public extension DashXGql {
     typealias JSON = [String: Any?]
@@ -17,21 +17,10 @@ public extension DashXGql {
     typealias Decimal = String
 }
 
-extension String {
-    func convertToDictionary() -> [String: Any]? {
-        if let data = data(using: .utf8) {
-            return (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: Any]
-        }
-        return nil
-    }
-}
-
 extension ISO8601DateFormatter {
     static var timeStamp: DashXGql.Timestamp {
-        struct Static {
-            static let instance = ISO8601DateFormatter()
-        }
-        return Static.instance.string(from: Date())
+        let formatter = ISO8601DateFormatter()
+        return formatter.string(from: Date())
     }
 }
 
@@ -48,9 +37,9 @@ extension DashXNotificationMessage {
         }
         return nil
     }
-    
+
     func dashxNotificationId() -> String? {
-        guard let dashxNotificationData = self.dashxNotificationData() else {
+        guard let dashxNotificationData = dashxNotificationData() else {
             return nil
         }
         return dashxNotificationData.id
