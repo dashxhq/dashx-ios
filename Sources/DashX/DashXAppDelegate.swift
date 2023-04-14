@@ -30,6 +30,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
     public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         dashXClient.setAPNSToken(to: deviceToken)
+        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
     }
 
     // MARK: - Push Notifications
@@ -74,11 +75,14 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.title = dashxData.title
         notificationContent.body = dashxData.body
         notificationContent.userInfo = userInfo
-
-        let request = UNNotificationRequest(identifier: dashxData.id, content: notificationContent, trigger: nil)
-
-        UNUserNotificationCenter.current().add(request)
-
+        
+        if let imagePath = dashxData.image,
+           let imageURL = URL(string: imagePath) {
+            dashXClient.createNotificationWithImage(id: dashxData.id, imageURL: imageURL, notificationContent: notificationContent)
+        } else {
+            dashXClient.createNotification(id: dashxData.id, content: notificationContent)
+        }
+        
         completionHandler(.newData)
     }
 

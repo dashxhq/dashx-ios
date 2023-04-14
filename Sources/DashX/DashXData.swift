@@ -5,6 +5,7 @@ struct DashXNotificationData: Decodable {
     let id: String
     let title: String
     let body: String
+    let image: String?
 }
 
 public typealias DashXNotificationMessage = [AnyHashable : Any]
