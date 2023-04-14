@@ -209,16 +209,16 @@ public class DashXClient {
             }
         }
     }
-    
+
     private func trackNotification(_ id: String, _ notificationStatus: DashXGql.TrackNotificationStatus, _ timeStamp: String) {
         let trackNotificationInput = DashXGql.TrackNotificationInput(id: id,
                                                                      status: notificationStatus,
                                                                      timestamp: timeStamp)
-        
+
         DashXLog.d(tag: #function, "Calling trackNotification with \(trackNotificationInput)")
-        
+
         let trackNotificationMutation = DashXGql.TrackNotificationMutation(input: trackNotificationInput)
-        
+
         Network.shared.apollo.perform(mutation: trackNotificationMutation) { result in
             switch result {
             case .success(let graphQLResult):
@@ -642,12 +642,12 @@ public class DashXClient {
             CLLocationManager().requestLocation()
         }
     }
-    
+
     // MARK: - Track Notification
-    
+
     public func trackNotification(message: DashXNotificationMessage, event: DashXGql.TrackNotificationStatus) {
         if let id = message.dashxNotificationId() {
-            trackNotification(id, event, ISO8601DateFormatter.timeStamp)
+            self.trackNotification(id, event, ISO8601DateFormatter.timeStamp)
         }
     }
 }
