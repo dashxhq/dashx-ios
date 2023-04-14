@@ -75,14 +75,15 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.title = dashxData.title
         notificationContent.body = dashxData.body
         notificationContent.userInfo = userInfo
-        
+
         if let imagePath = dashxData.image,
-           let imageURL = URL(string: imagePath) {
+           let imageURL = URL(string: imagePath)
+        {
             createNotificationWithImage(id: dashxData.id, imageURL: imageURL, content: notificationContent)
         } else {
             createNotification(id: dashxData.id, content: notificationContent)
         }
-        
+
         completionHandler(.newData)
     }
 
@@ -96,7 +97,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 extension DashXAppDelegate {
     private func createNotification(id: String, content: UNMutableNotificationContent) {
         let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
-        
+
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 DashXLog.d(tag: #function, "Failed to schedule notification request: \(error.localizedDescription)")
@@ -105,24 +106,25 @@ extension DashXAppDelegate {
             }
         }
     }
-    
+
     private func createNotificationWithImage(id: String,
                                              imageURL: URL,
-                                             content: UNMutableNotificationContent) {
-        let task = URLSession.shared.downloadTask(with: imageURL) { (location, _, error) in
+                                             content: UNMutableNotificationContent)
+    {
+        let task = URLSession.shared.downloadTask(with: imageURL) { location, _, error in
             guard let location = location, error == nil else {
                 return
             }
-            
+
             // Create a temporary file URL to save the downloaded image
             let tmpDirectoryURL = FileManager.default.temporaryDirectory
             let uuid = UUID().uuidString
             let tmpFileURL = tmpDirectoryURL.appendingPathComponent(uuid + ".png")
-            
+
             do {
                 // Move the downloaded file to the temporary file URL
                 try FileManager.default.moveItem(at: location, to: tmpFileURL)
-                
+
                 // Create the notification attachment from the temporary file URL
                 let attachment = try UNNotificationAttachment(identifier: "\(id)-attachment", url: tmpFileURL, options: nil)
                 content.attachments = [attachment]
