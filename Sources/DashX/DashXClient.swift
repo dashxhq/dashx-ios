@@ -650,46 +650,4 @@ public class DashXClient {
             trackNotification(id, event, ISO8601DateFormatter.timeStamp)
         }
     }
-    
-    // MARK: - Create Notification
-    
-    func createNotification(id: String, content: UNMutableNotificationContent) {
-        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
-
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error while adding notification request: \(error.localizedDescription)")
-            } else {
-                print("Notification request added successfully.")
-            }
-        }
-    }
-    
-    func createNotificationWithImage(id: String,
-                                         imageURL: URL,
-                                         notificationContent: UNMutableNotificationContent) {
-        let task = URLSession.shared.downloadTask(with: imageURL) { (location, response, error) in
-            guard let location = location else {
-                return
-            }
-
-            // Create a temporary file URL to save the downloaded image
-            let tmpDirectoryURL = FileManager.default.temporaryDirectory
-            let uuid = UUID().uuidString
-            let tmpFileURL = tmpDirectoryURL.appendingPathComponent(uuid+".png")
-
-            do {
-                // Move the downloaded file to the temporary file URL
-                try FileManager.default.moveItem(at: location, to: tmpFileURL)
-
-                // Create the notification attachment from the temporary file URL
-                let attachment = try UNNotificationAttachment(identifier: "image", url: tmpFileURL, options: nil)
-                notificationContent.attachments = [attachment]
-                self.createNotification(id: id, content: notificationContent)
-            } catch {
-                print("Error moving file: \(error.localizedDescription)")
-            }
-        }
-        task.resume()
-    }
 }
