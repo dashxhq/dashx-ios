@@ -788,7 +788,7 @@ public enum DashXGql {
     ///   - model
     ///   - name
     ///   - kind
-    public init(id: String, advertisingId: String, adTrackingEnabled: String, manufacturer: String, model: String, name: String, kind: String) {
+    public init(id: String, advertisingId: String, adTrackingEnabled: Bool, manufacturer: String, model: String, name: String, kind: String) {
       graphQLMap = ["id": id, "advertisingId": advertisingId, "adTrackingEnabled": adTrackingEnabled, "manufacturer": manufacturer, "model": model, "name": name, "kind": kind]
     }
 
@@ -810,9 +810,9 @@ public enum DashXGql {
       }
     }
 
-    public var adTrackingEnabled: String {
+    public var adTrackingEnabled: Bool {
       get {
-        return graphQLMap["adTrackingEnabled"] as! String
+        return graphQLMap["adTrackingEnabled"] as! Bool
       }
       set {
         graphQLMap.updateValue(newValue, forKey: "adTrackingEnabled")
