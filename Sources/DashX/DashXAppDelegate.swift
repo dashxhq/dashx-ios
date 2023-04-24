@@ -92,6 +92,8 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
     open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
 
     open func notificationClicked(message: [AnyHashable: Any]) {}
+
+    open func handleLink(url: URL) {}
 }
 
 extension DashXAppDelegate {

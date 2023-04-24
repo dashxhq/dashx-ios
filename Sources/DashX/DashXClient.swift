@@ -650,4 +650,18 @@ public class DashXClient {
             self.trackNotification(id, event, ISO8601DateFormatter.timeStamp)
         }
     }
+
+    // MARK: - Universal Links
+
+    public func handleUserActivity(userActivity: NSUserActivity?) {
+        if userActivity?.activityType == NSUserActivityTypeBrowsingWeb {
+            guard let url = userActivity?.webpageURL else {
+                return
+            }
+
+            let appDelegate: DashXAppDelegate? = UIApplication.shared.delegate as? DashXAppDelegate
+
+            appDelegate?.handleLink(url: url)
+        }
+    }
 }
