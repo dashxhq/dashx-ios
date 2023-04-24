@@ -10,8 +10,7 @@ class BluetoothMonitor: NSObject {
         super.init()
 
         if isBluetoothUsagePermissionDescriptionPresent {
-            cbCentralManager = CBCentralManager()
-            cbCentralManager!.delegate = self
+            cbCentralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey: 0])
         }
     }
 
