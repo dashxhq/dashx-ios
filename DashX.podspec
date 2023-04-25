@@ -17,7 +17,7 @@ Pod::Spec.new do |spec|
 
   spec.name         = "DashX"
   spec.module_name  = "DashX"
-  spec.version      = "1.0.15"
+  spec.version      = "1.0.16"
   spec.summary      = "DashX SDK for iOS"
 
   spec.description  = <<-DESC
