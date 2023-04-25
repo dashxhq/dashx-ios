@@ -1,11 +1,39 @@
 import Apollo
 import Foundation
 
+struct ActionButton: Decodable {
+    let identifier: String
+    let label: String
+    let icon: String?
+}
+
 struct DashXNotificationData: Decodable {
     let id: String
     let title: String
     let body: String
     let image: String?
+    let actionButtons: [ActionButton]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, body, image
+        case actionButtons = "action_buttons"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        body = try container.decode(String.self, forKey: .body)
+        image = try container.decodeIfPresent(String.self, forKey: .image)
+
+        if let actionButtonsString = try container.decodeIfPresent(String.self, forKey: .actionButtons) {
+            let actionButtonsData = actionButtonsString.data(using: .utf8)!
+            actionButtons = try JSONDecoder().decode([ActionButton].self, from: actionButtonsData)
+        } else {
+            actionButtons = nil
+        }
+    }
 }
 
 public typealias DashXNotificationMessage = [AnyHashable: Any]

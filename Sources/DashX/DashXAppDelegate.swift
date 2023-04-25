@@ -54,9 +54,14 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
 
-        dashXClient.trackNotification(message: message, event: .clicked)
+        if response.actionIdentifier == UNNotificationDismissActionIdentifier {
+            dashXClient.trackNotification(message: message, event: .dismissed)
+        } else {
+            dashXClient.trackNotification(message: message, event: .clicked)
 
-        notificationClicked(message: message)
+            notificationClicked(message: message, actionIdentifier: response.actionIdentifier)
+        }
+
         completionHandler()
     }
 
@@ -75,6 +80,30 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.title = dashxData.title
         notificationContent.body = dashxData.body
         notificationContent.userInfo = userInfo
+        notificationContent.categoryIdentifier = Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER
+
+        var notificationActions: [UNNotificationAction] = []
+
+        if let actionButtons = dashxData.actionButtons {
+            for button in actionButtons {
+                notificationActions.append(
+                    UNNotificationAction(
+                        identifier: button.identifier,
+                        title: button.label,
+                        options: [.foreground]
+                    )
+                )
+            }
+        }
+
+        let notificationCategory = UNNotificationCategory(
+            identifier: Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER,
+            actions: notificationActions,
+            intentIdentifiers: [],
+            options: .customDismissAction
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([notificationCategory])
 
         if let imagePath = dashxData.image,
            let imageURL = URL(string: imagePath)
@@ -91,7 +120,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
     open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
 
-    open func notificationClicked(message: [AnyHashable: Any]) {}
+    open func notificationClicked(message: [AnyHashable: Any], actionIdentifier: String) {}
 
     open func handleLink(url: URL) {}
 }
