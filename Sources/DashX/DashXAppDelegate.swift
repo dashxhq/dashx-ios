@@ -56,12 +56,12 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         if response.actionIdentifier == UNNotificationDismissActionIdentifier {
             dashXClient.trackNotification(message: message, event: .dismissed)
-            return
+        } else {
+            dashXClient.trackNotification(message: message, event: .clicked)
+
+            notificationClicked(message: message)
         }
 
-        dashXClient.trackNotification(message: message, event: .clicked)
-
-        notificationClicked(message: message)
         completionHandler()
     }
 
