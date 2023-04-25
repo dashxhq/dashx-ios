@@ -59,7 +59,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         } else {
             dashXClient.trackNotification(message: message, event: .clicked)
 
-            notificationClicked(message: message)
+            notificationClicked(message: message, actionIdentifier: response.actionIdentifier)
         }
 
         completionHandler()
@@ -82,14 +82,28 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.userInfo = userInfo
         notificationContent.categoryIdentifier = Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER
 
-        let notificationCategories = UNNotificationCategory(
+        var notificationActions: [UNNotificationAction] = []
+
+        if let actionButtons = dashxData.actionButtons {
+            for button in actionButtons {
+                notificationActions.append(
+                    UNNotificationAction(
+                        identifier: button.identifier,
+                        title: button.label,
+                        options: [.foreground]
+                    )
+                )
+            }
+        }
+
+        let notificationCategory = UNNotificationCategory(
             identifier: Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER,
-            actions: [],
+            actions: notificationActions,
             intentIdentifiers: [],
             options: .customDismissAction
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([notificationCategories])
+        UNUserNotificationCenter.current().setNotificationCategories([notificationCategory])
 
         if let imagePath = dashxData.image,
            let imageURL = URL(string: imagePath)
@@ -106,7 +120,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
     open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
 
-    open func notificationClicked(message: [AnyHashable: Any]) {}
+    open func notificationClicked(message: [AnyHashable: Any], actionIdentifier: String) {}
 
     open func handleLink(url: URL) {}
 }
