@@ -18,6 +18,7 @@ struct Constants {
     static let CONTENT_TYPE = "Content-Type"
     static let GCS_ASSET_UPLOAD_HEADER_KEY = "x-goog-meta-origin-id"
     static let DASHX_NOTIFICATION_DATA_KEY = "dashx"
+    static let DASHX_NOTIFICATION_CATEGORY_IDENTIFIER = "DASHX_NOTIFICATION"
     static let BLUETOOTH_USAGE_PERMISSION_DESCRIPTION_KEY = "NSBluetoothAlwaysUsageDescription"
 }
 

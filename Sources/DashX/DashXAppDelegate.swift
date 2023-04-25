@@ -54,6 +54,11 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
 
+        if response.actionIdentifier == UNNotificationDismissActionIdentifier {
+            dashXClient.trackNotification(message: message, event: .dismissed)
+            return
+        }
+
         dashXClient.trackNotification(message: message, event: .clicked)
 
         notificationClicked(message: message)
@@ -75,6 +80,16 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.title = dashxData.title
         notificationContent.body = dashxData.body
         notificationContent.userInfo = userInfo
+        notificationContent.categoryIdentifier = Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER
+
+        let notificationCategories = UNNotificationCategory(
+            identifier: Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER,
+            actions: [],
+            intentIdentifiers: [],
+            options: .customDismissAction
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([notificationCategories])
 
         if let imagePath = dashxData.image,
            let imageURL = URL(string: imagePath)

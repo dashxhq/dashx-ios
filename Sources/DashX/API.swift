@@ -1667,6 +1667,7 @@ public enum DashXGql {
   public enum TrackNotificationStatus: RawRepresentable, Equatable, Hashable, CaseIterable, Apollo.JSONDecodable, Apollo.JSONEncodable {
     public typealias RawValue = String
     case delivered
+    case dismissed
     case opened
     case clicked
     /// Auto generated constant for unknown enum values
@@ -1675,6 +1676,7 @@ public enum DashXGql {
     public init?(rawValue: RawValue) {
       switch rawValue {
         case "DELIVERED": self = .delivered
+        case "DISMISSED": self = .dismissed
         case "OPENED": self = .opened
         case "CLICKED": self = .clicked
         default: self = .__unknown(rawValue)
@@ -1684,6 +1686,7 @@ public enum DashXGql {
     public var rawValue: RawValue {
       switch self {
         case .delivered: return "DELIVERED"
+        case .dismissed: return "DISMISSED"
         case .opened: return "OPENED"
         case .clicked: return "CLICKED"
         case .__unknown(let value): return value
@@ -1693,6 +1696,7 @@ public enum DashXGql {
     public static func == (lhs: TrackNotificationStatus, rhs: TrackNotificationStatus) -> Bool {
       switch (lhs, rhs) {
         case (.delivered, .delivered): return true
+        case (.dismissed, .dismissed): return true
         case (.opened, .opened): return true
         case (.clicked, .clicked): return true
         case (.__unknown(let lhsValue), .__unknown(let rhsValue)): return lhsValue == rhsValue
@@ -1703,6 +1707,7 @@ public enum DashXGql {
     public static var allCases: [TrackNotificationStatus] {
       return [
         .delivered,
+        .dismissed,
         .opened,
         .clicked,
       ]
