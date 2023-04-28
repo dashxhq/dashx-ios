@@ -12,10 +12,11 @@ struct DashXNotificationData: Decodable {
     let title: String
     let body: String
     let image: String?
+    let url: String?
     let actionButtons: [ActionButton]?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, body, image
+        case id, title, body, image, url
         case actionButtons = "action_buttons"
     }
 
@@ -26,6 +27,7 @@ struct DashXNotificationData: Decodable {
         title = try container.decode(String.self, forKey: .title)
         body = try container.decode(String.self, forKey: .body)
         image = try container.decodeIfPresent(String.self, forKey: .image)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
 
         if let actionButtonsString = try container.decodeIfPresent(String.self, forKey: .actionButtons) {
             let actionButtonsData = actionButtonsString.data(using: .utf8)!
@@ -54,16 +56,16 @@ extension ISO8601DateFormatter {
 
 extension DashXNotificationMessage {
     func dashxNotificationData() -> DashXNotificationData? {
-        if let theJSONString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String {
-            if let jsonData = theJSONString.data(using: .utf8) {
-                do {
-                    return try JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
-                } catch {
-                    DashXLog.d(tag: #function, "Unable to parse DashX notification data \(error)")
-                }
-            }
+        guard let jsonString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String else {
+            return nil
         }
-        return nil
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            return nil
+        }
+        guard let notificationData = try? JSONDecoder().decode(DashXNotificationData.self, from: jsonData) else {
+            return nil
+        }
+        return notificationData
     }
 
     func dashxNotificationId() -> String? {
@@ -71,5 +73,15 @@ extension DashXNotificationMessage {
             return nil
         }
         return dashxNotificationData.id
+    }
+
+    func dashxNotificationUrl() -> URL? {
+        guard let dashxNotificationData = dashxNotificationData() else {
+            return nil
+        }
+        guard let url = dashxNotificationData.url else {
+            return nil
+        }
+        return URL(string: url)
     }
 }

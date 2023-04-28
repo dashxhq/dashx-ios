@@ -59,7 +59,11 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         } else {
             dashXClient.trackNotification(message: message, event: .clicked)
 
-            notificationClicked(message: message, actionIdentifier: response.actionIdentifier)
+            if let url = message.dashxNotificationUrl() {
+                handleLink(url: url)
+            } else {
+                notificationClicked(message: message, actionIdentifier: response.actionIdentifier)
+            }
         }
 
         completionHandler()
