@@ -13,6 +13,7 @@ import UIKit
 open class DashXSceneDelegate: UIResponder, UIWindowSceneDelegate {
     private var advertisingMonitor = AdvertisingMonitor.shared
 
+    @available(iOS 13.0, *)
     open func sceneDidBecomeActive(_ scene: UIScene) {
         advertisingMonitor.requestAdTrackingPermission()
     }
