@@ -35,7 +35,7 @@ public class DashXClient {
 
     private var mustSubscribe: Bool = false
 
-    internal var isAdTrackingEnabled: Bool = false
+    internal var shouldRequestIDFAPermissions: Bool = false
 
     private init() {
         self.loadIdentity()
@@ -98,8 +98,9 @@ public class DashXClient {
     //
     // device.adTrackingEnabled
     // device.advertisingId
+    // DashX will attempt to request IDFA permissions
     public func enableAdTracking() {
-        self.isAdTrackingEnabled = true
+        self.shouldRequestIDFAPermissions = true
     }
 
     // MARK: - User Management
