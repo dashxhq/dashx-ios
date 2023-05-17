@@ -106,7 +106,7 @@ class SystemContext: NSObject {
             return DashXGql.SystemContextDeviceInput(
                 id: id,
                 advertisingId: environment.advertisingMonitor.advertisingId,
-                adTrackingEnabled: environment.advertisingMonitor.isAdTrackingEnabled,
+                adTrackingEnabled: environment.advertisingMonitor.adTrackingEnabled,
                 manufacturer: "Apple",
                 model: environment.device.model,
                 name: environment.device.name,
