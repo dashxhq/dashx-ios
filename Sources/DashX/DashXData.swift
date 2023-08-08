@@ -1,26 +1,26 @@
 import Apollo
 import Foundation
 
-struct ActionButton: Decodable {
-    let identifier: String
-    let label: String
-    let icon: String?
+public struct ActionButton: Decodable {
+    public let identifier: String
+    public let label: String
+    public let icon: String?
 }
 
-struct DashXNotificationData: Decodable {
-    let id: String
-    let title: String
-    let body: String
-    let image: String?
-    let url: String?
-    let actionButtons: [ActionButton]?
+public struct DashXNotificationData: Decodable {
+    public let id: String
+    public let title: String
+    public let body: String
+    public let image: String?
+    public let url: String?
+    public let actionButtons: [ActionButton]?
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey {
         case id, title, body, image, url
         case actionButtons = "action_buttons"
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         id = try container.decode(String.self, forKey: .id)
@@ -41,21 +41,21 @@ struct DashXNotificationData: Decodable {
 public typealias DashXNotificationMessage = [AnyHashable: Any]
 
 public extension DashXGql {
-    typealias JSON = [String: Any?]
-    typealias UUID = String
-    typealias Timestamp = String
-    typealias Decimal = String
+    public typealias JSON = [String: Any?]
+    public typealias UUID = String
+    public typealias Timestamp = String
+    public typealias Decimal = String
 }
 
-extension ISO8601DateFormatter {
-    static var timeStamp: DashXGql.Timestamp {
+public extension ISO8601DateFormatter {
+    public static var timeStamp: DashXGql.Timestamp {
         let formatter = ISO8601DateFormatter()
         return formatter.string(from: Date())
     }
 }
 
-extension DashXNotificationMessage {
-    func dashxNotificationData() -> DashXNotificationData? {
+public extension DashXNotificationMessage {
+    public func dashxNotificationData() -> DashXNotificationData? {
         guard let jsonString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String else {
             return nil
         }
@@ -68,14 +68,14 @@ extension DashXNotificationMessage {
         return notificationData
     }
 
-    func dashxNotificationId() -> String? {
+    public func dashxNotificationId() -> String? {
         guard let dashxNotificationData = dashxNotificationData() else {
             return nil
         }
         return dashxNotificationData.id
     }
 
-    func dashxNotificationUrl() -> URL? {
+    public func dashxNotificationUrl() -> URL? {
         guard let dashxNotificationData = dashxNotificationData() else {
             return nil
         }
