@@ -2,7 +2,7 @@ import AdSupport
 import AppTrackingTransparency
 import Foundation
 
-class AdvertisingMonitor: UIResponder, UIWindowSceneDelegate {
+class AdvertisingMonitor: NSObject {
     static let shared = AdvertisingMonitor()
 
     private var asIdentifierManager: ASIdentifierManager!
