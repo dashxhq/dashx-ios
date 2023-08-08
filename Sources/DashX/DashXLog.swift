@@ -19,7 +19,7 @@ public class DashXLog {
         self.logLevel = to
     }
 
-    static func d(tag: String, _ data: String) {
+    static public func d(tag: String, _ data: String) {
         if logLevel >= .debug {
             if #available(iOS 10.0, *) {
                 os_log("%@: %@", type: .debug, tag, data)
@@ -29,7 +29,7 @@ public class DashXLog {
         }
     }
 
-    static func i(tag: String, _ data: String) {
+    static public func i(tag: String, _ data: String) {
         if logLevel >= .info {
             if #available(iOS 10.0, *) {
                 os_log("%@: %@", type: .info, tag, data)
@@ -39,7 +39,7 @@ public class DashXLog {
         }
     }
 
-    static func e(tag: String, _ data: String) {
+    static public func e(tag: String, _ data: String) {
         if logLevel >= .error {
             if #available(iOS 10.0, *) {
                 os_log("%@: %@", type: .error, tag, data)

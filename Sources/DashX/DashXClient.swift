@@ -240,6 +240,7 @@ public class DashXClient {
 
     public func subscribe() {
         if self.fcmToken == nil {
+            DashXLog.d(tag: #function, "'subscribe' called without fcmToken; returning...")
             self.mustSubscribe = true
             return
         }
