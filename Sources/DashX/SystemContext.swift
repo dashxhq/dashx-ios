@@ -12,7 +12,6 @@ struct SystemContextEnvironment {
     let bundle: Bundle
     let device: UIDevice
     let advertisingMonitor: AdvertisingMonitor
-    let bluetoothMonitor: BluetoothMonitor
     let networkMonitor: NetworkMonitor
     let screen: UIScreen
     let locationMonitor: LocationMonitor
@@ -23,7 +22,6 @@ struct SystemContextEnvironment {
         bundle: Bundle.main,
         device: UIDevice.current,
         advertisingMonitor: AdvertisingMonitor.shared,
-        bluetoothMonitor: BluetoothMonitor.shared,
         networkMonitor: NetworkMonitor.shared,
         screen: UIScreen.main,
         locationMonitor: LocationMonitor.shared
@@ -131,15 +129,29 @@ class SystemContext: NSObject {
         // networkInfo.serviceSubscriberCellularProviders?.first?.value.carrierName
         // CTCarrier is 'Deprecated with no replacement' - https://developer.apple.com/documentation/coretelephony/ctcarrier
         let carrierName = "--"
-        let isCellularEnabled = environment.networkMonitor.isReachableOnCellular
-        let isWifiEnabled = environment.networkMonitor.isReachableOnWifi
-        let isBluetoothEnabled = environment.bluetoothMonitor.isBluetoothEnabled
+
+        let connection = environment.networkMonitor.connection
+
+        var cellular = false
+        var wifi = false
+        var bluetooth = false
+
+        switch connection {
+        case .online(.cellular):
+            cellular = true
+        case .online(.wifi):
+            wifi = true
+        case .online(.bluetooth):
+            bluetooth = true
+        default:
+            break
+        }
 
         return DashXGql.SystemContextNetworkInput(
-            bluetooth: isBluetoothEnabled,
+            bluetooth: bluetooth, // TODO: Get this status WITHOUT using CoreBluetooth
             carrier: carrierName,
-            cellular: isCellularEnabled,
-            wifi: isWifiEnabled
+            cellular: cellular,
+            wifi: wifi
         )
     }
 
