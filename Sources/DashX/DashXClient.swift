@@ -1,6 +1,5 @@
 import Apollo
 import AppTrackingTransparency
-import CoreLocation
 import FirebaseMessaging
 import Foundation
 import UIKit
@@ -630,19 +629,6 @@ public class DashXClient {
                 completion(settings.authorizationStatus)
             }
         })
-    }
-
-    // MARK: - Request permission for Location
-
-    public func requestLocationPermission(locationPermissionType: LocationPermissionType = .always) {
-        switch locationPermissionType {
-        case .always:
-            CLLocationManager().requestAlwaysAuthorization()
-        case .whenInUse:
-            CLLocationManager().requestWhenInUseAuthorization()
-        case .current:
-            CLLocationManager().requestLocation()
-        }
     }
 
     // MARK: - Track Notification

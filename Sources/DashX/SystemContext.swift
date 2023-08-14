@@ -1,6 +1,5 @@
 import AdSupport
 import AppTrackingTransparency
-import CoreLocation
 import Foundation
 import Network
 import SystemConfiguration
@@ -14,7 +13,6 @@ struct SystemContextEnvironment {
     let advertisingMonitor: AdvertisingMonitor
     let networkMonitor: NetworkMonitor
     let screen: UIScreen
-    let locationMonitor: LocationMonitor
 
     static let live = Self(
         locale: Locale.current,
@@ -23,8 +21,7 @@ struct SystemContextEnvironment {
         device: UIDevice.current,
         advertisingMonitor: AdvertisingMonitor.shared,
         networkMonitor: NetworkMonitor.shared,
-        screen: UIScreen.main,
-        locationMonitor: LocationMonitor.shared
+        screen: UIScreen.main
     )
 }
 
@@ -77,7 +74,7 @@ class SystemContext: NSObject {
                 network: getSystemContextNetworkInput(),
                 screen: getSystemContextScreenInput(),
                 campaign: nil,
-                location: getSystemContextLocationInput()
+                location: nil
             )
         }
         return nil
@@ -161,20 +158,5 @@ class SystemContext: NSObject {
             height: Int(environment.screen.bounds.height),
             density: Int(environment.screen.scale)
         )
-    }
-
-    func getSystemContextLocationInput() -> DashXGql.SystemContextLocationInput? {
-        environment.locationMonitor.prepareLocationInfo()
-        if let latitude = environment.locationMonitor.getLatitude,
-           let longitude = environment.locationMonitor.getLongitude,
-           let speed = environment.locationMonitor.getSpeed
-        {
-            return DashXGql.SystemContextLocationInput(
-                latitude: DashXGql.Decimal(latitude),
-                longitude: DashXGql.Decimal(longitude),
-                speed: DashXGql.Decimal(speed)
-            )
-        }
-        return nil
     }
 }
