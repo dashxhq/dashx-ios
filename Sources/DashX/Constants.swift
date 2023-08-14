@@ -19,7 +19,6 @@ public struct Constants {
     public static let GCS_ASSET_UPLOAD_HEADER_KEY = "x-goog-meta-origin-id"
     public static let DASHX_NOTIFICATION_DATA_KEY = "dashx"
     public static let DASHX_NOTIFICATION_CATEGORY_IDENTIFIER = "DASHX_NOTIFICATION"
-    public static let BLUETOOTH_USAGE_PERMISSION_DESCRIPTION_KEY = "NSBluetoothAlwaysUsageDescription"
 }
 
 public enum UserAttributes {
