@@ -1,5 +1,4 @@
 import Apollo
-import ApolloAPI
 import Foundation
 
 class Network {

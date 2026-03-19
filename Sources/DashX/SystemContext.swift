@@ -1,5 +1,5 @@
 import AdSupport
-import ApolloAPI
+import Apollo
 import AppTrackingTransparency
 import Foundation
 import UIKit

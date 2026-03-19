@@ -1,5 +1,4 @@
 import Apollo
-import ApolloAPI
 import AppTrackingTransparency
 #if canImport(FirebaseMessaging)
 import FirebaseMessaging
