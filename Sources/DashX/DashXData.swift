@@ -1,4 +1,3 @@
-import Apollo
 import Foundation
 
 public struct ActionButton: Decodable {
@@ -40,22 +39,15 @@ public struct DashXNotificationData: Decodable {
 
 public typealias DashXNotificationMessage = [AnyHashable: Any]
 
-public extension DashXGql {
-    public typealias JSON = [String: Any?]
-    public typealias UUID = String
-    public typealias Timestamp = String
-    public typealias Decimal = String
-}
-
 public extension ISO8601DateFormatter {
-    public static var timeStamp: DashXGql.Timestamp {
+    static var timeStamp: DashXGql.Timestamp {
         let formatter = ISO8601DateFormatter()
         return formatter.string(from: Date())
     }
 }
 
 public extension DashXNotificationMessage {
-    public func dashxNotificationData() -> DashXNotificationData? {
+    func dashxNotificationData() -> DashXNotificationData? {
         guard let jsonString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String else {
             return nil
         }
@@ -68,14 +60,14 @@ public extension DashXNotificationMessage {
         return notificationData
     }
 
-    public func dashxNotificationId() -> String? {
+    func dashxNotificationId() -> String? {
         guard let dashxNotificationData = dashxNotificationData() else {
             return nil
         }
         return dashxNotificationData.id
     }
 
-    public func dashxNotificationUrl() -> URL? {
+    func dashxNotificationUrl() -> URL? {
         guard let dashxNotificationData = dashxNotificationData() else {
             return nil
         }

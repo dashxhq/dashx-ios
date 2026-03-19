@@ -1,15 +1,34 @@
 import Apollo
+import ApolloAPI
 import Foundation
 
 class Network {
     static let shared = Network()
     private var baseUri: String = "https://api.dashx.com/graphql"
 
-    func setBaseURI(to: String) {
-        self.baseUri = to
+    private let apolloLock = NSLock()
+    private var _apollo: ApolloClient?
+
+    var apollo: ApolloClient {
+        apolloLock.lock()
+        defer { apolloLock.unlock() }
+        if let existing = _apollo { return existing }
+        let client = makeApolloClient()
+        _apollo = client
+        return client
     }
 
-    private(set) lazy var apollo: ApolloClient = {
+    func setBaseURI(to uri: String) {
+        apolloLock.lock()
+        defer { apolloLock.unlock() }
+        guard self.baseUri != uri else {
+            return
+        }
+        self.baseUri = uri
+        self._apollo = makeApolloClient()
+    }
+
+    private func makeApolloClient() -> ApolloClient {
         let client = URLSessionClient()
         let cache = InMemoryNormalizedCache()
         let store = ApolloStore(cache: cache)
@@ -20,11 +39,11 @@ class Network {
             endpointURL: url
         )
         return ApolloClient(networkTransport: transport, store: store)
-    }()
+    }
 }
 
 class NetworkInterceptorProvider: DefaultInterceptorProvider {
-    override func interceptors<Operation: GraphQLOperation>(for operation: Operation) -> [ApolloInterceptor] {
+    override func interceptors<Operation: GraphQLOperation>(for operation: Operation) -> [any ApolloInterceptor] {
         var interceptors = super.interceptors(for: operation)
         interceptors.insert(ConfigInterceptor.shared, at: 0)
         return interceptors
@@ -34,15 +53,33 @@ class NetworkInterceptorProvider: DefaultInterceptorProvider {
 class ConfigInterceptor: ApolloInterceptor {
     static let shared = ConfigInterceptor()
 
-    var publicKey: String?
-    var targetEnvironment: String?
-    var identityToken: String?
+    let id: String = "com.dashx.configInterceptor"
+
+    private let configQueue = DispatchQueue(label: "com.dashx.config", attributes: .concurrent)
+
+    private var _publicKey: String?
+    var publicKey: String? {
+        get { configQueue.sync { _publicKey } }
+        set { configQueue.sync(flags: .barrier) { self._publicKey = newValue } }
+    }
+
+    private var _targetEnvironment: String?
+    var targetEnvironment: String? {
+        get { configQueue.sync { _targetEnvironment } }
+        set { configQueue.sync(flags: .barrier) { self._targetEnvironment = newValue } }
+    }
+
+    private var _identityToken: String?
+    var identityToken: String? {
+        get { configQueue.sync { _identityToken } }
+        set { configQueue.sync(flags: .barrier) { self._identityToken = newValue } }
+    }
 
     func interceptAsync<Operation: GraphQLOperation>(
-        chain: RequestChain,
+        chain: any RequestChain,
         request: HTTPRequest<Operation>,
         response: HTTPResponse<Operation>?,
-        completion: @escaping (Result<GraphQLResult<Operation.Data>, Error>) -> Void
+        completion: @escaping (Result<GraphQLResult<Operation.Data>, any Error>) -> Void
     ) {
         if let publicKey = self.publicKey {
             request.addHeader(name: "X-PUBLIC-KEY", value: "\(publicKey)")
@@ -59,6 +96,7 @@ class ConfigInterceptor: ApolloInterceptor {
         chain.proceedAsync(
             request: request,
             response: response,
+            interceptor: self,
             completion: completion
         )
     }
