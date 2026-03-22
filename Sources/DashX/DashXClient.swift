@@ -35,7 +35,7 @@ public class DashXClient {
     public static let instance = DashXClient()
 
     /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
-    private static let assetPollQueue = DispatchQueue(label: "com.dashx.sdk.assetPoll")
+    private static let assetPollQueue = DispatchQueue(label: "com.dashx.ios.assetPoll")
 
     // Single lock protecting all mutable identity / token state below.
     // Using NSLock (non-recursive) is safe here because no getter or setter

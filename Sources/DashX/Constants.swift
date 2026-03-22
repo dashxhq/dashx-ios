@@ -1,8 +1,8 @@
 import Foundation
 
 public struct Constants {
-    static let PACKAGE_NAME = "com.dashx.sdk"
-    static let PACKAGE_VERSION = "1.1.0"
+    static let PACKAGE_NAME = "com.dashx.ios"
+    static let PACKAGE_VERSION = "1.1.1"
     public static let USER_PREFERENCES_KEY_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
     public static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID = "\(PACKAGE_NAME).account_anonymous_uid"
     public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"

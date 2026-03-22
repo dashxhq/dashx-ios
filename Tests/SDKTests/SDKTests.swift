@@ -97,7 +97,7 @@ final class SystemContextTests: XCTestCase {
         let context = SystemContext()
 
         let defaultLibrary = context.getSystemContextLibraryInput()
-        XCTAssertEqual(defaultLibrary.name, "com.dashx.sdk")
+        XCTAssertEqual(defaultLibrary.name, "com.dashx.ios")
         XCTAssertEqual(defaultLibrary.version, "1.0.21")
 
         context.setLibraryInfo(libraryInfo: .init(name: "com.example.custom", version: "9.9.9"))

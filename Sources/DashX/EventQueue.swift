@@ -83,7 +83,7 @@ final class EventQueue {
     static let shared = EventQueue()
 
     private let queue = DispatchQueue(label: "com.dashx.eventqueue")
-    private let storageKey = "com.dashx.sdk.event_queue"
+    private let storageKey = "com.dashx.ios.event_queue"
     private let maxQueueSize = 1000
     private let maxRetries = 10
     private let baseRetryInterval: TimeInterval = 2.0
