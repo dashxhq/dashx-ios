@@ -1,4 +1,7 @@
 import Apollo
+#if canImport(ApolloAPI)
+import ApolloAPI
+#endif
 import AppTrackingTransparency
 #if canImport(FirebaseMessaging)
 import FirebaseMessaging
@@ -278,10 +281,10 @@ public class DashXClient {
         }
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
-            accountUid: effectiveAccountUid ?? .null,
-            accountAnonymousUid: effectiveAnonymousUid ?? .null,
+            accountUid: (effectiveAccountUid != nil) ? .some(effectiveAccountUid!) : .null,
+            accountAnonymousUid: (effectiveAnonymousUid != nil) ? .some(effectiveAnonymousUid!) : .null,
             data: dataJSON,
-            systemContext: systemContext ?? .null
+            systemContext: (systemContext != nil) ? .some(systemContext!) : .null
         )
 
         DashXLog.d(tag: #function, "Calling track with \(trackEventInput)")
@@ -355,7 +358,7 @@ public class DashXClient {
 
     private func trackMessage(_ id: String, _ messageStatus: DashXGql.TrackMessageStatus, _ timeStamp: String) {
         let trackMessageInput = DashXGql.TrackMessageInput(id: id,
-                                                           status: GraphQLEnum(messageStatus),
+                                                           status: GraphQLEnum<DashXGql.TrackMessageStatus>(messageStatus),
                                                            timestamp: timeStamp)
 
         DashXLog.d(tag: #function, "Calling trackMessage with \(trackMessageInput)")
@@ -407,10 +410,10 @@ public class DashXClient {
         }
 
         let subscribeContactInput = DashXGql.SubscribeContactInput(
-            accountUid: self.accountUid ?? .null,
+            accountUid: (self.accountUid != nil) ? .some(self.accountUid!) : .null,
             accountAnonymousUid: .some(anonymousUid),
             name: .some(UIDevice.current.model),
-            kind: GraphQLEnum(.ios),
+            kind: GraphQLEnum<DashXGql.ContactKind>(.ios),
             value: fcmToken,
             osName: .some(UIDevice.current.systemName),
             osVersion: .some(UIDevice.current.systemVersion),
@@ -456,7 +459,7 @@ public class DashXClient {
 
         let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
-                accountUid: self.accountUid ?? .null,
+                accountUid: (self.accountUid != nil) ? .some(self.accountUid!) : .null,
                 accountAnonymousUid: .some(anonymousUid),
                 value: token
             )

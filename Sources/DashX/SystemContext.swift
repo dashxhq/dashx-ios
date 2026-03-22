@@ -72,15 +72,15 @@ class SystemContext: NSObject {
 
             return DashXGql.SystemContextInput(
                 ipV4: ipV4,
-                ipV6: ipV6 ?? .null,
+                ipV6: (ipV6 != nil) ? .some(ipV6!) : .null,
                 locale: locale,
                 timeZone: environment.timeZone.identifier,
                 userAgent: userAgentString(),
-                app: getSystemContextAppInput() ?? .null,
-                device: getSystemContextDeviceInput() ?? .null,
+                app: (getSystemContextAppInput() != nil) ? .some(getSystemContextAppInput()!) : .null,
+                device: (getSystemContextDeviceInput() != nil) ? .some(getSystemContextDeviceInput()!) : .null,
                 os: .some(getSystemContextOsInput()),
                 library: .some(getSystemContextLibraryInput()),
-                network: getSystemContextNetworkInput() ?? .null,
+                network: (getSystemContextNetworkInput() != nil) ? .some(getSystemContextNetworkInput()!) : .null,
                 screen: .some(getSystemContextScreenInput()),
                 campaign: .null,
                 location: .null

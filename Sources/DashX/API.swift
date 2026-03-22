@@ -3,6 +3,9 @@
 // It contains all schema metadata, custom scalars, input types, enums, and operations.
 
 import Apollo
+#if canImport(ApolloAPI)
+import ApolloAPI
+#endif
 import Foundation
 
 // MARK: - DashXGql Namespace

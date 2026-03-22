@@ -1,4 +1,7 @@
 import Apollo
+#if canImport(ApolloAPI)
+import ApolloAPI
+#endif
 import Foundation
 
 class Network {

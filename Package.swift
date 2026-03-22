@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "DashX",
-    platforms: [.iOS(.v13), .macOS(.v10_14)],
+    platforms: [.iOS(.v13)],
     products: [
         .library(
             name: "DashX",
