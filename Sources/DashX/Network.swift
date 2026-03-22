@@ -32,10 +32,16 @@ class Network {
         let cache = InMemoryNormalizedCache()
         let store = ApolloStore(cache: cache)
         let provider = NetworkInterceptorProvider(client: client, store: store)
-        let url = URL(string: baseUri)!
+        let endpointURL: URL
+        if let parsed = URL(string: baseUri) {
+            endpointURL = parsed
+        } else {
+            DashXLog.e(tag: "Network", "Invalid GraphQL base URI '\(baseUri)' — falling back to https://api.dashx.com/graphql")
+            endpointURL = URL(string: "https://api.dashx.com/graphql")!
+        }
         let transport = RequestChainNetworkTransport(
             interceptorProvider: provider,
-            endpointURL: url
+            endpointURL: endpointURL
         )
         return ApolloClient(networkTransport: transport, store: store)
     }

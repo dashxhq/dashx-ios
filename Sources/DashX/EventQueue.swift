@@ -1,12 +1,82 @@
 import Foundation
 
+/// Persisted queue item. `dataJSON` preserves `[String: Any]` types via JSON (legacy `data` was `[String: String]`).
 struct QueuedEvent: Codable {
     let event: String
-    let data: [String: String]?
+    /// JSON object bytes for event payload; `nil` means no custom data.
+    let dataJSON: Data?
     let accountUid: String?
     let accountAnonymousUid: String?
     let enqueuedAt: Date
     var retryCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case event
+        case dataJSON
+        case legacyStringData = "data"
+        case accountUid
+        case accountAnonymousUid
+        case enqueuedAt
+        case retryCount
+    }
+
+    init(
+        event: String,
+        dataJSON: Data?,
+        accountUid: String?,
+        accountAnonymousUid: String?,
+        enqueuedAt: Date,
+        retryCount: Int
+    ) {
+        self.event = event
+        self.dataJSON = dataJSON
+        self.accountUid = accountUid
+        self.accountAnonymousUid = accountAnonymousUid
+        self.enqueuedAt = enqueuedAt
+        self.retryCount = retryCount
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        event = try c.decode(String.self, forKey: .event)
+        accountUid = try c.decodeIfPresent(String.self, forKey: .accountUid)
+        accountAnonymousUid = try c.decodeIfPresent(String.self, forKey: .accountAnonymousUid)
+        enqueuedAt = try c.decode(Date.self, forKey: .enqueuedAt)
+        retryCount = try c.decodeIfPresent(Int.self, forKey: .retryCount) ?? 0
+
+        if let json = try c.decodeIfPresent(Data.self, forKey: .dataJSON) {
+            dataJSON = json
+        } else if let legacy = try c.decodeIfPresent([String: String].self, forKey: .legacyStringData) {
+            let dict = legacy.mapValues { $0 as Any }
+            dataJSON = Self.makeJSONData(from: dict)
+        } else {
+            dataJSON = nil
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(event, forKey: .event)
+        try c.encodeIfPresent(dataJSON, forKey: .dataJSON)
+        try c.encodeIfPresent(accountUid, forKey: .accountUid)
+        try c.encodeIfPresent(accountAnonymousUid, forKey: .accountAnonymousUid)
+        try c.encode(enqueuedAt, forKey: .enqueuedAt)
+        try c.encode(retryCount, forKey: .retryCount)
+    }
+
+    static func makeJSONData(from dictionary: [String: Any]?) -> Data? {
+        guard let dictionary else { return nil }
+        guard JSONSerialization.isValidJSONObject(dictionary) else {
+            DashXLog.e(tag: "EventQueue", "Event data is not a valid JSON object. Properties will be dropped.")
+            return nil
+        }
+        return try? JSONSerialization.data(withJSONObject: dictionary, options: [])
+    }
+
+    func decodedData() -> [String: Any]? {
+        guard let dataJSON else { return nil }
+        return try? JSONSerialization.jsonObject(with: dataJSON) as? [String: Any]
+    }
 }
 
 final class EventQueue {
@@ -30,10 +100,10 @@ final class EventQueue {
     // MARK: - Public Interface
 
     func enqueue(event: String, data: [String: Any]?, accountUid: String?, accountAnonymousUid: String?) {
-        let stringData = data?.compactMapValues { "\($0)" }
+        let payload = QueuedEvent.makeJSONData(from: data)
         let queued = QueuedEvent(
             event: event,
-            data: stringData,
+            dataJSON: payload,
             accountUid: accountUid,
             accountAnonymousUid: accountAnonymousUid,
             enqueuedAt: Date(),
@@ -48,13 +118,14 @@ final class EventQueue {
             self.pendingEvents.append(queued)
             self.saveToDisk()
             DashXLog.d(tag: "EventQueue", "Enqueued event '\(event)' (queue size: \(self.pendingEvents.count))")
-            self.scheduleRetryFromHead()
+            self.retryTimer?.cancel()
+            self.flushNextIfNeeded()
         }
     }
 
     func flush() {
         queue.async { [weak self] in
-            self?.flushInternal()
+            self?.flushNextIfNeeded()
         }
     }
 
@@ -62,9 +133,9 @@ final class EventQueue {
         queue.sync { pendingEvents.count }
     }
 
-    // MARK: - Internal
+    // MARK: - Sequential flush + retry
 
-    private func flushInternal() {
+    private func flushNextIfNeeded() {
         guard !isFlushing, !pendingEvents.isEmpty else { return }
 
         guard case .online = NetworkMonitor.shared.connection else {
@@ -74,19 +145,41 @@ final class EventQueue {
         }
 
         isFlushing = true
+        let head = pendingEvents[0]
+        let data = head.decodedData()
 
-        let batch = pendingEvents
-        pendingEvents.removeAll()
-        saveToDisk()
-
-        DashXLog.d(tag: "EventQueue", "Flushing \(batch.count) queued events")
-
-        for event in batch {
-            let dataDict: [String: Any]? = event.data
-            DashXClient.instance.track(event.event, withData: dataDict)
+        DashXClient.instance.track(
+            head.event,
+            withData: data,
+            queuedAccountUid: head.accountUid,
+            queuedAccountAnonymousUid: head.accountAnonymousUid
+        ) { [weak self] success in
+            guard let self else { return }
+            self.queue.async {
+                guard self.isFlushing else { return }
+                if success {
+                    self.pendingEvents.removeFirst()
+                    self.saveToDisk()
+                    self.isFlushing = false
+                    self.flushNextIfNeeded()
+                } else {
+                    var failed = self.pendingEvents[0]
+                    failed.retryCount += 1
+                    if failed.retryCount >= self.maxRetries {
+                        DashXLog.e(tag: "EventQueue", "Event '\(failed.event)' exceeded max retries — dropping")
+                        self.pendingEvents.removeFirst()
+                        self.saveToDisk()
+                        self.isFlushing = false
+                        self.flushNextIfNeeded()
+                    } else {
+                        self.pendingEvents[0] = failed
+                        self.saveToDisk()
+                        self.isFlushing = false
+                        self.scheduleRetryFromHead()
+                    }
+                }
+            }
         }
-
-        isFlushing = false
     }
 
     // MARK: - Retry Scheduling
@@ -110,7 +203,7 @@ final class EventQueue {
 
         retryTimer?.cancel()
         let work = DispatchWorkItem { [weak self] in
-            self?.flushInternal()
+            self?.flushNextIfNeeded()
         }
         retryTimer = work
         queue.asyncAfter(deadline: .now() + totalDelay, execute: work)

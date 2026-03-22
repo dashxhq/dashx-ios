@@ -31,6 +31,9 @@ public let DashX = DashXClient.instance
 public class DashXClient {
     public static let instance = DashXClient()
 
+    /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
+    private static let assetPollQueue = DispatchQueue(label: "com.dashx.sdk.assetPoll")
+
     // Single lock protecting all mutable identity / token state below.
     // Using NSLock (non-recursive) is safe here because no getter or setter
     // calls another guarded property while the lock is held.
@@ -225,15 +228,44 @@ public class DashXClient {
 
     // MARK: - Analytics
 
+    /// Tracks an analytics event. When offline or on transport/GraphQL failure, the event may be persisted for retry.
     public func track(_ event: String, withData: [String: Any]? = nil) {
+        track(
+            event,
+            withData: withData,
+            queuedAccountUid: nil,
+            queuedAccountAnonymousUid: nil,
+            completion: nil
+        )
+    }
+
+    /// - Parameters:
+    ///   - queuedAccountUid: Identity captured when the event was queued; use for replay so changing `setIdentity` mid-queue does not corrupt payloads.
+    ///   - completion: Called on the main queue with `true` when the server accepted the mutation (no GraphQL errors, non-nil data).
+    internal func track(
+        _ event: String,
+        withData: [String: Any]?,
+        queuedAccountUid: String?,
+        queuedAccountAnonymousUid: String?,
+        completion: ((Bool) -> Void)?
+    ) {
+        let effectiveAccountUid = queuedAccountUid ?? self.accountUid
+        let effectiveAnonymousUid = queuedAccountAnonymousUid ?? self.accountAnonymousUid
+
         guard case .online = NetworkMonitor.shared.connection else {
             DashXLog.d(tag: #function, "Offline — queueing event '\(event)'")
-            EventQueue.shared.enqueue(
-                event: event,
-                data: withData,
-                accountUid: self.accountUid,
-                accountAnonymousUid: self.accountAnonymousUid
-            )
+            // When replaying from the disk queue (`completion != nil`), do not enqueue again.
+            if completion == nil {
+                EventQueue.shared.enqueue(
+                    event: event,
+                    data: withData,
+                    accountUid: effectiveAccountUid,
+                    accountAnonymousUid: effectiveAnonymousUid
+                )
+            }
+            if let completion {
+                DispatchQueue.main.async { completion(false) }
+            }
             return
         }
 
@@ -246,8 +278,8 @@ public class DashXClient {
         }
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
-            accountUid: self.accountUid ?? .null,
-            accountAnonymousUid: self.accountAnonymousUid ?? .null,
+            accountUid: effectiveAccountUid ?? .null,
+            accountAnonymousUid: effectiveAnonymousUid ?? .null,
             data: dataJSON,
             systemContext: systemContext ?? .null
         )
@@ -259,16 +291,61 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: trackEventMutation) { result in
             switch result {
             case .success(let graphQLResult):
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "GraphQL errors during track(): \(errors)")
+                    self.handleTrackFailure(
+                        event: event,
+                        withData: withData,
+                        accountUid: effectiveAccountUid,
+                        accountAnonymousUid: effectiveAnonymousUid,
+                        completion: completion
+                    )
+                    return
+                }
+                guard graphQLResult.data != nil else {
+                    DashXLog.e(tag: #function, "track() succeeded but response data is nil")
+                    self.handleTrackFailure(
+                        event: event,
+                        withData: withData,
+                        accountUid: effectiveAccountUid,
+                        accountAnonymousUid: effectiveAnonymousUid,
+                        completion: completion
+                    )
+                    return
+                }
                 DashXLog.d(tag: #function, "Sent track with \(String(describing: graphQLResult.data))")
+                if let completion {
+                    DispatchQueue.main.async { completion(true) }
+                }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during track(): \(error)")
-                EventQueue.shared.enqueue(
+                self.handleTrackFailure(
                     event: event,
-                    data: withData,
-                    accountUid: self.accountUid,
-                    accountAnonymousUid: self.accountAnonymousUid
+                    withData: withData,
+                    accountUid: effectiveAccountUid,
+                    accountAnonymousUid: effectiveAnonymousUid,
+                    completion: completion
                 )
             }
+        }
+    }
+
+    private func handleTrackFailure(
+        event: String,
+        withData: [String: Any]?,
+        accountUid: String?,
+        accountAnonymousUid: String?,
+        completion: ((Bool) -> Void)?
+    ) {
+        if let completion {
+            DispatchQueue.main.async { completion(false) }
+        } else {
+            EventQueue.shared.enqueue(
+                event: event,
+                data: withData,
+                accountUid: accountUid,
+                accountAnonymousUid: accountAnonymousUid
+            )
         }
     }
 
@@ -288,7 +365,11 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: trackMessageMutation) { result in
             switch result {
             case .success(let graphQLResult):
-                DashXLog.d(tag: #function, "Sent track Message with \(String(describing: graphQLResult.data))")
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "GraphQL errors during trackMessage(): \(errors)")
+                } else {
+                    DashXLog.d(tag: #function, "Sent track Message with \(String(describing: graphQLResult.data))")
+                }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during trackMessage(): \(error)")
             }
@@ -634,7 +715,7 @@ public class DashXClient {
                 if response.status == "ready" || triesLeft <= 0 {
                     completion(.success(response))
                 } else {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    Self.assetPollQueue.asyncAfter(deadline: .now() + 3) {
                         self.pollTillAssetIsReady(triesLeft: triesLeft - 1, assetId: assetId, completion: completion)
                     }
                 }
@@ -703,7 +784,7 @@ public class DashXClient {
             options: [.alert, .badge, .sound],
             completionHandler: { _, _ in
 
-                // Get the full status of the permission
+                // Get the full status of the permission (delivered on main queue).
                 self.getNotificationPermissionStatus { permission in
                     completion(permission)
                 }

@@ -28,12 +28,25 @@ public struct DashXNotificationData: Decodable {
         image = try container.decodeIfPresent(String.self, forKey: .image)
         url = try container.decodeIfPresent(String.self, forKey: .url)
 
-        if let actionButtonsString = try container.decodeIfPresent(String.self, forKey: .actionButtons) {
-            let actionButtonsData = actionButtonsString.data(using: .utf8)!
-            actionButtons = try JSONDecoder().decode([ActionButton].self, from: actionButtonsData)
+        if let decoded = try Self.decodeActionButtons(from: container) {
+            actionButtons = decoded
         } else {
             actionButtons = nil
         }
+    }
+
+    /// Supports `action_buttons` as either a JSON string or a JSON array (server variants).
+    private static func decodeActionButtons(from container: KeyedDecodingContainer<CodingKeys>) throws -> [ActionButton]? {
+        if let buttons = try? container.decode([ActionButton].self, forKey: .actionButtons) {
+            return buttons
+        }
+        if let actionButtonsString = try container.decodeIfPresent(String.self, forKey: .actionButtons) {
+            guard let actionButtonsData = actionButtonsString.data(using: .utf8) else {
+                return nil
+            }
+            return try JSONDecoder().decode([ActionButton].self, from: actionButtonsData)
+        }
+        return nil
     }
 }
 
