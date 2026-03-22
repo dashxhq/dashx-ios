@@ -3,9 +3,9 @@ import Apollo
 import ApolloAPI
 #endif
 
-// Apollo iOS pods installed via CocoaPods may not expose a separate `ApolloAPI`
-// Swift module. DashX's generated GraphQL code expects `ApolloAPI.*` symbols,
-// so we provide a small namespace shim mapping them to the `Apollo` module types.
+// Some Apollo iOS integrations may not expose a separate `ApolloAPI` Swift module.
+// DashX's generated GraphQL code expects `ApolloAPI.*` symbols, so we provide a
+// small namespace shim mapping them to the `Apollo` module types when needed.
 #if !canImport(ApolloAPI)
 public enum ApolloAPI {
     public typealias SchemaMetadata = Apollo.SchemaMetadata

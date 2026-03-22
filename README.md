@@ -24,52 +24,18 @@ _DashX SDK for iOS_
 
 ## Install
 
-The minimum supported version for iOS is 12.0. To set the Minimum SDK target,
-1. Open your iOS project in XCode
-2. Select your Target > **General** > **Deployment Info** > Ensure that the version is set to 12.0+
+The minimum supported iOS version is **13.0**. In Xcode, set your app target’s **General** > **Deployment Info** to 13.0 or higher.
 
-### Using Cocoapods
+### Swift Package Manager
 
-1. Update your Podfile:
-
-```ruby
-platform :ios, '12.0' # must be 12 or higher
-# ...
-target 'YOUR_TARGET_NAME' do
-    # ...
-    pod 'DashX'
-    # ...
-end
-```
-
-2. Open Terminal in your project's root directory and run:
-
-```sh
-pod install
-```
-
-### Using Carthage
-
-Specify the dependency in your `Cartfile`:
-
-```
-github "dashxhq/dashx-ios"
-```
-
-Run the following command:
-
-```sh
-carthage update
-```
-
-### Using Swift Package Manager
-
-1. In your Xcode project, go to **File** > **Add Packages**
-2. Paste the following URL in "Search or Enter Package URL":
+1. In your Xcode project, choose **File** > **Add Package Dependencies…**
+2. Enter the repository URL:
 
 ```
 https://github.com/dashxhq/dashx-ios.git
 ```
+
+3. Add the **DashX** library to your app target. If you use push notifications / Firebase integration helpers from this SDK, also add **DashXFirebase**.
 
 ## Usage
 

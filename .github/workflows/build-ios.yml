@@ -1,0 +1,19 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build DashX
+        run: xcodebuild -scheme DashX -destination 'generic/platform=iOS' build
+
+      - name: Build DashXFirebase
+        run: xcodebuild -scheme DashXFirebase -destination 'generic/platform=iOS' build
