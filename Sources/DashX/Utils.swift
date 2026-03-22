@@ -1,17 +1,30 @@
 import AdSupport
 import AppTrackingTransparency
 import Foundation
+import UniformTypeIdentifiers
+#if canImport(MobileCoreServices)
 import MobileCoreServices
+#endif
 
 extension URL {
     func mimeType() -> String {
-        let url = NSURL(fileURLWithPath: path)
-        let pathExtension = url.pathExtension
+        let pathExtension = self.pathExtension
+        guard !pathExtension.isEmpty else {
+            return "application/octet-stream"
+        }
 
-        if let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, pathExtension! as NSString, nil)?.takeRetainedValue() {
-            if let mimetype = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue() {
-                return mimetype as String
+        if #available(iOS 14.0, *) {
+            if let mimeType = UTType(filenameExtension: pathExtension)?.preferredMIMEType {
+                return mimeType
             }
+        } else if let uti = UTTypeCreatePreferredIdentifierForTag(
+            kUTTagClassFilenameExtension,
+            pathExtension as NSString,
+            nil
+        )?.takeRetainedValue(),
+            let mimeType = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue()
+        {
+            return mimeType as String
         }
         return "application/octet-stream"
     }
@@ -79,5 +92,5 @@ func getIPAddress() -> (ipV4: String?, ipV6: String?) {
 }
 
 func generateMuxVideoUrl(playbackId: String) -> String {
-    return "https://stream.mux.com/$\(playbackId).m3u8"
+    return "https://stream.mux.com/\(playbackId).m3u8"
 }

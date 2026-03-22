@@ -43,6 +43,7 @@ public struct AssetData: Codable {
     enum CodingKeys: String, CodingKey {
         case status
         case url
+        case playbackIds
     }
 }
 

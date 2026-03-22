@@ -1,8 +1,7 @@
 import AdSupport
+import Apollo
 import AppTrackingTransparency
 import Foundation
-import Network
-import SystemConfiguration
 import UIKit
 
 struct SystemContextEnvironment {
@@ -21,8 +20,18 @@ struct SystemContextEnvironment {
         device: UIDevice.current,
         advertisingMonitor: AdvertisingMonitor.shared,
         networkMonitor: NetworkMonitor.shared,
-        screen: UIScreen.main
+        screen: currentScreen()
     )
+
+    private static func currentScreen() -> UIScreen {
+        if let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+            return windowScene.screen
+        }
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            return windowScene.screen
+        }
+        return UIScreen.screens[0]
+    }
 }
 
 public struct LibraryInfo {
@@ -63,18 +72,18 @@ class SystemContext: NSObject {
 
             return DashXGql.SystemContextInput(
                 ipV4: ipV4,
-                ipV6: ipV6,
+                ipV6: ipV6 ?? .null,
                 locale: locale,
                 timeZone: environment.timeZone.identifier,
                 userAgent: userAgentString(),
-                app: getSystemContextAppInput(),
-                device: getSystemContextDeviceInput(),
-                os: getSystemContextOsInput(),
-                library: getSystemContextLibraryInput(),
-                network: getSystemContextNetworkInput(),
-                screen: getSystemContextScreenInput(),
-                campaign: nil,
-                location: nil
+                app: getSystemContextAppInput() ?? .null,
+                device: getSystemContextDeviceInput() ?? .null,
+                os: .some(getSystemContextOsInput()),
+                library: .some(getSystemContextLibraryInput()),
+                network: getSystemContextNetworkInput() ?? .null,
+                screen: .some(getSystemContextScreenInput()),
+                campaign: .null,
+                location: .null
             )
         }
         return nil

@@ -1,3 +1,4 @@
+import DashX
 import FirebaseCore
 import FirebaseMessaging
 import Foundation
@@ -9,7 +10,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
     private var app: UIApplication = .shared
 
-    private var dashXClient = DashXClient.instance
+    private var dashXClient: DashXClient { DashXClient.instance }
 
     // MARK: Init
 
@@ -18,14 +19,17 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         UNUserNotificationCenter.current().delegate = self
 
-        // Register to ensure device token can be fetched
+        dashXClient.linkHandler = { [weak self] url in
+            self?.handleLink(url: url)
+        }
+
         app.registerForRemoteNotifications()
     }
 
     // MARK: - APNS Token Management
 
     public func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        DashXLog.d(tag: #function, "Unable to register for remote notifications: \(error.localizedDescription)")
+        DashXLog.e(tag: #function, "Unable to register for remote notifications: \(error.localizedDescription)")
     }
 
     public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -41,7 +45,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(message)
 
-        dashXClient.trackNotification(message: message, event: .delivered)
+        dashXClient.trackMessage(message: message, event: .delivered)
 
         let presentationOptions = notificationDeliveredInForeground(message: message)
 
@@ -55,9 +59,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         Messaging.messaging().appDidReceiveMessage(message)
 
         if response.actionIdentifier == UNNotificationDismissActionIdentifier {
-            dashXClient.trackNotification(message: message, event: .dismissed)
+            dashXClient.trackMessage(message: message, event: .dismissed)
         } else {
-            dashXClient.trackNotification(message: message, event: .clicked)
+            dashXClient.trackMessage(message: message, event: .clicked)
 
             if let url = message.dashxNotificationUrl() {
                 handleLink(url: url)
@@ -74,7 +78,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         Messaging.messaging().appDidReceiveMessage(userInfo)
 
         guard let dashxData = userInfo.dashxNotificationData() else {
-            DashXLog.d(tag: #function, "Unable to parse DashX notification data")
+            DashXLog.e(tag: #function, "Unable to parse DashX notification data")
             completionHandler(.failed)
             return
         }
@@ -135,7 +139,7 @@ extension DashXAppDelegate {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                DashXLog.d(tag: #function, "Failed to schedule notification request: \(error.localizedDescription)")
+                DashXLog.e(tag: #function, "Failed to schedule notification request: \(error.localizedDescription)")
             } else {
                 DashXLog.d(tag: #function, "Notification request added successfully.")
             }
@@ -165,7 +169,7 @@ extension DashXAppDelegate {
                 content.attachments = [attachment]
                 self.createNotification(id: id, content: content)
             } catch {
-                DashXLog.d(tag: #function, "Error moving file: \(error.localizedDescription)")
+                DashXLog.e(tag: #function, "Error moving file: \(error.localizedDescription)")
             }
         }
         task.resume()

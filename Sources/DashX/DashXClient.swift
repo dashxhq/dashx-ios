@@ -1,13 +1,18 @@
 import Apollo
 import AppTrackingTransparency
+#if canImport(FirebaseMessaging)
 import FirebaseMessaging
+#endif
 import Foundation
 import UIKit
 
+@available(*, deprecated, message: "Use Result-based or async/await overloads instead")
 public typealias SuccessCallback = (Any?) -> ()
+
+@available(*, deprecated, message: "Use Result-based or async/await overloads instead")
 public typealias FailureCallback = (Error) -> ()
 
-enum DashXClientError: Error {
+public enum DashXClientError: Error {
     case noArgsInIdentify
     case assetIsNotReady
     case assetIsNotUploaded
@@ -24,23 +29,57 @@ public enum LocationPermissionType {
 public let DashX = DashXClient.instance
 
 public class DashXClient {
-    static let instance = DashXClient()
+    public static let instance = DashXClient()
 
-    private var accountAnonymousUid: String?
-    private var accountUid: String?
+    /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
+    private static let assetPollQueue = DispatchQueue(label: "com.dashx.sdk.assetPoll")
 
-    private var apnsToken: String?
-    private var fcmToken: String?
+    // Single lock protecting all mutable identity / token state below.
+    // Using NSLock (non-recursive) is safe here because no getter or setter
+    // calls another guarded property while the lock is held.
+    private let stateLock = NSLock()
 
-    private var mustSubscribe: Bool = false
+    private var _accountAnonymousUid: String?
+    private var accountAnonymousUid: String? {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _accountAnonymousUid }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _accountAnonymousUid = newValue }
+    }
 
-    internal var shouldRequestIDFAPermissions: Bool = false
+    private var _accountUid: String?
+    private var accountUid: String? {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _accountUid }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _accountUid = newValue }
+    }
+
+    private var _apnsToken: String?
+    private var apnsToken: String? {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _apnsToken }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _apnsToken = newValue }
+    }
+
+    private var _fcmToken: String?
+    private var fcmToken: String? {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _fcmToken }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _fcmToken = newValue }
+    }
+
+    private var _mustSubscribe: Bool = false
+    private var mustSubscribe: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _mustSubscribe }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _mustSubscribe = newValue }
+    }
+
+    private var _shouldRequestIDFAPermissions: Bool = false
+    internal var shouldRequestIDFAPermissions: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _shouldRequestIDFAPermissions }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _shouldRequestIDFAPermissions = newValue }
+    }
 
     private init() {
         self.loadIdentity()
     }
 
-    internal func setAPNSToken(to: Data) {
+    public func setAPNSToken(to: Data) {
         DashXLog.d(tag: #function, "APNS Token is \(to.string)")
 
         self.apnsToken = to.string
@@ -76,6 +115,8 @@ public class DashXClient {
         if let libraryInfo = libraryInfo {
             SystemContext.shared.setLibraryInfo(libraryInfo: libraryInfo)
         }
+
+        EventQueue.shared.flush()
     }
 
     public func setFCMToken(to: String) {
@@ -139,25 +180,26 @@ public class DashXClient {
         // preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
+    @available(*, deprecated, message: "Use identify(options:) instead")
     public func identify(withOptions: NSDictionary?) throws {
-        if withOptions == nil {
+        guard let dict = withOptions as? [String: String] else {
             throw DashXClientError.noArgsInIdentify
         }
+        identify(options: dict)
+    }
 
-        let optionsDictionary = withOptions as? [String: String]
-
-        let uid = optionsDictionary?[UserAttributes.UID] ?? self.accountUid
-
-        let anonymousUid = optionsDictionary?[UserAttributes.ANONYMOUS_UID] ?? self.accountAnonymousUid
+    public func identify(options: [String: String]) {
+        let uid = options[UserAttributes.UID] ?? self.accountUid
+        let anonymousUid = options[UserAttributes.ANONYMOUS_UID] ?? self.accountAnonymousUid
 
         let identifyAccountInput = DashXGql.IdentifyAccountInput(
-            uid: uid,
-            anonymousUid: anonymousUid,
-            email: optionsDictionary?[UserAttributes.EMAIL],
-            phone: optionsDictionary?[UserAttributes.PHONE],
-            name: optionsDictionary?[UserAttributes.NAME],
-            firstName: optionsDictionary?[UserAttributes.FIRST_NAME],
-            lastName: optionsDictionary?[UserAttributes.LAST_NAME]
+            uid: uid ?? .null,
+            anonymousUid: anonymousUid ?? .null,
+            email: options[UserAttributes.EMAIL] ?? .null,
+            phone: options[UserAttributes.PHONE] ?? .null,
+            name: options[UserAttributes.NAME] ?? .null,
+            firstName: options[UserAttributes.FIRST_NAME] ?? .null,
+            lastName: options[UserAttributes.LAST_NAME] ?? .null
         )
 
         let identifyAccountMutation = DashXGql.IdentifyAccountMutation(input: identifyAccountInput)
@@ -167,7 +209,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 DashXLog.d(tag: #function, "Sent identify with \(String(describing: graphQLResult))")
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during identify(): \(error)")
+                DashXLog.e(tag: #function, "Encountered an error during identify(): \(error)")
             }
         }
     }
@@ -186,14 +228,60 @@ public class DashXClient {
 
     // MARK: - Analytics
 
-    public func track(_ event: String, withData: NSDictionary? = nil) {
+    /// Tracks an analytics event. When offline or on transport/GraphQL failure, the event may be persisted for retry.
+    public func track(_ event: String, withData: [String: Any]? = nil) {
+        track(
+            event,
+            withData: withData,
+            queuedAccountUid: nil,
+            queuedAccountAnonymousUid: nil,
+            completion: nil
+        )
+    }
+
+    /// - Parameters:
+    ///   - queuedAccountUid: Identity captured when the event was queued; use for replay so changing `setIdentity` mid-queue does not corrupt payloads.
+    ///   - completion: Called on the main queue with `true` when the server accepted the mutation (no GraphQL errors, non-nil data).
+    internal func track(
+        _ event: String,
+        withData: [String: Any]?,
+        queuedAccountUid: String?,
+        queuedAccountAnonymousUid: String?,
+        completion: ((Bool) -> Void)?
+    ) {
+        let effectiveAccountUid = queuedAccountUid ?? self.accountUid
+        let effectiveAnonymousUid = queuedAccountAnonymousUid ?? self.accountAnonymousUid
+
+        guard case .online = NetworkMonitor.shared.connection else {
+            DashXLog.d(tag: #function, "Offline — queueing event '\(event)'")
+            // When replaying from the disk queue (`completion != nil`), do not enqueue again.
+            if completion == nil {
+                EventQueue.shared.enqueue(
+                    event: event,
+                    data: withData,
+                    accountUid: effectiveAccountUid,
+                    accountAnonymousUid: effectiveAnonymousUid
+                )
+            }
+            if let completion {
+                DispatchQueue.main.async { completion(false) }
+            }
+            return
+        }
+
         let systemContext = SystemContext.shared.getSystemContextInput()
+        let dataJSON: GraphQLNullable<DashXGql.JSON>
+        if let dict = withData {
+            dataJSON = .some(DashXGql.JSON(dict))
+        } else {
+            dataJSON = .null
+        }
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
-            accountUid: self.accountUid,
-            accountAnonymousUid: self.accountAnonymousUid,
-            data: withData as? [String: JSONDecodable?],
-            systemContext: systemContext
+            accountUid: effectiveAccountUid ?? .null,
+            accountAnonymousUid: effectiveAnonymousUid ?? .null,
+            data: dataJSON,
+            systemContext: systemContext ?? .null
         )
 
         DashXLog.d(tag: #function, "Calling track with \(trackEventInput)")
@@ -203,44 +291,108 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: trackEventMutation) { result in
             switch result {
             case .success(let graphQLResult):
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "GraphQL errors during track(): \(errors)")
+                    self.handleTrackFailure(
+                        event: event,
+                        withData: withData,
+                        accountUid: effectiveAccountUid,
+                        accountAnonymousUid: effectiveAnonymousUid,
+                        completion: completion
+                    )
+                    return
+                }
+                guard graphQLResult.data != nil else {
+                    DashXLog.e(tag: #function, "track() succeeded but response data is nil")
+                    self.handleTrackFailure(
+                        event: event,
+                        withData: withData,
+                        accountUid: effectiveAccountUid,
+                        accountAnonymousUid: effectiveAnonymousUid,
+                        completion: completion
+                    )
+                    return
+                }
                 DashXLog.d(tag: #function, "Sent track with \(String(describing: graphQLResult.data))")
+                if let completion {
+                    DispatchQueue.main.async { completion(true) }
+                }
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during track(): \(error)")
+                DashXLog.e(tag: #function, "Encountered an error during track(): \(error)")
+                self.handleTrackFailure(
+                    event: event,
+                    withData: withData,
+                    accountUid: effectiveAccountUid,
+                    accountAnonymousUid: effectiveAnonymousUid,
+                    completion: completion
+                )
             }
         }
     }
 
-    private func trackNotification(_ id: String, _ notificationStatus: DashXGql.TrackNotificationStatus, _ timeStamp: String) {
-        let trackNotificationInput = DashXGql.TrackNotificationInput(id: id,
-                                                                     status: notificationStatus,
-                                                                     timestamp: timeStamp)
+    private func handleTrackFailure(
+        event: String,
+        withData: [String: Any]?,
+        accountUid: String?,
+        accountAnonymousUid: String?,
+        completion: ((Bool) -> Void)?
+    ) {
+        if let completion {
+            DispatchQueue.main.async { completion(false) }
+        } else {
+            EventQueue.shared.enqueue(
+                event: event,
+                data: withData,
+                accountUid: accountUid,
+                accountAnonymousUid: accountAnonymousUid
+            )
+        }
+    }
 
-        DashXLog.d(tag: #function, "Calling trackNotification with \(trackNotificationInput)")
+    public func flushEventQueue() {
+        EventQueue.shared.flush()
+    }
 
-        let trackNotificationMutation = DashXGql.TrackNotificationMutation(input: trackNotificationInput)
+    private func trackMessage(_ id: String, _ messageStatus: DashXGql.TrackMessageStatus, _ timeStamp: String) {
+        let trackMessageInput = DashXGql.TrackMessageInput(id: id,
+                                                           status: GraphQLEnum(messageStatus),
+                                                           timestamp: timeStamp)
 
-        Network.shared.apollo.perform(mutation: trackNotificationMutation) { result in
+        DashXLog.d(tag: #function, "Calling trackMessage with \(trackMessageInput)")
+
+        let trackMessageMutation = DashXGql.TrackMessageMutation(input: trackMessageInput)
+
+        Network.shared.apollo.perform(mutation: trackMessageMutation) { result in
             switch result {
             case .success(let graphQLResult):
-                DashXLog.d(tag: #function, "Sent track Notification with \(String(describing: graphQLResult.data))")
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "GraphQL errors during trackMessage(): \(errors)")
+                } else {
+                    DashXLog.d(tag: #function, "Sent track Message with \(String(describing: graphQLResult.data))")
+                }
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during trackNotification(): \(error)")
+                DashXLog.e(tag: #function, "Encountered an error during trackMessage(): \(error)")
             }
         }
     }
 
-    public func screen(_ screenName: String, withData: NSDictionary?) {
-        let properties = withData as? [String: Any]
-
-        self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties?.merging(["name": screenName], uniquingKeysWith: { _, new in new }) as NSDictionary?)
+    public func screen(_ screenName: String, withData: [String: Any]? = nil) {
+        var properties = withData ?? [:]
+        properties["name"] = screenName
+        self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties)
     }
 
     // MARK: - Contact Management
 
     public func subscribe() {
-        if self.fcmToken == nil {
+        guard let fcmToken = self.fcmToken else {
             DashXLog.d(tag: #function, "'subscribe' called without fcmToken; returning...")
             self.mustSubscribe = true
+            return
+        }
+
+        guard let anonymousUid = self.accountAnonymousUid else {
+            DashXLog.d(tag: #function, "'subscribe' called without accountAnonymousUid; returning...")
             return
         }
 
@@ -255,15 +407,15 @@ public class DashXClient {
         }
 
         let subscribeContactInput = DashXGql.SubscribeContactInput(
-            accountUid: self.accountUid,
-            accountAnonymousUid: self.accountAnonymousUid!,
-            name: UIDevice.current.model,
-            kind: .ios,
-            value: self.fcmToken!,
-            osName: UIDevice.current.systemName,
-            osVersion: UIDevice.current.systemVersion,
-            deviceModel: self.getDeviceModel(),
-            deviceManufacturer: "Apple"
+            accountUid: self.accountUid ?? .null,
+            accountAnonymousUid: .some(anonymousUid),
+            name: .some(UIDevice.current.model),
+            kind: GraphQLEnum(.ios),
+            value: fcmToken,
+            osName: .some(UIDevice.current.systemName),
+            osVersion: .some(UIDevice.current.systemVersion),
+            deviceModel: .some(self.getDeviceModel()),
+            deviceManufacturer: .some("Apple")
         )
 
         DashXLog.d(tag: #function, "Calling subscribe with \(subscribeContactInput)")
@@ -274,7 +426,7 @@ public class DashXClient {
             switch result {
             case .success(let graphQLResult):
                 if graphQLResult.errors != nil {
-                    DashXLog.d(tag: #function, "Encountered GraphQL errors during subscribe(): \(String(describing: graphQLResult.errors))")
+                    DashXLog.e(tag: #function, "Encountered GraphQL errors during subscribe(): \(String(describing: graphQLResult.errors))")
                 }
 
                 if graphQLResult.data != nil {
@@ -282,7 +434,7 @@ public class DashXClient {
                     DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
                 }
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during subscribe(): \(error)")
+                DashXLog.e(tag: #function, "Encountered an error during subscribe(): \(error)")
             }
         }
     }
@@ -292,16 +444,21 @@ public class DashXClient {
         let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
         let savedToken = preferences.string(forKey: fcmTokenKey)
 
-        if savedToken == nil {
+        guard let token = savedToken else {
             DashXLog.d(tag: #function, "unsubscribe() called without subscribing first")
             return
         }
 
-        Messaging.messaging().deleteToken { result in
+        guard let anonymousUid = self.accountAnonymousUid else {
+            DashXLog.d(tag: #function, "'unsubscribe' called without accountAnonymousUid; returning...")
+            return
+        }
+
+        let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
-                accountUid: self.accountUid,
-                accountAnonymousUid: self.accountAnonymousUid!,
-                value: self.fcmToken!
+                accountUid: self.accountUid ?? .null,
+                accountAnonymousUid: .some(anonymousUid),
+                value: token
             )
 
             DashXLog.d(tag: #function, "Calling unsubscribe with \(unsubscribeContactInput)")
@@ -312,7 +469,7 @@ public class DashXClient {
                 switch result {
                 case .success(let graphQLResult):
                     if graphQLResult.errors != nil {
-                        DashXLog.d(tag: #function, "Encountered GraphQL errors during unsubscribe(): \(String(describing: graphQLResult.errors))")
+                        DashXLog.e(tag: #function, "Encountered GraphQL errors during unsubscribe(): \(String(describing: graphQLResult.errors))")
                     }
 
                     if graphQLResult.data != nil {
@@ -320,19 +477,27 @@ public class DashXClient {
                         DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
                     }
                 case .failure(let error):
-                    DashXLog.d(tag: #function, "Encountered an error during unsubscribe(): \(error)")
+                    DashXLog.e(tag: #function, "Encountered an error during unsubscribe(): \(error)")
                 }
             }
         }
+
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().deleteToken { _ in performUnsubscribe() }
+        #else
+        performUnsubscribe()
+        #endif
     }
 
     // MARK: - Preferences
 
     public func fetchStoredPreferences(
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+        completion: @escaping (Result<[String: Any?], Error>) -> Void
     ) {
-        guard let uid = self.accountUid else { return }
+        guard let uid = self.accountUid else {
+            completion(.failure(DashXClientError.customError(message: "No account UID set")))
+            return
+        }
 
         let fetchStoredPreferencesInput = DashXGql.FetchStoredPreferencesInput(
             accountUid: uid
@@ -345,33 +510,50 @@ public class DashXClient {
         Network.shared.apollo.fetch(query: fetchStoredPreferencesQuery, cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
             case .success(let graphQLResult):
-                if graphQLResult.errors != nil {
-                    DashXLog.d(tag: #function, "Encountered GraphQL errors during fetchStoredPreferences(): \(String(describing: graphQLResult.errors))")
-                    failureCallback(DashXClientError.customError(message: "Unable to fetch stored preferences"))
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "Encountered GraphQL errors during fetchStoredPreferences(): \(errors)")
+                    completion(.failure(DashXClientError.customError(message: "Unable to fetch stored preferences")))
+                    return
                 }
 
-                if graphQLResult.data != nil {
-                    let json = graphQLResult.data?.fetchStoredPreferences.preferenceData
+                if let data = graphQLResult.data {
+                    let json = data.fetchStoredPreferences.preferenceData
                     DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(String(describing: json))")
-                    successCallback(json)
+                    completion(.success(json.value))
                 }
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during fetchStoredPreferences(): \(error)")
-                failureCallback(error)
+                DashXLog.e(tag: #function, "Encountered an error during fetchStoredPreferences(): \(error)")
+                completion(.failure(error))
+            }
+        }
+    }
+
+    @available(*, deprecated, message: "Use fetchStoredPreferences(completion:) or async overload instead")
+    public func fetchStoredPreferences(
+        successCallback: @escaping (Any?) -> Void,
+        failureCallback: @escaping (Error) -> Void
+    ) {
+        fetchStoredPreferences { result in
+            switch result {
+            case .success(let value): successCallback(value)
+            case .failure(let error): failureCallback(error)
             }
         }
     }
 
     public func saveStoredPreferences(
-        preferenceData: NSDictionary?,
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+        preferenceData: [String: Any],
+        completion: @escaping (Result<Bool, Error>) -> Void
     ) {
-        guard let uid = self.accountUid else { return }
+        guard let uid = self.accountUid else {
+            completion(.failure(DashXClientError.customError(message: "No account UID set")))
+            return
+        }
 
-        guard let preferenceData = preferenceData as? [String: Any] else { return }
-
-        let saveStoredPreferencesInput = DashXGql.SaveStoredPreferencesInput(accountUid: uid, preferenceData: preferenceData)
+        let saveStoredPreferencesInput = DashXGql.SaveStoredPreferencesInput(
+            accountUid: uid,
+            preferenceData: DashXGql.JSON(preferenceData)
+        )
 
         DashXLog.d(tag: #function, "Calling saveStoredPreferences with \(saveStoredPreferencesInput)")
 
@@ -380,69 +562,30 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: saveStoredPreferencesMutation) { result in
             switch result {
             case .success(let graphQLResult):
-                let json = graphQLResult.data?.saveStoredPreferences
-                DashXLog.d(tag: #function, "Sent saveStoredPreferences with \(String(describing: json))")
-                successCallback(json?.resultMap)
+                let success = graphQLResult.data?.saveStoredPreferences.success ?? false
+                DashXLog.d(tag: #function, "Sent saveStoredPreferences with success=\(success)")
+                completion(.success(success))
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during saveStoredPreferences(): \(error)")
-                failureCallback(error)
+                DashXLog.e(tag: #function, "Encountered an error during saveStoredPreferences(): \(error)")
+                completion(.failure(error))
             }
         }
     }
 
-    // MARK: - Billing
-
-    public func addItemToCart(
-        itemId: String,
-        pricingId: String,
-        quantity: String,
-        reset: Bool,
-        custom: NSDictionary?,
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+    @available(*, deprecated, message: "Use saveStoredPreferences(preferenceData:completion:) or async overload instead")
+    public func saveStoredPreferences(
+        preferenceData: NSDictionary?,
+        successCallback: @escaping (Any?) -> Void,
+        failureCallback: @escaping (Error) -> Void
     ) {
-        let addItemToCartInput = DashXGql.AddItemToCartInput(
-            accountUid: self.accountUid, accountAnonymousUid: self.accountAnonymousUid, itemId: itemId, pricingId: pricingId, quantity: quantity, reset: reset, custom: custom as? [String: JSONDecodable?]
-        )
-
-        DashXLog.d(tag: #function, "Calling addItemToCart with \(addItemToCartInput)")
-
-        let addItemToCartMutation = DashXGql.AddItemToCartMutation(input: addItemToCartInput)
-
-        Network.shared.apollo.perform(mutation: addItemToCartMutation) { result in
-            switch result {
-            case .success(let graphQLResult):
-                let json = graphQLResult.data?.addItemToCart
-                DashXLog.d(tag: #function, "Sent addItemToCart with \(String(describing: json))")
-                successCallback(json?.resultMap)
-            case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during addItemToCart(): \(error)")
-                failureCallback(error)
-            }
+        guard let dict = preferenceData as? [String: Any] else {
+            failureCallback(DashXClientError.customError(message: "Invalid preference data"))
+            return
         }
-    }
-
-    public func fetchCart(
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
-    ) {
-        let fetchCartInput = DashXGql.FetchCartInput(
-            accountUid: self.accountUid, accountAnonymousUid: self.accountAnonymousUid
-        )
-
-        DashXLog.d(tag: #function, "Calling fetchCart with \(fetchCartInput)")
-
-        let fetchCartQuery = DashXGql.FetchCartQuery(input: fetchCartInput)
-
-        Network.shared.apollo.fetch(query: fetchCartQuery) { result in
+        saveStoredPreferences(preferenceData: dict) { result in
             switch result {
-            case .success(let graphQLResult):
-                let json = graphQLResult.data?.fetchCart
-                DashXLog.i(tag: #function, "Sent fetchCart with \(String(describing: json))")
-                successCallback(json?.resultMap)
-            case .failure(let error):
-                DashXLog.e(tag: #function, "Encountered an error during fetchCart(): \(error)")
-                failureCallback(error)
+            case .success(let value): successCallback(value)
+            case .failure(let error): failureCallback(error)
             }
         }
     }
@@ -453,15 +596,21 @@ public class DashXClient {
         fileURL: URL,
         resource: String,
         attribute: String,
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+        completion: @escaping (Result<AssetResponse, Error>) -> Void
     ) {
-        self.prepareAsset(fileURL: fileURL, resource: resource, attribute: attribute) { response in
-            if let prepareAssetResponse = response as? PrepareAssetResponse,
-               let urlString = prepareAssetResponse.data?.upload?.url,
-               let assetId = prepareAssetResponse.id,
-               let url = URL(string: urlString)
-            {
+        self.prepareAsset(fileURL: fileURL, resource: resource, attribute: attribute) { prepareResult in
+            switch prepareResult {
+            case .failure(let error):
+                completion(.failure(error))
+            case .success(let prepareAssetResponse):
+                guard let urlString = prepareAssetResponse.data?.upload?.url,
+                      let assetId = prepareAssetResponse.id,
+                      let url = URL(string: urlString)
+                else {
+                    completion(.failure(DashXClientError.assetIsNotUploaded))
+                    return
+                }
+
                 var uploadAssetRequest = URLRequest(url: url)
                 uploadAssetRequest.httpMethod = HttpMethod.put.rawValue
                 uploadAssetRequest.setValue(fileURL.mimeType(), forHTTPHeaderField: Constants.CONTENT_TYPE)
@@ -470,26 +619,36 @@ public class DashXClient {
                 do {
                     let fileData = try Data(contentsOf: fileURL)
                     URLSession.shared.uploadTask(with: uploadAssetRequest, from: fileData) { _, response, error in
-                        guard error == nil else {
-                            return failureCallback(error!)
+                        if let error = error {
+                            completion(.failure(error))
+                            return
                         }
                         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                            return failureCallback(DashXClientError.assetIsNotUploaded)
+                            completion(.failure(DashXClientError.assetIsNotUploaded))
+                            return
                         }
-                        self.pollTillAssetIsReady(trysLeft: 5, assetId: assetId) { response in
-                            successCallback(response)
-                        } failureCallback: { error in
-                            failureCallback(error)
-                        }
+                        self.pollTillAssetIsReady(triesLeft: 5, assetId: assetId, completion: completion)
                     }.resume()
                 } catch {
-                    failureCallback(error)
+                    completion(.failure(error))
                 }
-            } else {
-                failureCallback(DashXClientError.assetIsNotUploaded)
             }
-        } failureCallback: { error in
-            failureCallback(error)
+        }
+    }
+
+    @available(*, deprecated, message: "Use uploadAsset(fileURL:resource:attribute:completion:) or async overload instead")
+    public func uploadAsset(
+        fileURL: URL,
+        resource: String,
+        attribute: String,
+        successCallback: @escaping (Any?) -> Void,
+        failureCallback: @escaping (Error) -> Void
+    ) {
+        uploadAsset(fileURL: fileURL, resource: resource, attribute: attribute) { result in
+            switch result {
+            case .success(let value): successCallback(value)
+            case .failure(let error): failureCallback(error)
+            }
         }
     }
 
@@ -497,8 +656,7 @@ public class DashXClient {
         fileURL: URL,
         resource: String,
         attribute: String,
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+        completion: @escaping (Result<PrepareAssetResponse, Error>) -> Void
     ) {
         let name = fileURL.lastPathComponent
         let mimeType = fileURL.mimeType()
@@ -506,14 +664,14 @@ public class DashXClient {
 
         do {
             let resources = try fileURL.resourceValues(forKeys: [.fileSizeKey])
-            size = resources.fileSize!
+            size = resources.fileSize ?? 0
         } catch {
-            DashXLog.d(tag: #function, "Unable to get file size \(error)")
+            DashXLog.e(tag: #function, "Unable to get file size \(error)")
         }
 
         let prepareAssetInput = DashXGql.PrepareAssetInput(
-            resource: resource,
-            attribute: attribute,
+            resource: .some(resource),
+            attribute: .some(attribute),
             name: name,
             size: size,
             mimeType: mimeType
@@ -526,53 +684,50 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: prepareAssetMutation) { result in
             switch result {
             case .success(let graphQLResult):
-                let json = graphQLResult.data?.prepareAsset
-                DashXLog.d(tag: #function, "Sent prepareAsset with \(String(describing: json))")
-                if let jsonDictionary = json?.resultMap.jsonValue as? [String: Any] {
+                let gqlResult = graphQLResult.data?.prepareAsset
+                DashXLog.d(tag: #function, "Sent prepareAsset with \(String(describing: gqlResult))")
+                if let gqlResult = gqlResult, let jsonDictionary = gqlResult.resultMap as? [String: Any] {
                     do {
-                        let json = try JSONSerialization.data(withJSONObject: jsonDictionary)
-                        let data = try JSONDecoder().decode(PrepareAssetResponse.self, from: json)
-                        successCallback(data)
+                        let jsonData = try JSONSerialization.data(withJSONObject: jsonDictionary)
+                        let data = try JSONDecoder().decode(PrepareAssetResponse.self, from: jsonData)
+                        completion(.success(data))
                     } catch {
-                        failureCallback(error)
+                        completion(.failure(error))
                     }
                 } else {
-                    failureCallback(DashXClientError.assetIsNotUploaded)
+                    completion(.failure(DashXClientError.assetIsNotUploaded))
                 }
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during prepareAsset(): \(error)")
-                failureCallback(error)
+                DashXLog.e(tag: #function, "Encountered an error during prepareAsset(): \(error)")
+                completion(.failure(error))
             }
         }
     }
 
     private func pollTillAssetIsReady(
-        trysLeft: Int,
+        triesLeft: Int,
         assetId: String,
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+        completion: @escaping (Result<AssetResponse, Error>) -> Void
     ) {
-        self.asset(assetId: assetId) { response in
-            if let response = response as? AssetResponse,
-               let status = response.status
-            {
-                if status == "ready" || trysLeft == 0 {
-                    successCallback(response)
+        self.fetchAsset(assetId: assetId) { result in
+            switch result {
+            case .success(let response):
+                if response.status == "ready" || triesLeft <= 0 {
+                    completion(.success(response))
                 } else {
-                    _ = Timer.scheduledTimer(withTimeInterval: 3, repeats: false) { _ in
-                        self.pollTillAssetIsReady(trysLeft: trysLeft - 1, assetId: assetId, successCallback: successCallback, failureCallback: failureCallback)
+                    Self.assetPollQueue.asyncAfter(deadline: .now() + 3) {
+                        self.pollTillAssetIsReady(triesLeft: triesLeft - 1, assetId: assetId, completion: completion)
                     }
                 }
+            case .failure(let error):
+                completion(.failure(error))
             }
-        } failureCallback: { error in
-            failureCallback(error)
         }
     }
 
-    public func asset(
+    public func fetchAsset(
         assetId: String,
-        successCallback: @escaping SuccessCallback,
-        failureCallback: @escaping FailureCallback
+        completion: @escaping (Result<AssetResponse, Error>) -> Void
     ) {
         DashXLog.d(tag: #function, "Calling asset with \(assetId)")
 
@@ -581,12 +736,12 @@ public class DashXClient {
         Network.shared.apollo.fetch(query: assetQuery) { result in
             switch result {
             case .success(let graphQLResult):
-                let json = graphQLResult.data?.asset
-                DashXLog.d(tag: #function, "Sent asset with \(String(describing: json))")
-                if let jsonDictionary = json?.resultMap.jsonValue as? [String: Any] {
+                let gqlResult = graphQLResult.data?.asset
+                DashXLog.d(tag: #function, "Sent asset with \(String(describing: gqlResult))")
+                if let gqlResult = gqlResult, let jsonDictionary = gqlResult.resultMap as? [String: Any] {
                     do {
-                        let json = try JSONSerialization.data(withJSONObject: jsonDictionary)
-                        var data = try JSONDecoder().decode(AssetResponse.self, from: json)
+                        let jsonData = try JSONSerialization.data(withJSONObject: jsonDictionary)
+                        var data = try JSONDecoder().decode(AssetResponse.self, from: jsonData)
                         if var assetData = data.data?.assetData,
                            assetData.url == nil,
                            let id = assetData.playbackIds?.first?.id
@@ -594,16 +749,30 @@ public class DashXClient {
                             assetData.url = generateMuxVideoUrl(playbackId: id)
                             data.data?.assetData = assetData
                         }
-                        successCallback(data)
+                        completion(.success(data))
                     } catch {
-                        failureCallback(error)
+                        completion(.failure(error))
                     }
                 } else {
-                    failureCallback(DashXClientError.assetIsNotUploaded)
+                    completion(.failure(DashXClientError.assetIsNotUploaded))
                 }
             case .failure(let error):
-                DashXLog.d(tag: #function, "Encountered an error during asset(): \(error)")
-                failureCallback(error)
+                DashXLog.e(tag: #function, "Encountered an error during asset(): \(error)")
+                completion(.failure(error))
+            }
+        }
+    }
+
+    @available(*, deprecated, renamed: "fetchAsset(assetId:completion:)")
+    public func asset(
+        assetId: String,
+        successCallback: @escaping (Any?) -> Void,
+        failureCallback: @escaping (Error) -> Void
+    ) {
+        fetchAsset(assetId: assetId) { result in
+            switch result {
+            case .success(let value): successCallback(value)
+            case .failure(let error): failureCallback(error)
             }
         }
     }
@@ -615,7 +784,7 @@ public class DashXClient {
             options: [.alert, .badge, .sound],
             completionHandler: { _, _ in
 
-                // Get the full status of the permission
+                // Get the full status of the permission (delivered on main queue).
                 self.getNotificationPermissionStatus { permission in
                     completion(permission)
                 }
@@ -631,25 +800,75 @@ public class DashXClient {
         })
     }
 
-    // MARK: - Track Notification
+    // MARK: - Track Message
 
-    public func trackNotification(message: DashXNotificationMessage, event: DashXGql.TrackNotificationStatus) {
+    public func trackMessage(message: DashXNotificationMessage, event: DashXGql.TrackMessageStatus) {
         if let id = message.dashxNotificationId() {
-            self.trackNotification(id, event, ISO8601DateFormatter.timeStamp)
+            self.trackMessage(id, event, ISO8601DateFormatter.timeStamp)
         }
     }
 
-    // MARK: - Universal Links
+    // MARK: - Link Handling
+
+    public var linkHandler: ((URL) -> Void)?
 
     public func handleUserActivity(userActivity: NSUserActivity?) {
-        if userActivity?.activityType == NSUserActivityTypeBrowsingWeb {
-            guard let url = userActivity?.webpageURL else {
-                return
+        guard userActivity?.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity?.webpageURL else {
+            return
+        }
+        linkHandler?(url)
+    }
+}
+
+// MARK: - async/await Overloads
+
+extension DashXClient {
+    public func fetchStoredPreferences() async throws -> [String: Any?] {
+        try await withCheckedThrowingContinuation { continuation in
+            fetchStoredPreferences { result in
+                continuation.resume(with: result)
             }
+        }
+    }
 
-            let appDelegate: DashXAppDelegate? = UIApplication.shared.delegate as? DashXAppDelegate
+    public func saveStoredPreferences(preferenceData: [String: Any]) async throws -> Bool {
+        try await withCheckedThrowingContinuation { continuation in
+            saveStoredPreferences(preferenceData: preferenceData) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
 
-            appDelegate?.handleLink(url: url)
+    public func uploadAsset(fileURL: URL, resource: String, attribute: String) async throws -> AssetResponse {
+        try await withCheckedThrowingContinuation { continuation in
+            uploadAsset(fileURL: fileURL, resource: resource, attribute: attribute) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    public func fetchAsset(assetId: String) async throws -> AssetResponse {
+        try await withCheckedThrowingContinuation { continuation in
+            fetchAsset(assetId: assetId) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    public func requestNotificationPermission() async -> UNAuthorizationStatus {
+        await withCheckedContinuation { continuation in
+            requestNotificationPermission { status in
+                continuation.resume(returning: status)
+            }
+        }
+    }
+
+    public func getNotificationPermissionStatus() async -> UNAuthorizationStatus {
+        await withCheckedContinuation { continuation in
+            getNotificationPermissionStatus { status in
+                continuation.resume(returning: status)
+            }
         }
     }
 }
