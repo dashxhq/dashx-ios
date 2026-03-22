@@ -1,4 +1,4 @@
-name: Publish to Cocoapods 
+name: Publish to Cocoapods
 
 on:
 # Triggers the workflow when a "tag" is made and pushed
@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    
+
     - name: Install Cocoapods
       run: gem install cocoapods
-      
+
     - name: Deploy to Cocoapods
       run: |
         set -eo pipefail
