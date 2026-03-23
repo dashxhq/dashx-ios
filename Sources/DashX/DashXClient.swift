@@ -593,6 +593,95 @@ public class DashXClient {
         }
     }
 
+    // MARK: - Records
+
+    public func fetchRecord(
+        urn: String,
+        preview: Bool? = nil,
+        language: String? = nil,
+        fields: [[String: Any]]? = nil,
+        include: [[String: Any]]? = nil,
+        exclude: [[String: Any]]? = nil,
+        completion: @escaping (Result<[String: Any?], Error>) -> Void
+    ) {
+        let parts = urn.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2, UUID(uuidString: parts[1]) != nil else {
+            completion(.failure(DashXClientError.customError(message: "URN must be of form: {resource}/{uuid}")))
+            return
+        }
+        let recordId: DashXGql.UUID = parts[1]
+        let input = DashXGql.FetchRecordInput(
+            recordId: recordId,
+            resource: parts[0].isEmpty ? .null : .some(parts[0]),
+            preview: preview.map { .some($0) } ?? .null,
+            language: language.map { .some($0) } ?? .null,
+            fields: fields.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
+            include: include.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
+            exclude: exclude.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null
+        )
+        Network.shared.apollo.fetch(query: DashXGql.FetchRecordQuery(input: input), cachePolicy: .fetchIgnoringCacheData) { result in
+            switch result {
+            case .success(let graphQLResult):
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "Encountered GraphQL errors during fetchRecord(): \(errors)")
+                    completion(.failure(DashXClientError.customError(message: errors.map { $0.message ?? "" }.joined(separator: ", "))))
+                    return
+                }
+                if let data = graphQLResult.data {
+                    DashXLog.d(tag: #function, "Sent fetchRecord with \(String(describing: data))")
+                    completion(.success(data.fetchRecord.value))
+                }
+            case .failure(let error):
+                DashXLog.e(tag: #function, "Encountered an error during fetchRecord(): \(error)")
+                completion(.failure(error))
+            }
+        }
+    }
+
+    public func searchRecords(
+        resource: String,
+        filter: [String: Any]? = nil,
+        order: [[String: Any]]? = nil,
+        limit: Int? = nil,
+        page: Int? = nil,
+        preview: Bool? = nil,
+        language: String? = nil,
+        fields: [[String: Any]]? = nil,
+        include: [[String: Any]]? = nil,
+        exclude: [[String: Any]]? = nil,
+        completion: @escaping (Result<[[String: Any?]], Error>) -> Void
+    ) {
+        let input = DashXGql.SearchRecordsInput(
+            resource: resource,
+            filter: filter.map { .some(DashXGql.JSON($0)) } ?? .null,
+            order: order.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
+            limit: limit.map { .some($0) } ?? .null,
+            page: page.map { .some($0) } ?? .null,
+            preview: preview.map { .some($0) } ?? .null,
+            language: language.map { .some($0) } ?? .null,
+            fields: fields.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
+            include: include.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
+            exclude: exclude.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null
+        )
+        Network.shared.apollo.fetch(query: DashXGql.SearchRecordsQuery(input: input), cachePolicy: .fetchIgnoringCacheData) { result in
+            switch result {
+            case .success(let graphQLResult):
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "Encountered GraphQL errors during searchRecords(): \(errors)")
+                    completion(.failure(DashXClientError.customError(message: errors.map { $0.message ?? "" }.joined(separator: ", "))))
+                    return
+                }
+                if let data = graphQLResult.data {
+                    DashXLog.d(tag: #function, "Sent searchRecords with \(String(describing: data))")
+                    completion(.success(data.searchRecords.map { $0.value }))
+                }
+            case .failure(let error):
+                DashXLog.e(tag: #function, "Encountered an error during searchRecords(): \(error)")
+                completion(.failure(error))
+            }
+        }
+    }
+
     // MARK: - File Uploads
 
     public func uploadAsset(
@@ -871,6 +960,43 @@ extension DashXClient {
         await withCheckedContinuation { continuation in
             getNotificationPermissionStatus { status in
                 continuation.resume(returning: status)
+            }
+        }
+    }
+
+    public func fetchRecord(
+        urn: String,
+        preview: Bool? = nil,
+        language: String? = nil,
+        fields: [[String: Any]]? = nil,
+        include: [[String: Any]]? = nil,
+        exclude: [[String: Any]]? = nil
+    ) async throws -> [String: Any?] {
+        try await withCheckedThrowingContinuation { continuation in
+            fetchRecord(urn: urn, preview: preview, language: language,
+                        fields: fields, include: include, exclude: exclude) {
+                continuation.resume(with: $0)
+            }
+        }
+    }
+
+    public func searchRecords(
+        resource: String,
+        filter: [String: Any]? = nil,
+        order: [[String: Any]]? = nil,
+        limit: Int? = nil,
+        page: Int? = nil,
+        preview: Bool? = nil,
+        language: String? = nil,
+        fields: [[String: Any]]? = nil,
+        include: [[String: Any]]? = nil,
+        exclude: [[String: Any]]? = nil
+    ) async throws -> [[String: Any?]] {
+        try await withCheckedThrowingContinuation { continuation in
+            searchRecords(resource: resource, filter: filter, order: order, limit: limit, page: page,
+                          preview: preview, language: language, fields: fields,
+                          include: include, exclude: exclude) {
+                continuation.resume(with: $0)
             }
         }
     }
