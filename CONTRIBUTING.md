@@ -87,7 +87,7 @@ $ swift build
 
 ## Publishing
 
-1. Bump the version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`).
+1. Bump the version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`) & `DashX.podspec` (`s.version`).
 2. Commit the version bump: `Bump version to x.x.x`
 3. Create a tag: `git tag 'x.x.x'`
 4. Push the tag: `git push origin --tags`
