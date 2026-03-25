@@ -50,7 +50,7 @@ class AdvertisingMonitor: NSObject {
         if #available(iOS 14, *) {
             let status = ATTrackingManager.trackingAuthorizationStatus
 
-            guard DashXClient.instance.shouldRequestIDFAPermissions else { return }
+            guard DashXClient.instance.isAdTrackingRequested else { return }
 
             if status == .notDetermined {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

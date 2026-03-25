@@ -43,9 +43,8 @@ final class DashXClientTests: XCTestCase {
     }
 
     func testEnableAdTrackingSetsRequestFlag() {
-        DashXClient.instance.shouldRequestIDFAPermissions = false
         DashXClient.instance.enableAdTracking()
-        XCTAssertTrue(DashXClient.instance.shouldRequestIDFAPermissions)
+        XCTAssertTrue(DashXClient.instance.isAdTrackingRequested)
     }
 
     private func clearUserPreferences() {
