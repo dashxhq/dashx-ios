@@ -15,7 +15,7 @@ public typealias SuccessCallback = (Any?) -> ()
 @available(*, deprecated, message: "Use Result-based or async/await overloads instead")
 public typealias FailureCallback = (Error) -> ()
 
-public enum DashXClientError: Error {
+public enum DashXClientError: Error, LocalizedError {
     case noArgsInIdentify
     case assetIsNotReady
     case assetIsNotUploaded
@@ -26,6 +26,53 @@ public enum DashXClientError: Error {
     /// A network-level failure (DNS, TLS, timeout, etc.).
     case networkError(underlying: Error)
     case customError(message: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .noArgsInIdentify:
+            return "identify() was called without any options."
+        case .assetIsNotReady:
+            return "The asset is not ready for use yet."
+        case .assetIsNotUploaded:
+            return "The asset could not be uploaded."
+        case .notIdentified:
+            return "No identified user. Call setIdentity() before this operation."
+        case .graphQLErrors(let messages):
+            return "GraphQL errors: \(messages.joined(separator: "; "))"
+        case .networkError(let underlying):
+            return "Network error: \(underlying.localizedDescription)"
+        case .customError(let message):
+            return message
+        }
+    }
+
+    public var recoverySuggestion: String? {
+        switch self {
+        case .noArgsInIdentify:
+            return "Pass a dictionary with at least one user attribute (e.g. email, uid)."
+        case .assetIsNotReady:
+            return "Wait and retry fetching the asset, or increase the polling timeout."
+        case .assetIsNotUploaded:
+            return "Check that the file exists, is readable, and that your network connection is stable."
+        case .notIdentified:
+            return "Call DashXClient.instance.setIdentity(uid:token:) before performing this operation."
+        case .graphQLErrors:
+            return "Check the error messages for details. This may indicate invalid input or a server-side issue."
+        case .networkError:
+            return "Check your network connection and try again."
+        case .customError:
+            return nil
+        }
+    }
+
+    /// Whether this error is transient and the operation may succeed on retry.
+    public var isRetryable: Bool {
+        switch self {
+        case .networkError: return true
+        case .assetIsNotReady: return true
+        default: return false
+        }
+    }
 }
 
 public enum LocationPermissionType {
@@ -770,7 +817,7 @@ public class DashXClient {
                             completion(.failure(DashXClientError.assetIsNotUploaded))
                             return
                         }
-                        self.pollTillAssetIsReady(triesLeft: 5, assetId: assetId, completion: completion)
+                        self.pollTillAssetIsReady(triesLeft: Self.maxAssetPollRetries, assetId: assetId, completion: completion)
                     }.resume()
                 } catch {
                     completion(.failure(error))
@@ -847,6 +894,10 @@ public class DashXClient {
         }
     }
 
+    /// Maximum number of asset poll attempts and base interval (seconds) for exponential backoff.
+    public static var maxAssetPollRetries: Int = 5
+    public static var assetPollBaseInterval: TimeInterval = 2.0
+
     private func pollTillAssetIsReady(
         triesLeft: Int,
         assetId: String,
@@ -858,7 +909,12 @@ public class DashXClient {
                 if response.status == "ready" || triesLeft <= 0 {
                     completion(.success(response))
                 } else {
-                    Self.assetPollQueue.asyncAfter(deadline: .now() + 3) {
+                    let attempt = Self.maxAssetPollRetries - triesLeft
+                    let delay = Self.assetPollBaseInterval * pow(2.0, Double(attempt))
+                    let jitter = Double.random(in: 0...1)
+                    let totalDelay = min(delay + jitter, 60)
+                    DashXLog.d(tag: "pollTillAssetIsReady", "Retrying in \(String(format: "%.1f", totalDelay))s (attempt \(attempt + 1))")
+                    Self.assetPollQueue.asyncAfter(deadline: .now() + totalDelay) {
                         self.pollTillAssetIsReady(triesLeft: triesLeft - 1, assetId: assetId, completion: completion)
                     }
                 }
