@@ -43,9 +43,8 @@ final class DashXClientTests: XCTestCase {
     }
 
     func testEnableAdTrackingSetsRequestFlag() {
-        DashXClient.instance.shouldRequestIDFAPermissions = false
         DashXClient.instance.enableAdTracking()
-        XCTAssertTrue(DashXClient.instance.shouldRequestIDFAPermissions)
+        XCTAssertTrue(DashXClient.instance.isAdTrackingRequested)
     }
 
     private func clearUserPreferences() {
@@ -98,7 +97,7 @@ final class SystemContextTests: XCTestCase {
 
         let defaultLibrary = context.getSystemContextLibraryInput()
         XCTAssertEqual(defaultLibrary.name, "com.dashx.ios")
-        XCTAssertEqual(defaultLibrary.version, "1.0.21")
+        XCTAssertEqual(defaultLibrary.version, Constants.PACKAGE_VERSION)
 
         context.setLibraryInfo(libraryInfo: .init(name: "com.example.custom", version: "9.9.9"))
         let customLibrary = context.getSystemContextLibraryInput()

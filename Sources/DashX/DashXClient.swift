@@ -15,11 +15,64 @@ public typealias SuccessCallback = (Any?) -> ()
 @available(*, deprecated, message: "Use Result-based or async/await overloads instead")
 public typealias FailureCallback = (Error) -> ()
 
-public enum DashXClientError: Error {
+public enum DashXClientError: Error, LocalizedError {
     case noArgsInIdentify
     case assetIsNotReady
     case assetIsNotUploaded
+    /// The SDK operation requires an identified user but none is set.
+    case notIdentified
+    /// One or more GraphQL errors were returned by the server.
+    case graphQLErrors([String])
+    /// A network-level failure (DNS, TLS, timeout, etc.).
+    case networkError(underlying: Error)
     case customError(message: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .noArgsInIdentify:
+            return "identify() was called without any options."
+        case .assetIsNotReady:
+            return "The asset is not ready for use yet."
+        case .assetIsNotUploaded:
+            return "The asset could not be uploaded."
+        case .notIdentified:
+            return "No identified user. Call setIdentity() before this operation."
+        case .graphQLErrors(let messages):
+            return "GraphQL errors: \(messages.joined(separator: "; "))"
+        case .networkError(let underlying):
+            return "Network error: \(underlying.localizedDescription)"
+        case .customError(let message):
+            return message
+        }
+    }
+
+    public var recoverySuggestion: String? {
+        switch self {
+        case .noArgsInIdentify:
+            return "Pass a dictionary with at least one user attribute (e.g. email, uid)."
+        case .assetIsNotReady:
+            return "Wait and retry fetching the asset, or increase the polling timeout."
+        case .assetIsNotUploaded:
+            return "Check that the file exists, is readable, and that your network connection is stable."
+        case .notIdentified:
+            return "Call DashXClient.instance.setIdentity(uid:token:) before performing this operation."
+        case .graphQLErrors:
+            return "Check the error messages for details. This may indicate invalid input or a server-side issue."
+        case .networkError:
+            return "Check your network connection and try again."
+        case .customError:
+            return nil
+        }
+    }
+
+    /// Whether this error is transient and the operation may succeed on retry.
+    public var isRetryable: Bool {
+        switch self {
+        case .networkError: return true
+        case .assetIsNotReady: return true
+        default: return false
+        }
+    }
 }
 
 public enum LocationPermissionType {
@@ -72,10 +125,11 @@ public class DashXClient {
         set { stateLock.lock(); defer { stateLock.unlock() }; _mustSubscribe = newValue }
     }
 
-    private var _shouldRequestIDFAPermissions: Bool = false
-    internal var shouldRequestIDFAPermissions: Bool {
-        get { stateLock.lock(); defer { stateLock.unlock() }; return _shouldRequestIDFAPermissions }
-        set { stateLock.lock(); defer { stateLock.unlock() }; _shouldRequestIDFAPermissions = newValue }
+    private var _isAdTrackingRequested: Bool = false
+    /// `true` after `enableAdTracking()` has been called. Read-only for external consumers.
+    public private(set) var isAdTrackingRequested: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _isAdTrackingRequested }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _isAdTrackingRequested = newValue }
     }
 
     private init() {
@@ -143,7 +197,7 @@ public class DashXClient {
     // device.advertisingId
     // DashX will attempt to request IDFA permissions
     public func enableAdTracking() {
-        self.shouldRequestIDFAPermissions = true
+        self.isAdTrackingRequested = true
     }
 
     // MARK: - User Management
@@ -191,7 +245,7 @@ public class DashXClient {
         identify(options: dict)
     }
 
-    public func identify(options: [String: String]) {
+    public func identify(options: [String: String], completion: ((Result<Void, Error>) -> Void)? = nil) {
         let uid = options[UserAttributes.UID] ?? self.accountUid
         let anonymousUid = options[UserAttributes.ANONYMOUS_UID] ?? self.accountAnonymousUid
 
@@ -210,9 +264,22 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: identifyAccountMutation) { result in
             switch result {
             case .success(let graphQLResult):
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "GraphQL errors during identify(): \(errors)")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                    }
+                    return
+                }
                 DashXLog.d(tag: #function, "Sent identify with \(String(describing: graphQLResult))")
+                if let completion {
+                    DispatchQueue.main.async { completion(.success(())) }
+                }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during identify(): \(error)")
+                if let completion {
+                    DispatchQueue.main.async { completion(.failure(DashXClientError.networkError(underlying: error))) }
+                }
             }
         }
     }
@@ -226,6 +293,7 @@ public class DashXClient {
 
         self.accountUid = nil
         self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
+        self.isAdTrackingRequested = false
         ConfigInterceptor.shared.identityToken = nil
     }
 
@@ -281,10 +349,10 @@ public class DashXClient {
         }
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
-            accountUid: (effectiveAccountUid != nil) ? .some(effectiveAccountUid!) : .null,
-            accountAnonymousUid: (effectiveAnonymousUid != nil) ? .some(effectiveAnonymousUid!) : .null,
+            accountUid: effectiveAccountUid.map { .some($0) } ?? .null,
+            accountAnonymousUid: effectiveAnonymousUid.map { .some($0) } ?? .null,
             data: dataJSON,
-            systemContext: (systemContext != nil) ? .some(systemContext!) : .null
+            systemContext: systemContext.map { .some($0) } ?? .null
         )
 
         DashXLog.d(tag: #function, "Calling track with \(trackEventInput)")
@@ -356,7 +424,7 @@ public class DashXClient {
         EventQueue.shared.flush()
     }
 
-    private func trackMessage(_ id: String, _ messageStatus: DashXGql.TrackMessageStatus, _ timeStamp: String) {
+    private func trackMessage(_ id: String, _ messageStatus: DashXGql.TrackMessageStatus, _ timeStamp: String, completion: ((Result<Void, Error>) -> Void)? = nil) {
         let trackMessageInput = DashXGql.TrackMessageInput(id: id,
                                                            status: GraphQLEnum<DashXGql.TrackMessageStatus>(messageStatus),
                                                            timestamp: timeStamp)
@@ -370,11 +438,20 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "GraphQL errors during trackMessage(): \(errors)")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                    }
                 } else {
                     DashXLog.d(tag: #function, "Sent track Message with \(String(describing: graphQLResult.data))")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.success(())) }
+                    }
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during trackMessage(): \(error)")
+                if let completion {
+                    DispatchQueue.main.async { completion(.failure(DashXClientError.networkError(underlying: error))) }
+                }
             }
         }
     }
@@ -387,7 +464,7 @@ public class DashXClient {
 
     // MARK: - Contact Management
 
-    public func subscribe() {
+    public func subscribe(completion: ((Result<Void, Error>) -> Void)? = nil) {
         guard let fcmToken = self.fcmToken else {
             DashXLog.d(tag: #function, "'subscribe' called without fcmToken; returning...")
             self.mustSubscribe = true
@@ -406,11 +483,14 @@ public class DashXClient {
 
         if preferences.string(forKey: fcmTokenKey) == self.fcmToken {
             DashXLog.d(tag: #function, "Already subscribed: \(String(describing: self.fcmToken))")
+            if let completion {
+                DispatchQueue.main.async { completion(.success(())) }
+            }
             return
         }
 
         let subscribeContactInput = DashXGql.SubscribeContactInput(
-            accountUid: (self.accountUid != nil) ? .some(self.accountUid!) : .null,
+            accountUid: self.accountUid.map { .some($0) } ?? .null,
             accountAnonymousUid: .some(anonymousUid),
             name: .some(UIDevice.current.model),
             kind: GraphQLEnum<DashXGql.ContactKind>(.ios),
@@ -428,21 +508,30 @@ public class DashXClient {
         Network.shared.apollo.perform(mutation: subscribeContactMutation) { result in
             switch result {
             case .success(let graphQLResult):
-                if graphQLResult.errors != nil {
-                    DashXLog.e(tag: #function, "Encountered GraphQL errors during subscribe(): \(String(describing: graphQLResult.errors))")
+                if let errors = graphQLResult.errors, !errors.isEmpty {
+                    DashXLog.e(tag: #function, "Encountered GraphQL errors during subscribe(): \(errors)")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                    }
+                    return
                 }
-
                 if graphQLResult.data != nil {
                     preferences.set(graphQLResult.data?.subscribeContact.value, forKey: fcmTokenKey)
                     DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.success(())) }
+                    }
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during subscribe(): \(error)")
+                if let completion {
+                    DispatchQueue.main.async { completion(.failure(DashXClientError.networkError(underlying: error))) }
+                }
             }
         }
     }
 
-    public func unsubscribe() {
+    public func unsubscribe(completion: ((Result<Void, Error>) -> Void)? = nil) {
         let preferences = UserDefaults.standard
         let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
         let savedToken = preferences.string(forKey: fcmTokenKey)
@@ -459,7 +548,7 @@ public class DashXClient {
 
         let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
-                accountUid: (self.accountUid != nil) ? .some(self.accountUid!) : .null,
+                accountUid: self.accountUid.map { .some($0) } ?? .null,
                 accountAnonymousUid: .some(anonymousUid),
                 value: token
             )
@@ -471,16 +560,25 @@ public class DashXClient {
             Network.shared.apollo.perform(mutation: unsubscribeContactMutation) { result in
                 switch result {
                 case .success(let graphQLResult):
-                    if graphQLResult.errors != nil {
-                        DashXLog.e(tag: #function, "Encountered GraphQL errors during unsubscribe(): \(String(describing: graphQLResult.errors))")
+                    if let errors = graphQLResult.errors, !errors.isEmpty {
+                        DashXLog.e(tag: #function, "Encountered GraphQL errors during unsubscribe(): \(errors)")
+                        if let completion {
+                            DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                        }
+                        return
                     }
-
                     if graphQLResult.data != nil {
                         preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: fcmTokenKey)
                         DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
+                        if let completion {
+                            DispatchQueue.main.async { completion(.success(())) }
+                        }
                     }
                 case .failure(let error):
                     DashXLog.e(tag: #function, "Encountered an error during unsubscribe(): \(error)")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.networkError(underlying: error))) }
+                    }
                 }
             }
         }
@@ -498,7 +596,7 @@ public class DashXClient {
         completion: @escaping (Result<[String: Any?], Error>) -> Void
     ) {
         guard let uid = self.accountUid else {
-            completion(.failure(DashXClientError.customError(message: "No account UID set")))
+            completion(.failure(DashXClientError.notIdentified))
             return
         }
 
@@ -515,7 +613,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during fetchStoredPreferences(): \(errors)")
-                    completion(.failure(DashXClientError.customError(message: "Unable to fetch stored preferences")))
+                    completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" })))
                     return
                 }
 
@@ -549,7 +647,7 @@ public class DashXClient {
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         guard let uid = self.accountUid else {
-            completion(.failure(DashXClientError.customError(message: "No account UID set")))
+            completion(.failure(DashXClientError.notIdentified))
             return
         }
 
@@ -624,7 +722,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during fetchRecord(): \(errors)")
-                    completion(.failure(DashXClientError.customError(message: errors.map { $0.message ?? "" }.joined(separator: ", "))))
+                    completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" })))
                     return
                 }
                 if let data = graphQLResult.data {
@@ -668,7 +766,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during searchRecords(): \(errors)")
-                    completion(.failure(DashXClientError.customError(message: errors.map { $0.message ?? "" }.joined(separator: ", "))))
+                    completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" })))
                     return
                 }
                 if let data = graphQLResult.data {
@@ -719,7 +817,7 @@ public class DashXClient {
                             completion(.failure(DashXClientError.assetIsNotUploaded))
                             return
                         }
-                        self.pollTillAssetIsReady(triesLeft: 5, assetId: assetId, completion: completion)
+                        self.pollTillAssetIsReady(triesLeft: Self.maxAssetPollRetries, assetId: assetId, completion: completion)
                     }.resume()
                 } catch {
                     completion(.failure(error))
@@ -796,6 +894,10 @@ public class DashXClient {
         }
     }
 
+    /// Maximum number of asset poll attempts and base interval (seconds) for exponential backoff.
+    public static var maxAssetPollRetries: Int = 5
+    public static var assetPollBaseInterval: TimeInterval = 2.0
+
     private func pollTillAssetIsReady(
         triesLeft: Int,
         assetId: String,
@@ -807,7 +909,12 @@ public class DashXClient {
                 if response.status == "ready" || triesLeft <= 0 {
                     completion(.success(response))
                 } else {
-                    Self.assetPollQueue.asyncAfter(deadline: .now() + 3) {
+                    let attempt = Self.maxAssetPollRetries - triesLeft
+                    let delay = Self.assetPollBaseInterval * pow(2.0, Double(attempt))
+                    let jitter = Double.random(in: 0...1)
+                    let totalDelay = min(delay + jitter, 60)
+                    DashXLog.d(tag: "pollTillAssetIsReady", "Retrying in \(String(format: "%.1f", totalDelay))s (attempt \(attempt + 1))")
+                    Self.assetPollQueue.asyncAfter(deadline: .now() + totalDelay) {
                         self.pollTillAssetIsReady(triesLeft: triesLeft - 1, assetId: assetId, completion: completion)
                     }
                 }
@@ -894,9 +1001,11 @@ public class DashXClient {
 
     // MARK: - Track Message
 
-    public func trackMessage(message: DashXNotificationMessage, event: DashXGql.TrackMessageStatus) {
+    public func trackMessage(message: DashXNotificationMessage, event: DashXGql.TrackMessageStatus, completion: ((Result<Void, Error>) -> Void)? = nil) {
         if let id = message.dashxNotificationId() {
-            self.trackMessage(id, event, ISO8601DateFormatter.timeStamp)
+            self.trackMessage(id, event, ISO8601DateFormatter.timeStamp, completion: completion)
+        } else if let completion {
+            DispatchQueue.main.async { completion(.failure(DashXClientError.customError(message: "Message does not contain a DashX notification ID"))) }
         }
     }
 
@@ -997,6 +1106,30 @@ extension DashXClient {
                           preview: preview, language: language, fields: fields,
                           include: include, exclude: exclude) {
                 continuation.resume(with: $0)
+            }
+        }
+    }
+
+    public func identify(options: [String: String]) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            identify(options: options) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    public func subscribe() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            subscribe { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+
+    public func unsubscribe() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            unsubscribe { result in
+                continuation.resume(with: result)
             }
         }
     }

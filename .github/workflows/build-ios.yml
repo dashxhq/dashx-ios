@@ -1,4 +1,4 @@
-name: Build iOS
+name: CI
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,3 +17,19 @@ jobs:
 
       - name: Build DashXFirebase
         run: xcodebuild -scheme DashXFirebase -destination 'generic/platform=iOS' build
+
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -scheme DashX-Package \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=latest' \
+            -only-testing:DashXTests \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults.xcresult
