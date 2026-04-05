@@ -208,8 +208,7 @@ public class DashXClient {
         self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         self.accountAnonymousUid = self.generateAnonymousUid()
 
-        // Not setting this for now.
-        // ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
     }
 
     private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
@@ -226,15 +225,22 @@ public class DashXClient {
         }
     }
 
-    public func setIdentity(uid: String, token: String) {
+    public func setIdentity(uid: String?, token: String?) {
         let preferences = UserDefaults.standard
 
         self.accountUid = uid
-        preferences.set(self.accountUid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        if let uid = uid {
+            preferences.set(uid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        } else {
+            preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        }
 
-        // Not setting this for now.
-        // ConfigInterceptor.shared.identityToken = token
-        // preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        ConfigInterceptor.shared.identityToken = token
+        if let token = token {
+            preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        } else {
+            preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        }
     }
 
     @available(*, deprecated, message: "Use identify(options:) instead")

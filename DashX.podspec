@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "DashX"
-  s.version      = "1.1.4"
+  s.version      = "1.1.5"
   s.summary      = "DashX iOS SDK"
   s.homepage     = "https://github.com/dashxhq/dashx-ios"
   s.license      = { :type => "MIT" }

@@ -32,7 +32,7 @@ final class DashXClientTests: XCTestCase {
     }
 
     func testSetIdentityPersistsUidAndResetClearsIt() {
-        DashXClient.instance.setIdentity(uid: "user-123", token: "ignored")
+        DashXClient.instance.setIdentity(uid: "user-123", token: nil)
         XCTAssertEqual(
             UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID),
             "user-123"
@@ -40,6 +40,16 @@ final class DashXClientTests: XCTestCase {
 
         DashXClient.instance.reset()
         XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID))
+    }
+
+    func testSetIdentityNilClearsStoredUidAndToken() {
+        DashXClient.instance.setIdentity(uid: "user-1", token: "token-1")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN), "token-1")
+
+        DashXClient.instance.setIdentity(uid: nil, token: nil)
+        XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID))
+        XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN))
+        XCTAssertNil(ConfigInterceptor.shared.identityToken)
     }
 
     func testEnableAdTrackingSetsRequestFlag() {
