@@ -22,10 +22,7 @@ public struct ActionButton: Decodable {
 
     enum CodingKeys: String, CodingKey {
         case identifier, label, icon, url
-        case clickAction = "click_action"
-        case screenName = "screen_name"
-        case screenData = "screen_data"
-        case richLanding = "rich_landing"
+        case clickAction, screenName, screenData, richLanding
     }
 }
 
