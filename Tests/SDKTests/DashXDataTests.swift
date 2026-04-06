@@ -27,6 +27,33 @@ final class DashXNotificationDataTests: XCTestCase {
         XCTAssertEqual(data.actionButtons?.first?.identifier, "open")
         XCTAssertEqual(data.actionButtons?.first?.label, "Open")
         XCTAssertEqual(data.actionButtons?.first?.icon, "icon-link")
+        XCTAssertNil(data.screenName)
+        XCTAssertNil(data.screenData)
+        XCTAssertNil(data.clickAction)
+    }
+
+    func testExtendedPayloadDecoding() throws {
+        let json = """
+        {
+            "id": "notif-ext",
+            "title": "Hi",
+            "body": "Body",
+            "url": "https://example.com",
+            "screen_name": "Detail",
+            "screen_data": {"k": "v"},
+            "click_action": "com.app.OPEN",
+            "action_buttons": [
+                {"identifier": "go", "label": "Go", "url": "https://go", "click_action": "com.app.GO"}
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertEqual(data.screenName, "Detail")
+        XCTAssertEqual(data.screenData?["k"], "v")
+        XCTAssertEqual(data.clickAction, "com.app.OPEN")
+        XCTAssertEqual(data.actionButtons?.first?.url, "https://go")
+        XCTAssertEqual(data.actionButtons?.first?.clickAction, "com.app.GO")
     }
 
     func testMinimalPayloadDecoding() throws {
@@ -38,6 +65,9 @@ final class DashXNotificationDataTests: XCTestCase {
         XCTAssertEqual(data.id, "notif-2")
         XCTAssertNil(data.image)
         XCTAssertNil(data.url)
+        XCTAssertNil(data.screenName)
+        XCTAssertNil(data.screenData)
+        XCTAssertNil(data.clickAction)
         XCTAssertNil(data.actionButtons)
     }
 
@@ -120,5 +150,123 @@ final class DashXNotificationDataTests: XCTestCase {
             Constants.DASHX_NOTIFICATION_DATA_KEY: "not json at all {"
         ]
         XCTAssertNil(message.dashxNotificationData())
+    }
+
+    // MARK: - navigationAction(forActionIdentifier:)
+
+    func testNavigationAction_defaultTap_prefersScreenOverUrl() throws {
+        let json = """
+        {
+            "id": "n1",
+            "title": "T",
+            "body": "B",
+            "url": "https://example.com",
+            "screen_name": "Home"
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "com.apple.UNNotificationDefaultActionIdentifier")
+        guard case let .screen(name, screenData) = action else {
+            return XCTFail("Expected screen action")
+        }
+        XCTAssertEqual(name, "Home")
+        XCTAssertNil(screenData)
+    }
+
+    func testNavigationAction_defaultTap_deepLinkFromUrl() throws {
+        let json = """
+        {"id": "n2", "title": "T", "body": "B", "url": "https://open.example"}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "com.apple.UNNotificationDefaultActionIdentifier")
+        guard case let .deepLink(url) = action else {
+            return XCTFail("Expected deepLink")
+        }
+        XCTAssertEqual(url.absoluteString, "https://open.example")
+    }
+
+    func testNavigationAction_defaultTap_richLandingFromUrl() throws {
+        let json = """
+        {"id": "n2rl", "title": "T", "body": "B", "url": "https://landing.example", "rich_landing": true}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "com.apple.UNNotificationDefaultActionIdentifier")
+        guard case let .richLanding(url) = action else {
+            return XCTFail("Expected richLanding")
+        }
+        XCTAssertEqual(url.absoluteString, "https://landing.example")
+    }
+
+    func testNavigationAction_actionButton_deepLink() throws {
+        let json = """
+        {
+            "id": "n3",
+            "title": "T",
+            "body": "B",
+            "action_buttons": [{"identifier": "go", "label": "Go", "url": "https://btn"}]
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "go")
+        guard case let .deepLink(url) = action else {
+            return XCTFail("Expected deepLink for button")
+        }
+        XCTAssertEqual(url.absoluteString, "https://btn")
+    }
+
+    func testNavigationAction_actionButton_prefersScreenOverUrl() throws {
+        let json = """
+        {
+            "id": "n4",
+            "title": "T",
+            "body": "B",
+            "action_buttons": [
+                {
+                    "identifier": "cart",
+                    "label": "Cart",
+                    "url": "https://cart",
+                    "screen_name": "Cart",
+                    "screen_data": {"id": "1"}
+                }
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "cart")
+        guard case let .screen(name, screenData) = action else {
+            return XCTFail("Expected screen for button")
+        }
+        XCTAssertEqual(name, "Cart")
+        XCTAssertEqual(screenData?["id"], "1")
+    }
+
+    func testNavigationAction_actionButton_richLanding() throws {
+        let json = """
+        {
+            "id": "n5",
+            "title": "T",
+            "body": "B",
+            "action_buttons": [
+                {
+                    "identifier": "open",
+                    "label": "Open",
+                    "url": "https://promo.example",
+                    "rich_landing": true
+                }
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "open")
+        guard case let .richLanding(url) = action else {
+            return XCTFail("Expected richLanding for button")
+        }
+        XCTAssertEqual(url.absoluteString, "https://promo.example")
     }
 }

@@ -3,6 +3,7 @@ import FirebaseCore
 import FirebaseMessaging
 import Foundation
 import UIKit
+import UserNotifications
 
 @objc(DashXAppDelegate)
 open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -47,6 +48,8 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         dashXClient.trackMessage(message: message, event: .delivered)
 
+        registerDashXNotificationCategoryIfNeeded(from: message)
+
         let presentationOptions = notificationDeliveredInForeground(message: message)
 
         completionHandler(presentationOptions)
@@ -63,11 +66,18 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         } else {
             dashXClient.trackMessage(message: message, event: .clicked)
 
-            if let url = message.dashxNotificationUrl() {
-                handleLink(url: url)
-            } else {
-                notificationClicked(message: message, actionIdentifier: response.actionIdentifier)
+            let navigationAction = message.dashxNotificationData()?.navigationAction(forActionIdentifier: response.actionIdentifier)
+
+            if onNotificationClicked(message: message, action: navigationAction, actionIdentifier: response.actionIdentifier) {
+                completionHandler()
+                return
             }
+
+            applyDefaultNotificationClickHandling(
+                message: message,
+                navigationAction: navigationAction,
+                actionIdentifier: response.actionIdentifier
+            )
         }
 
         completionHandler()
@@ -89,6 +99,69 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.body = dashxData.body
         notificationContent.userInfo = userInfo
         notificationContent.categoryIdentifier = Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER
+
+        registerDashXNotificationCategoryIfNeeded(from: userInfo)
+
+        if let imagePath = dashxData.image,
+           let imageURL = URL(string: imagePath)
+        {
+            createNotificationWithImage(id: dashxData.id, imageURL: imageURL, content: notificationContent)
+        } else {
+            createNotification(id: dashxData.id, content: notificationContent)
+        }
+
+        completionHandler(.newData)
+    }
+
+    // MARK: - Push Notifications handlers
+
+    open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
+
+    /// Return `true` to handle navigation yourself and skip the SDK default behavior (``handleLink(url:)`` and the deprecated ``notificationClicked(message:actionIdentifier:)`` hook).
+    open func onNotificationClicked(message: [AnyHashable: Any], action: NavigationAction?, actionIdentifier: String) -> Bool {
+        false
+    }
+
+    @available(*, deprecated, message: "Use onNotificationClicked(message:action:actionIdentifier:) instead.")
+    open func notificationClicked(message: [AnyHashable: Any], actionIdentifier: String) {}
+
+    open func handleLink(url: URL) {}
+
+    private func applyDefaultNotificationClickHandling(
+        message: [AnyHashable: Any],
+        navigationAction: NavigationAction?,
+        actionIdentifier: String
+    ) {
+        if let navigationAction {
+            switch navigationAction {
+            case let .deepLink(url):
+                dashXClient.processURL(url, source: "notification")
+            case let .richLanding(url):
+                dashXClient.processURL(url, source: "notification", forwardToLinkHandler: false)
+                DashXBrowser.presentRichLanding(url: url)
+            case .screen:
+                notificationClicked(message: message, actionIdentifier: actionIdentifier)
+            }
+            return
+        }
+
+        if actionIdentifier != UNNotificationDefaultActionIdentifier {
+            notificationClicked(message: message, actionIdentifier: actionIdentifier)
+            return
+        }
+
+        if let url = message.dashxNotificationUrl() {
+            dashXClient.processURL(url, source: "notification")
+        } else {
+            notificationClicked(message: message, actionIdentifier: actionIdentifier)
+        }
+    }
+
+    /// Registers a ``UNNotificationCategory`` with ``ActionButton`` actions so taps resolve per-button URLs / screen data.
+    private func registerDashXNotificationCategoryIfNeeded(from message: [AnyHashable: Any]) {
+        guard let dashxData = message.dashxNotificationData() else {
+            return
+        }
 
         var notificationActions: [UNNotificationAction] = []
 
@@ -112,25 +185,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         )
 
         UNUserNotificationCenter.current().setNotificationCategories([notificationCategory])
-
-        if let imagePath = dashxData.image,
-           let imageURL = URL(string: imagePath)
-        {
-            createNotificationWithImage(id: dashxData.id, imageURL: imageURL, content: notificationContent)
-        } else {
-            createNotification(id: dashxData.id, content: notificationContent)
-        }
-
-        completionHandler(.newData)
     }
-
-    // MARK: - Push Notifications handlers
-
-    open func notificationDeliveredInForeground(message: [AnyHashable: Any]) -> UNNotificationPresentationOptions { return [] }
-
-    open func notificationClicked(message: [AnyHashable: Any], actionIdentifier: String) {}
-
-    open func handleLink(url: URL) {}
 }
 
 extension DashXAppDelegate {

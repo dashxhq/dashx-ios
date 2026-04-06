@@ -28,6 +28,9 @@ let package = Package(
             ],
             resources: [
                 .process("Resources"),
+            ],
+            linkerSettings: [
+                .linkedFramework("SafariServices"),
             ]
         ),
         .target(
