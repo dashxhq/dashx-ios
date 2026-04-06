@@ -79,7 +79,7 @@ public struct DashXNotificationData: Decodable {
             guard let actionButtonsData = actionButtonsString.data(using: .utf8) else {
                 return nil
             }
-            return try JSONDecoder().decode([ActionButton].self, from: actionButtonsData)
+            return try? JSONDecoder().decode([ActionButton].self, from: actionButtonsData)
         }
         return nil
     }

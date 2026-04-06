@@ -43,7 +43,7 @@ final class DashXNotificationDataTests: XCTestCase {
             "screen_data": {"k": "v"},
             "click_action": "com.app.OPEN",
             "action_buttons": [
-                {"identifier": "go", "label": "Go", "url": "https://go", "click_action": "com.app.GO"}
+                {"identifier": "go", "label": "Go", "url": "https://go", "clickAction": "com.app.GO"}
             ]
         }
         """.data(using: .utf8)!
@@ -229,8 +229,8 @@ final class DashXNotificationDataTests: XCTestCase {
                     "identifier": "cart",
                     "label": "Cart",
                     "url": "https://cart",
-                    "screen_name": "Cart",
-                    "screen_data": {"id": "1"}
+                    "screenName": "Cart",
+                    "screenData": {"id": "1"}
                 }
             ]
         }
@@ -265,7 +265,7 @@ final class DashXNotificationDataTests: XCTestCase {
             "title": "T",
             "body": "B",
             "action_buttons": [
-                {"identifier": "act", "label": "Act", "click_action": "com.app.ACT"}
+                {"identifier": "act", "label": "Act", "clickAction": "com.app.ACT"}
             ]
         }
         """.data(using: .utf8)!
@@ -289,7 +289,7 @@ final class DashXNotificationDataTests: XCTestCase {
                     "identifier": "open",
                     "label": "Open",
                     "url": "https://promo.example",
-                    "rich_landing": true
+                    "richLanding": true
                 }
             ]
         }
