@@ -291,6 +291,8 @@ public class DashXClient {
     }
 
     public func reset() {
+        unsubscribe()
+
         let preferences = UserDefaults.standard
 
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
