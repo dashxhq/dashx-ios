@@ -291,6 +291,8 @@ public class DashXClient {
     }
 
     public func reset() {
+        unsubscribe()
+
         let preferences = UserDefaults.standard
 
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
@@ -1019,12 +1021,61 @@ public class DashXClient {
 
     public var linkHandler: ((URL) -> Void)?
 
+    /// Records a `dx_deep_link_opened` analytics event and optionally forwards the URL to ``linkHandler``.
+    /// - Parameters:
+    ///   - url: The opened deep link.
+    ///   - source: Optional attribution (e.g. `universal_link`, `scene_url`, `notification`).
+    ///   - forwardToLinkHandler: When `false`, only the analytics event is sent (e.g. rich landing handled separately).
+    public func processURL(_ url: URL, source: String? = nil, forwardToLinkHandler: Bool = true) {
+        var data: [String: Any] = [
+            "url": url.absoluteString,
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+        if let source {
+            data["source"] = source
+        }
+        track(Constants.EVENT_DEEP_LINK_OPENED, withData: data)
+        if forwardToLinkHandler {
+            linkHandler?(url)
+        }
+    }
+
+    /// Records a `dx_notification_navigated` event for every notification tap, regardless of navigation type.
+    public func trackNotificationNavigation(_ action: NavigationAction?, notificationId: String?) {
+        var data: [String: Any] = [
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+        if let notificationId {
+            data["notification_id"] = notificationId
+        }
+        switch action {
+        case let .deepLink(url):
+            data["type"] = "deep_link"
+            data["url"] = url.absoluteString
+        case let .screen(name, screenData):
+            data["type"] = "screen"
+            data["screen_name"] = name
+            if let screenData {
+                data["screen_data"] = screenData
+            }
+        case let .richLanding(url):
+            data["type"] = "rich_landing"
+            data["url"] = url.absoluteString
+        case let .clickAction(action):
+            data["type"] = "click_action"
+            data["click_action"] = action
+        case nil:
+            data["type"] = "default"
+        }
+        track(Constants.EVENT_NOTIFICATION_NAVIGATED, withData: data)
+    }
+
     public func handleUserActivity(userActivity: NSUserActivity?) {
         guard userActivity?.activityType == NSUserActivityTypeBrowsingWeb,
               let url = userActivity?.webpageURL else {
             return
         }
-        linkHandler?(url)
+        processURL(url, source: "universal_link")
     }
 }
 

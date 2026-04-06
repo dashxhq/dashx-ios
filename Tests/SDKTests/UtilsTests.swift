@@ -74,6 +74,7 @@ final class UtilsTests: XCTestCase {
         XCTAssertFalse(Constants.INTERNAL_EVENT_APP_BACKGROUNDED.isEmpty)
         XCTAssertFalse(Constants.INTERNAL_EVENT_APP_CRASHED.isEmpty)
         XCTAssertFalse(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED.isEmpty)
+        XCTAssertFalse(Constants.EVENT_DEEP_LINK_OPENED.isEmpty)
     }
 
     func testUserAttributes() {
