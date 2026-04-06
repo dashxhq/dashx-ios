@@ -17,6 +17,8 @@ public struct Constants {
     public static let INTERNAL_EVENT_APP_SCREEN_VIEWED = "Screen Viewed"
     /// Emitted when a deep link URL is processed (push, universal link, custom scheme, etc.).
     public static let EVENT_DEEP_LINK_OPENED = "dx_deep_link_opened"
+    /// Emitted on every notification tap regardless of navigation type (deep link, screen, click action, etc.).
+    public static let EVENT_NOTIFICATION_NAVIGATED = "dx_notification_navigated"
     public static let CONTENT_TYPE = "Content-Type"
     public static let GCS_ASSET_UPLOAD_HEADER_KEY = "x-goog-meta-origin-id"
     public static let DASHX_NOTIFICATION_DATA_KEY = "dashx"

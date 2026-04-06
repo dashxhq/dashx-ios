@@ -1,12 +1,17 @@
 import SafariServices
 import UIKit
 
-/// In-app browser helpers for notification “rich landing” URLs.
+/// In-app browser helpers for notification "rich landing" URLs.
 public enum DashXBrowser {
+    /// Optional hook to customize the ``SFSafariViewController`` before it is presented
+    /// (e.g. set `preferredBarTintColor`, `dismissButtonStyle`, etc.).
+    public static var safariConfiguration: ((SFSafariViewController) -> Void)?
+
     /// Presents `url` in ``SFSafariViewController`` when a presenter can be found; otherwise opens the URL with the system handler.
     public static func presentRichLanding(url: URL, from presenter: UIViewController? = nil) {
         let safari = SFSafariViewController(url: url)
         safari.modalPresentationStyle = .pageSheet
+        safariConfiguration?(safari)
         guard let host = presenter ?? topViewController() else {
             UIApplication.shared.open(url, options: [:], completionHandler: nil)
             return

@@ -245,6 +245,39 @@ final class DashXNotificationDataTests: XCTestCase {
         XCTAssertEqual(screenData?["id"], "1")
     }
 
+    func testNavigationAction_defaultTap_clickActionFallback() throws {
+        let json = """
+        {"id": "nca", "title": "T", "body": "B", "click_action": "com.app.OPEN"}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "com.apple.UNNotificationDefaultActionIdentifier")
+        guard case let .clickAction(actionString) = action else {
+            return XCTFail("Expected clickAction")
+        }
+        XCTAssertEqual(actionString, "com.app.OPEN")
+    }
+
+    func testNavigationAction_actionButton_clickActionFallback() throws {
+        let json = """
+        {
+            "id": "ncab",
+            "title": "T",
+            "body": "B",
+            "action_buttons": [
+                {"identifier": "act", "label": "Act", "click_action": "com.app.ACT"}
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        let action = data.navigationAction(forActionIdentifier: "act")
+        guard case let .clickAction(actionString) = action else {
+            return XCTFail("Expected clickAction for button")
+        }
+        XCTAssertEqual(actionString, "com.app.ACT")
+    }
+
     func testNavigationAction_actionButton_richLanding() throws {
         let json = """
         {

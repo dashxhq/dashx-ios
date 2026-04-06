@@ -66,7 +66,10 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         } else {
             dashXClient.trackMessage(message: message, event: .clicked)
 
-            let navigationAction = message.dashxNotificationData()?.navigationAction(forActionIdentifier: response.actionIdentifier)
+            let dashxData = message.dashxNotificationData()
+            let navigationAction = dashxData?.navigationAction(forActionIdentifier: response.actionIdentifier)
+
+            dashXClient.trackNotificationNavigation(navigationAction, notificationId: dashxData?.id)
 
             if onNotificationClicked(message: message, action: navigationAction, actionIdentifier: response.actionIdentifier) {
                 completionHandler()
@@ -139,7 +142,7 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
             case let .richLanding(url):
                 dashXClient.processURL(url, source: "notification", forwardToLinkHandler: false)
                 DashXBrowser.presentRichLanding(url: url)
-            case .screen:
+            case .screen, .clickAction:
                 notificationClicked(message: message, actionIdentifier: actionIdentifier)
             }
             return

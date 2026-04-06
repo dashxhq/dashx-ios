@@ -1038,6 +1038,36 @@ public class DashXClient {
         }
     }
 
+    /// Records a `dx_notification_navigated` event for every notification tap, regardless of navigation type.
+    public func trackNotificationNavigation(_ action: NavigationAction?, notificationId: String?) {
+        var data: [String: Any] = [
+            "timestamp": ISO8601DateFormatter().string(from: Date())
+        ]
+        if let notificationId {
+            data["notification_id"] = notificationId
+        }
+        switch action {
+        case let .deepLink(url):
+            data["type"] = "deep_link"
+            data["url"] = url.absoluteString
+        case let .screen(name, screenData):
+            data["type"] = "screen"
+            data["screen_name"] = name
+            if let screenData {
+                data["screen_data"] = screenData
+            }
+        case let .richLanding(url):
+            data["type"] = "rich_landing"
+            data["url"] = url.absoluteString
+        case let .clickAction(action):
+            data["type"] = "click_action"
+            data["click_action"] = action
+        case nil:
+            data["type"] = "default"
+        }
+        track(Constants.EVENT_NOTIFICATION_NAVIGATED, withData: data)
+    }
+
     public func handleUserActivity(userActivity: NSUserActivity?) {
         guard userActivity?.activityType == NSUserActivityTypeBrowsingWeb,
               let url = userActivity?.webpageURL else {

@@ -5,6 +5,8 @@ public enum NavigationAction: Equatable {
     case deepLink(url: URL)
     case screen(name: String, data: [String: String]?)
     case richLanding(url: URL)
+    /// Intent-based navigation via a fully-qualified class name or action string (Android-oriented, but present in payloads for both platforms).
+    case clickAction(action: String)
 }
 
 public struct ActionButton: Decodable {
@@ -86,6 +88,7 @@ public struct DashXNotificationData: Decodable {
     }
 
     /// Resolves navigation for the main notification tap or an action button (when `actionIdentifier` matches ``ActionButton/identifier``).
+    /// Priority: `screen_name` > `rich_landing` + `url` > `url` > `click_action`.
     public func navigationAction(forActionIdentifier actionIdentifier: String) -> NavigationAction? {
         if actionIdentifier == unNotificationDefaultActionIdentifier {
             if let name = screenName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
@@ -96,6 +99,9 @@ public struct DashXNotificationData: Decodable {
             }
             if let urlString = url, let url = URL(string: urlString) {
                 return .deepLink(url: url)
+            }
+            if let action = clickAction?.trimmingCharacters(in: .whitespacesAndNewlines), !action.isEmpty {
+                return .clickAction(action: action)
             }
             return nil
         }
@@ -112,6 +118,9 @@ public struct DashXNotificationData: Decodable {
         }
         if let urlString = button.url, let url = URL(string: urlString) {
             return .deepLink(url: url)
+        }
+        if let action = button.clickAction?.trimmingCharacters(in: .whitespacesAndNewlines), !action.isEmpty {
+            return .clickAction(action: action)
         }
         return nil
     }

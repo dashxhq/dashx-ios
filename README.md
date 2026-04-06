@@ -55,9 +55,20 @@ The SDK routes notification taps and URLs through a small set of APIs so you can
 - **`DashXClient.processURL(_:source:forwardToLinkHandler:)`** records a `dx_deep_link_opened` event and, by default, invokes `linkHandler` so your `handleLink(url:)` runs. Use `forwardToLinkHandler: false` when you only want the event (for example when the SDK presents an in-app browser for rich landing).
 - **`DashXClient.handleUserActivity(userActivity:)`** handles `NSUserActivityTypeBrowsingWeb` universal links; call it from the app delegate or scene delegate when you are not using `DashXSceneDelegate`.
 
-### Notification payload (inside `dashx_notification_data`)
+### Notification payload (inside the `dashx` key)
 
-Structured fields include: `url`, `screen_name`, `screen_data`, `click_action`, `rich_landing`, and `action_buttons` (each button: `identifier`, `label`, `url`, `screen_name`, `screen_data`, `rich_landing`, etc.). The SDK resolves a **`NavigationAction`** (deep link URL, in-app rich landing, or screen + data) for the main tap or a specific action button.
+Structured fields include: `url`, `screen_name`, `screen_data`, `click_action`, `rich_landing`, and `action_buttons` (each button: `identifier`, `label`, `url`, `screen_name`, `screen_data`, `rich_landing`, `click_action`, etc.). The SDK resolves a **`NavigationAction`** (`.deepLink`, `.richLanding`, `.screen`, or `.clickAction`) for the main tap or a specific action button.
+
+### Rich landing customization
+
+Set **`DashXBrowser.safariConfiguration`** to customize the `SFSafariViewController` before it is presented (e.g. bar tint, dismiss button style):
+
+```swift
+DashXBrowser.safariConfiguration = { safari in
+    safari.preferredBarTintColor = .systemBackground
+    safari.dismissButtonStyle = .close
+}
+```
 
 ### Host app configuration
 
