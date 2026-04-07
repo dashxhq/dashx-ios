@@ -11,6 +11,14 @@ extension KeyedDecodingContainer {
            let value = try? JSONDecoder().decode(T.self, from: data) { return value }
         return nil
     }
+
+    /// Decodes a Bool that may arrive as a native JSON boolean or a string (`"true"` / `"false"`).
+    /// FCM data payloads deliver all values as strings, so `rich_landing` may be `"true"` instead of `true`.
+    func decodeBoolFromStringIfPresent(forKey key: Key) -> Bool? {
+        if let value = try? decode(Bool.self, forKey: key) { return value }
+        if let string = try? decode(String.self, forKey: key) { return string == "true" }
+        return nil
+    }
 }
 
 /// Resolved navigation intent for a notification tap or action (see payload fields `url`, `screen_name`, etc.).
@@ -47,7 +55,7 @@ public struct ActionButton: Decodable {
         clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
         screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
         screenData = container.decodeStringifiedJSONIfPresent([String: String].self, forKey: .screenData)
-        richLanding = try container.decodeIfPresent(Bool.self, forKey: .richLanding)
+        richLanding = container.decodeBoolFromStringIfPresent(forKey: .richLanding)
     }
 }
 
@@ -86,7 +94,7 @@ public struct DashXNotificationData: Decodable {
         screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
         screenData = container.decodeStringifiedJSONIfPresent([String: String].self, forKey: .screenData)
         clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
-        richLanding = try container.decodeIfPresent(Bool.self, forKey: .richLanding)
+        richLanding = container.decodeBoolFromStringIfPresent(forKey: .richLanding)
         actionButtons = container.decodeStringifiedJSONIfPresent([ActionButton].self, forKey: .actionButtons)
     }
 

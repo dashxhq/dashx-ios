@@ -139,6 +139,44 @@ final class DashXNotificationDataTests: XCTestCase {
         XCTAssertEqual(button.screenData?["id"], "1")
     }
 
+    // MARK: - Bool from string (FCM delivers all values as strings)
+
+    func testRichLandingAsStringTrue() throws {
+        let json = """
+        {"id": "n", "title": "T", "body": "B", "url": "https://example.com", "rich_landing": "true"}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertEqual(data.richLanding, true)
+    }
+
+    func testRichLandingAsStringFalse() throws {
+        let json = """
+        {"id": "n", "title": "T", "body": "B", "rich_landing": "false"}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertEqual(data.richLanding, false)
+    }
+
+    func testRichLandingAsNativeBool() throws {
+        let json = """
+        {"id": "n", "title": "T", "body": "B", "rich_landing": true}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertEqual(data.richLanding, true)
+    }
+
+    func testActionButtonRichLandingAsString() throws {
+        let json = """
+        {"identifier": "btn", "label": "Go", "url": "https://example.com", "richLanding": "true"}
+        """.data(using: .utf8)!
+
+        let button = try JSONDecoder().decode(ActionButton.self, from: json)
+        XCTAssertEqual(button.richLanding, true)
+    }
+
     func testScreenDataMalformedStringReturnsNil() throws {
         let json = """
         {"id": "n", "title": "T", "body": "B", "screen_data": "not json"}
