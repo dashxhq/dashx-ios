@@ -24,6 +24,30 @@ public struct ActionButton: Decodable {
         case identifier, label, icon, url
         case clickAction, screenName, screenData, richLanding
     }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        identifier = try container.decode(String.self, forKey: .identifier)
+        label = try container.decode(String.self, forKey: .label)
+        icon = try container.decodeIfPresent(String.self, forKey: .icon)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
+        screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
+        screenData = try Self.decodeScreenData(from: container, forKey: .screenData)
+        richLanding = try container.decodeIfPresent(Bool.self, forKey: .richLanding)
+    }
+
+    private static func decodeScreenData(from container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> [String: String]? {
+        if let dict = try? container.decode([String: String].self, forKey: key) {
+            return dict
+        }
+        if let jsonString = try? container.decode(String.self, forKey: key),
+           let data = jsonString.data(using: .utf8),
+           let dict = try? JSONDecoder().decode([String: String].self, from: data) {
+            return dict
+        }
+        return nil
+    }
 }
 
 private let unNotificationDefaultActionIdentifier = "com.apple.UNNotificationDefaultActionIdentifier"
@@ -59,7 +83,7 @@ public struct DashXNotificationData: Decodable {
         image = try container.decodeIfPresent(String.self, forKey: .image)
         url = try container.decodeIfPresent(String.self, forKey: .url)
         screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
-        screenData = try container.decodeIfPresent([String: String].self, forKey: .screenData)
+        screenData = try Self.decodeScreenData(from: container)
         clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
         richLanding = try container.decodeIfPresent(Bool.self, forKey: .richLanding)
 
@@ -68,6 +92,19 @@ public struct DashXNotificationData: Decodable {
         } else {
             actionButtons = nil
         }
+    }
+
+    /// Supports `screen_data` as either a JSON object or a stringified JSON string (server variants).
+    private static func decodeScreenData(from container: KeyedDecodingContainer<CodingKeys>) throws -> [String: String]? {
+        if let dict = try? container.decode([String: String].self, forKey: .screenData) {
+            return dict
+        }
+        if let jsonString = try? container.decode(String.self, forKey: .screenData),
+           let data = jsonString.data(using: .utf8),
+           let dict = try? JSONDecoder().decode([String: String].self, from: data) {
+            return dict
+        }
+        return nil
     }
 
     /// Supports `action_buttons` as either a JSON string or a JSON array (server variants).
@@ -135,15 +172,19 @@ public extension ISO8601DateFormatter {
 public extension DashXNotificationMessage {
     func dashxNotificationData() -> DashXNotificationData? {
         guard let jsonString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String else {
+            DashXLog.d(tag: "DashXNotificationMessage", "No DashX data key in notification payload. Keys: \(self.keys)")
             return nil
         }
         guard let jsonData = jsonString.data(using: .utf8) else {
+            DashXLog.e(tag: "DashXNotificationMessage", "Failed to convert DashX JSON string to Data")
             return nil
         }
-        guard let notificationData = try? JSONDecoder().decode(DashXNotificationData.self, from: jsonData) else {
+        do {
+            return try JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
+        } catch {
+            DashXLog.e(tag: "DashXNotificationMessage", "Failed to decode DashX payload: \(error). Raw JSON: \(jsonString.prefix(500))")
             return nil
         }
-        return notificationData
     }
 
     func dashxNotificationId() -> String? {
