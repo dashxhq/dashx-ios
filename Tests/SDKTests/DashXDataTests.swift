@@ -110,6 +110,44 @@ final class DashXNotificationDataTests: XCTestCase {
         XCTAssertEqual(button.icon, "link-icon")
     }
 
+    // MARK: - Stringified screen_data
+
+    func testScreenDataAsNativeDict() throws {
+        let json = """
+        {"id": "n", "title": "T", "body": "B", "screen_name": "Home", "screen_data": {"k": "v"}}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertEqual(data.screenData?["k"], "v")
+    }
+
+    func testScreenDataAsStringifiedJson() throws {
+        let json = """
+        {"id": "n", "title": "T", "body": "B", "screen_name": "Home", "screen_data": "{\\"k\\":\\"v\\"}"}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertEqual(data.screenData?["k"], "v")
+    }
+
+    func testActionButtonScreenDataAsStringifiedJson() throws {
+        let json = """
+        {"identifier": "btn", "label": "Go", "screenData": "{\\"id\\":\\"1\\"}"}
+        """.data(using: .utf8)!
+
+        let button = try JSONDecoder().decode(ActionButton.self, from: json)
+        XCTAssertEqual(button.screenData?["id"], "1")
+    }
+
+    func testScreenDataMalformedStringReturnsNil() throws {
+        let json = """
+        {"id": "n", "title": "T", "body": "B", "screen_data": "not json"}
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(DashXNotificationData.self, from: json)
+        XCTAssertNil(data.screenData)
+    }
+
     // MARK: - DashXNotificationMessage helpers
 
     func testDashxNotificationMessageWithValidPayload() {

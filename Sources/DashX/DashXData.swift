@@ -1,5 +1,18 @@
 import Foundation
 
+// MARK: - Decoding helpers
+
+extension KeyedDecodingContainer {
+    /// Decodes a value that may arrive as either a native JSON object or a stringified JSON string.
+    func decodeStringifiedJSONIfPresent<T: Decodable>(_ type: T.Type, forKey key: Key) -> T? {
+        if let value = try? decode(T.self, forKey: key) { return value }
+        if let jsonString = try? decode(String.self, forKey: key),
+           let data = jsonString.data(using: .utf8),
+           let value = try? JSONDecoder().decode(T.self, from: data) { return value }
+        return nil
+    }
+}
+
 /// Resolved navigation intent for a notification tap or action (see payload fields `url`, `screen_name`, etc.).
 public enum NavigationAction: Equatable {
     case deepLink(url: URL)
@@ -33,20 +46,8 @@ public struct ActionButton: Decodable {
         url = try container.decodeIfPresent(String.self, forKey: .url)
         clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
         screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
-        screenData = try Self.decodeScreenData(from: container, forKey: .screenData)
+        screenData = container.decodeStringifiedJSONIfPresent([String: String].self, forKey: .screenData)
         richLanding = try container.decodeIfPresent(Bool.self, forKey: .richLanding)
-    }
-
-    private static func decodeScreenData(from container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> [String: String]? {
-        if let dict = try? container.decode([String: String].self, forKey: key) {
-            return dict
-        }
-        if let jsonString = try? container.decode(String.self, forKey: key),
-           let data = jsonString.data(using: .utf8),
-           let dict = try? JSONDecoder().decode([String: String].self, from: data) {
-            return dict
-        }
-        return nil
     }
 }
 
@@ -83,42 +84,10 @@ public struct DashXNotificationData: Decodable {
         image = try container.decodeIfPresent(String.self, forKey: .image)
         url = try container.decodeIfPresent(String.self, forKey: .url)
         screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
-        screenData = try Self.decodeScreenData(from: container)
+        screenData = container.decodeStringifiedJSONIfPresent([String: String].self, forKey: .screenData)
         clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
         richLanding = try container.decodeIfPresent(Bool.self, forKey: .richLanding)
-
-        if let decoded = try Self.decodeActionButtons(from: container) {
-            actionButtons = decoded
-        } else {
-            actionButtons = nil
-        }
-    }
-
-    /// Supports `screen_data` as either a JSON object or a stringified JSON string (server variants).
-    private static func decodeScreenData(from container: KeyedDecodingContainer<CodingKeys>) throws -> [String: String]? {
-        if let dict = try? container.decode([String: String].self, forKey: .screenData) {
-            return dict
-        }
-        if let jsonString = try? container.decode(String.self, forKey: .screenData),
-           let data = jsonString.data(using: .utf8),
-           let dict = try? JSONDecoder().decode([String: String].self, from: data) {
-            return dict
-        }
-        return nil
-    }
-
-    /// Supports `action_buttons` as either a JSON string or a JSON array (server variants).
-    private static func decodeActionButtons(from container: KeyedDecodingContainer<CodingKeys>) throws -> [ActionButton]? {
-        if let buttons = try? container.decode([ActionButton].self, forKey: .actionButtons) {
-            return buttons
-        }
-        if let actionButtonsString = try container.decodeIfPresent(String.self, forKey: .actionButtons) {
-            guard let actionButtonsData = actionButtonsString.data(using: .utf8) else {
-                return nil
-            }
-            return try? JSONDecoder().decode([ActionButton].self, from: actionButtonsData)
-        }
-        return nil
+        actionButtons = container.decodeStringifiedJSONIfPresent([ActionButton].self, forKey: .actionButtons)
     }
 
     /// Resolves navigation for the main notification tap or an action button (when `actionIdentifier` matches ``ActionButton/identifier``).
@@ -172,7 +141,7 @@ public extension ISO8601DateFormatter {
 public extension DashXNotificationMessage {
     func dashxNotificationData() -> DashXNotificationData? {
         guard let jsonString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String else {
-            DashXLog.d(tag: "DashXNotificationMessage", "No DashX data key in notification payload. Keys: \(self.keys)")
+            DashXLog.d(tag: "DashXNotificationMessage", "No DashX data key in notification payload")
             return nil
         }
         guard let jsonData = jsonString.data(using: .utf8) else {
@@ -182,7 +151,7 @@ public extension DashXNotificationMessage {
         do {
             return try JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
         } catch {
-            DashXLog.e(tag: "DashXNotificationMessage", "Failed to decode DashX payload: \(error). Raw JSON: \(jsonString.prefix(500))")
+            DashXLog.e(tag: "DashXNotificationMessage", "Failed to decode DashX payload: \(error)")
             return nil
         }
     }
