@@ -298,6 +298,7 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_FCM_TOKEN)
 
         self.accountUid = nil
         self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
@@ -554,6 +555,10 @@ public class DashXClient {
             return
         }
 
+        // Clear saved token immediately so subscribe() works on re-login
+        // regardless of whether the server call succeeds.
+        preferences.removeObject(forKey: fcmTokenKey)
+
         let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
                 accountUid: self.accountUid.map { .some($0) } ?? .null,
@@ -575,12 +580,9 @@ public class DashXClient {
                         }
                         return
                     }
-                    if graphQLResult.data != nil {
-                        preferences.set(graphQLResult.data?.unsubscribeContact.value, forKey: fcmTokenKey)
-                        DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
-                        if let completion {
-                            DispatchQueue.main.async { completion(.success(())) }
-                        }
+                    DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
+                    if let completion {
+                        DispatchQueue.main.async { completion(.success(())) }
                     }
                 case .failure(let error):
                     DashXLog.e(tag: #function, "Encountered an error during unsubscribe(): \(error)")
