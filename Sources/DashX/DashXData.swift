@@ -74,6 +74,8 @@ public struct DashXNotificationData: Decodable {
     /// When `true` and `url` is set, navigation resolves to ``NavigationAction/richLanding(url:)`` for the main notification tap.
     public let richLanding: Bool?
 
+    public let interruptionLevel: String?
+
     public enum CodingKeys: String, CodingKey {
         case id, title, body, image, url
         case actionButtons = "action_buttons"
@@ -81,6 +83,7 @@ public struct DashXNotificationData: Decodable {
         case screenData = "screen_data"
         case clickAction = "click_action"
         case richLanding = "rich_landing"
+        case interruptionLevel = "interruption_level"
     }
 
     public init(from decoder: Decoder) throws {
@@ -96,6 +99,7 @@ public struct DashXNotificationData: Decodable {
         clickAction = try container.decodeIfPresent(String.self, forKey: .clickAction)
         richLanding = container.decodeBoolFromStringIfPresent(forKey: .richLanding)
         actionButtons = container.decodeStringifiedJSONIfPresent([ActionButton].self, forKey: .actionButtons)
+        interruptionLevel = try container.decodeIfPresent(String.self, forKey: .interruptionLevel)
     }
 
     /// Resolves navigation for the main notification tap or an action button (when `actionIdentifier` matches ``ActionButton/identifier``).

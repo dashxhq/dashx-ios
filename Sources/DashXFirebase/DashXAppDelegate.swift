@@ -103,6 +103,21 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         notificationContent.userInfo = userInfo
         notificationContent.categoryIdentifier = Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER
 
+        if #available(iOS 15.0, *), let level = dashxData.interruptionLevel {
+            switch level {
+            case "passive":
+                notificationContent.interruptionLevel = .passive
+            case "active":
+                notificationContent.interruptionLevel = .active
+            case "timeSensitive":
+                notificationContent.interruptionLevel = .timeSensitive
+            case "critical":
+                notificationContent.interruptionLevel = .critical
+            default:
+                break
+            }
+        }
+
         registerDashXNotificationCategoryIfNeeded(from: userInfo)
 
         if let imagePath = dashxData.image,
