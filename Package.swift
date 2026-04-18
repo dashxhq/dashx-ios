@@ -7,12 +7,20 @@ let package = Package(
     platforms: [.iOS(.v13)],
     products: [
         .library(
+            name: "DashXCore",
+            targets: ["DashXCore"]
+        ),
+        .library(
             name: "DashX",
             targets: ["DashX"]
         ),
         .library(
             name: "DashXFirebase",
             targets: ["DashXFirebase"]
+        ),
+        .library(
+            name: "DashXNotificationServiceExtension",
+            targets: ["DashXNotificationServiceExtension"]
         ),
     ],
     dependencies: [
@@ -21,8 +29,12 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "DashXCore"
+        ),
+        .target(
             name: "DashX",
             dependencies: [
+                "DashXCore",
                 .product(name: "Apollo", package: "apollo-ios"),
                 .product(name: "ApolloAPI", package: "apollo-ios"),
             ],
@@ -40,9 +52,15 @@ let package = Package(
                 .product(name: "FirebaseMessaging", package: "firebase-ios-sdk"),
             ]
         ),
+        .target(
+            name: "DashXNotificationServiceExtension",
+            dependencies: [
+                "DashXCore",
+            ]
+        ),
         .testTarget(
             name: "DashXTests",
-            dependencies: ["DashX"],
+            dependencies: ["DashX", "DashXNotificationServiceExtension"],
             path: "Tests/SDKTests"
         ),
     ]

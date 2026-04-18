@@ -1,8 +1,16 @@
 import Foundation
 
+/// Keys used across the main SDK and the Notification Service Extension to read DashX-injected
+/// fields out of an incoming push payload. Keeping them here avoids duplicating string literals.
+public enum DashXNotificationKeys {
+    public static let payloadBlock = "dashx"
+    public static let categoryIdentifier = "DASHX_NOTIFICATION"
+    public static let iosSdkName = "com.dashx.ios"
+}
+
 // MARK: - Decoding helpers
 
-extension KeyedDecodingContainer {
+public extension KeyedDecodingContainer {
     /// Decodes a value that may arrive as either a native JSON object or a stringified JSON string.
     func decodeStringifiedJSONIfPresent<T: Decodable>(_ type: T.Type, forKey key: Key) -> T? {
         if let value = try? decode(T.self, forKey: key) { return value }
@@ -143,45 +151,23 @@ public struct DashXNotificationData: Decodable {
 
 public typealias DashXNotificationMessage = [AnyHashable: Any]
 
-public extension ISO8601DateFormatter {
-    static var timeStamp: DashXGql.Timestamp {
-        let formatter = ISO8601DateFormatter()
-        return formatter.string(from: Date())
-    }
-}
-
-public extension DashXNotificationMessage {
+public extension Dictionary where Key == AnyHashable, Value == Any {
     func dashxNotificationData() -> DashXNotificationData? {
-        guard let jsonString = self[Constants.DASHX_NOTIFICATION_DATA_KEY] as? String else {
-            DashXLog.d(tag: "DashXNotificationMessage", "No DashX data key in notification payload")
+        guard let jsonString = self[DashXNotificationKeys.payloadBlock] as? String else {
             return nil
         }
         guard let jsonData = jsonString.data(using: .utf8) else {
-            DashXLog.e(tag: "DashXNotificationMessage", "Failed to convert DashX JSON string to Data")
             return nil
         }
-        do {
-            return try JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
-        } catch {
-            DashXLog.e(tag: "DashXNotificationMessage", "Failed to decode DashX payload: \(error)")
-            return nil
-        }
+        return try? JSONDecoder().decode(DashXNotificationData.self, from: jsonData)
     }
 
     func dashxNotificationId() -> String? {
-        guard let dashxNotificationData = dashxNotificationData() else {
-            return nil
-        }
-        return dashxNotificationData.id
+        dashxNotificationData()?.id
     }
 
     func dashxNotificationUrl() -> URL? {
-        guard let dashxNotificationData = dashxNotificationData() else {
-            return nil
-        }
-        guard let url = dashxNotificationData.url else {
-            return nil
-        }
-        return URL(string: url)
+        guard let urlString = dashxNotificationData()?.url else { return nil }
+        return URL(string: urlString)
     }
 }

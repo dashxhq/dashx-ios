@@ -92,8 +92,8 @@ iOSInjectionProject/
 .DS_Store
 /*.xcodeproj
 
-# Apollo client files
-apollo*
+# Apollo CLI binary — installed per developer via `swift package apollo-cli-install`.
+apollo-ios-cli
 
-# GraphQL Schema
+# GraphQL schema — fetched locally before running codegen (see CONTRIBUTING.md).
 schema.json

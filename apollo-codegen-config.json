@@ -1,0 +1,63 @@
+{
+  "schemaNamespace": "DashXGql",
+  "input": {
+    "operationSearchPaths": [
+      "Graphql/*.graphql"
+    ],
+    "schemaSearchPaths": [
+      "schema.json"
+    ]
+  },
+  "output": {
+    "schemaTypes": {
+      "path": "./Sources/DashX/GraphQL",
+      "moduleType": {
+        "embeddedInTarget": {
+          "name": "DashX",
+          "accessModifier": "public"
+        }
+      }
+    },
+    "operations": {
+      "inSchemaModule": {}
+    },
+    "testMocks": {
+      "none": {}
+    }
+  },
+  "schemaDownload": {
+    "downloadMethod": {
+      "introspection": {
+        "endpointURL": "https://api.dashx-staging.com/graphql",
+        "httpMethod": {
+          "POST": {}
+        },
+        "includeDeprecatedInputValues": false,
+        "outputFormat": "JSON"
+      }
+    },
+    "outputPath": "./schema.json"
+  },
+  "options": {
+    "additionalInflectionRules": [],
+    "queryStringLiteralFormat": "multiline",
+    "deprecatedEnumCases": "include",
+    "schemaDocumentation": "include",
+    "selectionSetInitializers": {
+      "operations": true,
+      "namedFragments": true
+    },
+    "operationDocumentFormat": [
+      "definition"
+    ],
+    "cocoapodsCompatibleImportStatements": false,
+    "warningsOnDeprecatedUsage": "include",
+    "conversionStrategies": {
+      "enumCases": "camelCase",
+      "fieldAccessors": "camelCase",
+      "inputObjects": "camelCase"
+    },
+    "pruneGeneratedFiles": true,
+    "markOperationDefinitionsAsFinal": false
+  }
+}
