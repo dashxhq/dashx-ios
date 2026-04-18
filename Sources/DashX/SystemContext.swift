@@ -24,6 +24,17 @@ struct SystemContextEnvironment {
     )
 
     private static func currentScreen() -> UIScreen {
+        // UIKit reads must happen on the main thread. `SystemContextEnvironment.live`
+        // is a `static let` — its initializer fires on whatever thread first touches
+        // `SystemContext.shared`, which in practice can be the EventQueue's serial
+        // queue when persisted events flush before the app has finished launching.
+        if Thread.isMainThread {
+            return readScreen()
+        }
+        return DispatchQueue.main.sync { readScreen() }
+    }
+
+    private static func readScreen() -> UIScreen {
         if let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
             return windowScene.screen
         }

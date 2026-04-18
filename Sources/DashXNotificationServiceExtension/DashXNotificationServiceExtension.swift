@@ -51,6 +51,16 @@ open class DashXNotificationServiceExtension: UNNotificationServiceExtension {
         let userInfo = request.content.userInfo
         let dashx = userInfo.dashxNotificationData()
 
+        // Default the notification sound when the server didn't specify one. iOS
+        // copies `aps.sound` (if present) into `content.sound` before spawning the
+        // NSE; if it's nil, the banner renders silently. Matches the legacy
+        // silent-push path which hardcoded `UNNotificationSound.default` on the
+        // reconstructed local notification. Servers that want true silence can
+        // override by sending an explicit `aps.sound` the integrator recognizes.
+        if content.sound == nil {
+            content.sound = .default
+        }
+
         // 1. Synchronously register the action-button category before the content handler fires.
         //    iOS reads the category state at display time; if we set it asynchronously AFTER
         //    `contentHandler(...)`, action buttons won't appear on this notification.
@@ -164,8 +174,16 @@ open class DashXNotificationServiceExtension: UNNotificationServiceExtension {
     // MARK: - Delivered tracking
 
     /// Kicks off the delivered-tracking HTTP request and returns a semaphore that will be
-    /// signalled on completion. Returns nil if the NSE Info.plist doesn't carry the two
+    /// signalled on completion. Returns nil if the NSE Info.plist doesn't carry the
     /// required keys — in that case the caller simply skips waiting.
+    ///
+    /// The mutation mirrors the main SDK's `trackMessage` path (`DashXClient.trackMessage`):
+    /// same mutation name, same `TrackMessageInput` fields (id/status/timestamp), same
+    /// headers (`X-PUBLIC-KEY` uppercase, optional `X-TARGET-ENVIRONMENT`). Integrators
+    /// that ship an NSE should add `DASHX_BASE_URI`, `DASHX_PUBLIC_KEY`, and optionally
+    /// `DASHX_TARGET_ENVIRONMENT` to the extension's Info.plist with the same values
+    /// the host app uses — the NSE runs in its own process and can't see the main app's
+    /// runtime configuration.
     private func startTrackDelivered(notificationId: String) -> DispatchSemaphore? {
         guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "DASHX_BASE_URI") as? String,
               let publicKey = Bundle.main.object(forInfoDictionaryKey: "DASHX_PUBLIC_KEY") as? String,
@@ -175,16 +193,26 @@ open class DashXNotificationServiceExtension: UNNotificationServiceExtension {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(publicKey, forHTTPHeaderField: "X-Public-Key")
+        request.setValue(publicKey, forHTTPHeaderField: "X-PUBLIC-KEY")
+        if let targetEnvironment = Bundle.main.object(forInfoDictionaryKey: "DASHX_TARGET_ENVIRONMENT") as? String {
+            request.setValue(targetEnvironment, forHTTPHeaderField: "X-TARGET-ENVIRONMENT")
+        }
 
+        let timestamp = ISO8601DateFormatter().string(from: Date())
         let mutation = """
-        mutation($input: TrackNotificationInput!) {
-          trackNotification(input: $input) { success }
+        mutation TrackMessage($input: TrackMessageInput!) {
+          trackMessage(input: $input) { success }
         }
         """
         let body: [String: Any] = [
             "query": mutation,
-            "variables": ["input": ["id": notificationId, "event": "delivered"]],
+            "variables": [
+                "input": [
+                    "id": notificationId,
+                    "status": "DELIVERED",
+                    "timestamp": timestamp,
+                ]
+            ],
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 

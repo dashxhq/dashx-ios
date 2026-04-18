@@ -175,7 +175,23 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
     @available(*, deprecated, message: "Use onNotificationClicked(message:action:actionIdentifier:) instead.")
     open func notificationClicked(message: [AnyHashable: Any], actionIdentifier: String) {}
 
-    open func handleLink(url: URL) {}
+    /// Default behaviour: hands the URL to iOS via `UIApplication.shared.open(_:)`.
+    /// - `http` / `https` URLs open in Safari (or a universal-link handler registered
+    ///   for the domain — Apple routes that automatically).
+    /// - Custom schemes registered by the current app are routed back through the
+    ///   scene delegate's `openURLContexts:`, which means `DashXSceneDelegate` (if
+    ///   subclassed) picks them up and the app's own URL handling runs.
+    /// - Other custom schemes route to whichever app is registered for them.
+    ///
+    /// Override to route URLs inside the app (push a screen, open a tab, etc.) —
+    /// don't call `super` if you want to fully intercept. To keep the default
+    /// OS-level open behaviour and also do your own work, call `super.handleLink(url:)`
+    /// after your handling.
+    open func handleLink(url: URL) {
+        DispatchQueue.main.async {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+    }
 
     private func applyDefaultNotificationClickHandling(
         message: [AnyHashable: Any],

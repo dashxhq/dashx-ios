@@ -316,18 +316,21 @@ public class DashXClient {
             withData: withData,
             queuedAccountUid: nil,
             queuedAccountAnonymousUid: nil,
+            queuedTimestamp: nil,
             completion: nil
         )
     }
 
     /// - Parameters:
     ///   - queuedAccountUid: Identity captured when the event was queued; use for replay so changing `setIdentity` mid-queue does not corrupt payloads.
+    ///   - queuedTimestamp: Wall-clock time when the event was originally enqueued. Preserves the historical timestamp when the queue flushes later.
     ///   - completion: Called on the main queue with `true` when the server accepted the mutation (no GraphQL errors, non-nil data).
     internal func track(
         _ event: String,
         withData: [String: Any]?,
         queuedAccountUid: String?,
         queuedAccountAnonymousUid: String?,
+        queuedTimestamp: Date?,
         completion: ((Bool) -> Void)?
     ) {
         let effectiveAccountUid = queuedAccountUid ?? self.accountUid
@@ -353,15 +356,24 @@ public class DashXClient {
         let systemContext = SystemContext.shared.getSystemContextInput()
         let dataJSON: GraphQLNullable<DashXGql.JSON>
         if let dict = withData {
-            dataJSON = .some(Self.encodeDictAsJSONString(dict))
+            dataJSON = .some(Self.toJSONScalar(dict))
         } else {
             dataJSON = .null
         }
+
+        // Use the queued event's original enqueue time when replaying, else stamp
+        // "now". The server rejects track events without a top-level timestamp
+        // (GraphQL `Validation failed`), and queued events should preserve their
+        // original occurrence time rather than the flush time.
+        let formatter = ISO8601DateFormatter()
+        let timestamp = formatter.string(from: queuedTimestamp ?? Date())
+
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
             accountUid: effectiveAccountUid.map { .some($0) } ?? .null,
             accountAnonymousUid: effectiveAnonymousUid.map { .some($0) } ?? .null,
             data: dataJSON,
+            timestamp: .some(timestamp),
             systemContext: systemContext.map { .some($0) } ?? .null
         )
 
@@ -640,10 +652,9 @@ public class DashXClient {
                 }
 
                 if let data = graphQLResult.data {
-                    let jsonString = data.fetchStoredPreferences.preferenceData
-                    DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(jsonString)")
-                    let decoded = Self.decodeJSONStringToDict(jsonString)
-                    completion(.success(decoded ?? [:]))
+                    let jsonDict = data.fetchStoredPreferences.preferenceData
+                    DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(jsonDict)")
+                    completion(.success(Self.fromJSONScalar(jsonDict)))
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during fetchStoredPreferences(): \(error)")
@@ -676,7 +687,7 @@ public class DashXClient {
 
         let saveStoredPreferencesInput = DashXGql.SaveStoredPreferencesInput(
             accountUid: uid,
-            preferenceData: Self.encodeDictAsJSONString(preferenceData)
+            preferenceData: Self.toJSONScalar(preferenceData)
         )
 
         DashXLog.d(tag: #function, "Calling saveStoredPreferences with \(saveStoredPreferencesInput)")
@@ -736,9 +747,9 @@ public class DashXClient {
             resource: parts[0].isEmpty ? .null : .some(parts[0]),
             preview: preview.map { .some($0) } ?? .null,
             language: language.map { .some($0) } ?? .null,
-            fields: fields.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
-            include: include.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
-            exclude: exclude.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null
+            fields: fields.map { .some($0.map(Self.toJSONScalar)) } ?? .null,
+            include: include.map { .some($0.map(Self.toJSONScalar)) } ?? .null,
+            exclude: exclude.map { .some($0.map(Self.toJSONScalar)) } ?? .null
         )
         Network.shared.apollo.fetch(query: DashXGql.FetchRecordQuery(input: input), cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
@@ -750,7 +761,7 @@ public class DashXClient {
                 }
                 if let data = graphQLResult.data {
                     DashXLog.d(tag: #function, "Sent fetchRecord with \(String(describing: data))")
-                    completion(.success(Self.decodeJSONStringToDict(data.fetchRecord) ?? [:]))
+                    completion(.success(Self.fromJSONScalar(data.fetchRecord)))
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during fetchRecord(): \(error)")
@@ -774,15 +785,15 @@ public class DashXClient {
     ) {
         let input = DashXGql.SearchRecordsInput(
             resource: resource,
-            filter: filter.map { .some(Self.encodeDictAsJSONString($0)) } ?? .null,
-            order: order.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
+            filter: filter.map { .some(Self.toJSONScalar($0)) } ?? .null,
+            order: order.map { .some($0.map(Self.toJSONScalar)) } ?? .null,
             limit: limit.map { .some($0) } ?? .null,
             page: page.map { .some($0) } ?? .null,
             preview: preview.map { .some($0) } ?? .null,
             language: language.map { .some($0) } ?? .null,
-            fields: fields.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
-            include: include.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
-            exclude: exclude.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null
+            fields: fields.map { .some($0.map(Self.toJSONScalar)) } ?? .null,
+            include: include.map { .some($0.map(Self.toJSONScalar)) } ?? .null,
+            exclude: exclude.map { .some($0.map(Self.toJSONScalar)) } ?? .null
         )
         Network.shared.apollo.fetch(query: DashXGql.SearchRecordsQuery(input: input), cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
@@ -794,8 +805,7 @@ public class DashXClient {
                 }
                 if let data = graphQLResult.data {
                     DashXLog.d(tag: #function, "Sent searchRecords with \(String(describing: data))")
-                    let decoded = data.searchRecords.map { Self.decodeJSONStringToDict($0) ?? [:] }
-                    completion(.success(decoded))
+                    completion(.success(data.searchRecords.map(Self.fromJSONScalar)))
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during searchRecords(): \(error)")
@@ -904,9 +914,13 @@ public class DashXClient {
                     completion(.failure(DashXClientError.assetIsNotUploaded))
                     return
                 }
-                // The `data` field is a JSON string containing { "upload": { url, headers } }.
-                let responseAssetData: ResponseAssetData? = gqlResult.data.data(using: .utf8)
-                    .flatMap { try? JSONDecoder().decode(ResponseAssetData.self, from: $0) }
+                // The `data` field comes back as a JSON object (see JSON.swift); bridge
+                // it through JSONSerialization → JSONDecoder to populate ResponseAssetData.
+                let responseAssetData: ResponseAssetData? = {
+                    let anyDict: [String: Any] = (gqlResult.data.asDictionary ?? [:]).mapValues { $0.base }
+                    guard let bytes = try? JSONSerialization.data(withJSONObject: anyDict) else { return nil }
+                    return try? JSONDecoder().decode(ResponseAssetData.self, from: bytes)
+                }()
                 let response = PrepareAssetResponse(data: responseAssetData, id: gqlResult.id)
                 completion(.success(response))
             case .failure(let error):
@@ -963,10 +977,11 @@ public class DashXClient {
                     completion(.failure(DashXClientError.assetIsNotUploaded))
                     return
                 }
-                // The `data` field is a JSON string carrying the full AssetResponse payload
-                // (status + nested asset object). Decode it, then backfill the mux playback
-                // URL when only a `playbackIds` array is present.
-                guard let bytes = gqlResult.data.data(using: .utf8),
+                // `data` arrives as a JSON object with the full AssetResponse payload
+                // (status + nested asset object). Decode it, then backfill the mux
+                // playback URL when only a `playbackIds` array is present.
+                let anyDict: [String: Any] = (gqlResult.data.asDictionary ?? [:]).mapValues { $0.base }
+                guard let bytes = try? JSONSerialization.data(withJSONObject: anyDict),
                       var response = try? JSONDecoder().decode(AssetResponse.self, from: bytes)
                 else {
                     completion(.failure(DashXClientError.assetIsNotUploaded))
@@ -1209,24 +1224,24 @@ extension DashXClient {
 
     // MARK: - JSON / Dict helpers
     //
-    // The GraphQL schema's `JSON` custom scalar is wire-encoded as a JSON string.
-    // The modern Apollo codegen surfaces it as `DashXGql.JSON = String` (see
-    // Sources/DashX/GraphQL/Schema/CustomScalars/JSON.swift), so every conversion
-    // between Swift dictionaries and the `JSON` scalar has to go through
-    // JSONSerialization. Hidden behind these two helpers to keep call sites tidy.
+    // `DashXGql.JSON` is typealiased to `[String: AnyHashable]` (see
+    // Sources/DashX/GraphQL/Schema/CustomScalars/JSON.swift) so the scalar lands
+    // on the wire as an actual JSON object — the backend resolver for
+    // `track_event` (and other inputs) validates `data.is_object()` and rejects
+    // stringified JSON. The helpers below coerce between the caller's looser
+    // `[String: Any]` / `[String: Any?]` shapes and the scalar's `AnyHashable`
+    // shape, silently dropping values that can't be hashed.
 
-    static func encodeDictAsJSONString(_ dict: [String: Any]) -> DashXGql.JSON {
-        guard JSONSerialization.isValidJSONObject(dict),
-              let data = try? JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys]),
-              let string = String(data: data, encoding: .utf8)
-        else {
-            return "{}"
+    static func toJSONScalar(_ dict: [String: Any]) -> DashXGql.JSON {
+        let hashableDict: [String: AnyHashable] = dict.reduce(into: [:]) { acc, pair in
+            if let hashable = pair.value as? AnyHashable {
+                acc[pair.key] = hashable
+            }
         }
-        return string
+        return DashXGql.JSON(hashableDict)
     }
 
-    static func decodeJSONStringToDict(_ string: DashXGql.JSON) -> [String: Any?]? {
-        guard let data = string.data(using: .utf8) else { return nil }
-        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any?]
+    static func fromJSONScalar(_ json: DashXGql.JSON) -> [String: Any?] {
+        (json.asDictionary ?? [:]).mapValues { $0.base }
     }
 }
