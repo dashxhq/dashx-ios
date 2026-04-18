@@ -4,22 +4,3 @@ mutation SubscribeContact($input: SubscribeContactInput!) {
         value
     }
 }
-
-# Schema additions expected when the DashX backend regenerates the GraphQL schema
-# from the updated `core.yaml` blueprint:
-#
-#   input SubscribeContactInput {
-#       # ...existing fields...
-#       metadata: ContactMetadataInput
-#   }
-#
-#   input ContactMetadataInput {
-#       libraryName: String
-#       libraryVersion: String
-#   }
-#
-# After the backend ships the regenerated schema, run `./codegen.sh` in this
-# repo to regenerate Sources/DashX/API.swift — which will add `metadata` to
-# `DashXGql.SubscribeContactInput` and a new `DashXGql.ContactMetadataInput`
-# type. Until the Apollo codegen has run, DashXClient.swift's subscribe() call
-# path uses a transitional fallback (see subscribe(completion:) implementation).

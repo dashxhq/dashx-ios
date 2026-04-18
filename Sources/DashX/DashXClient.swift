@@ -353,7 +353,7 @@ public class DashXClient {
         let systemContext = SystemContext.shared.getSystemContextInput()
         let dataJSON: GraphQLNullable<DashXGql.JSON>
         if let dict = withData {
-            dataJSON = .some(DashXGql.JSON(dict))
+            dataJSON = .some(Self.encodeDictAsJSONString(dict))
         } else {
             dataJSON = .null
         }
@@ -640,9 +640,10 @@ public class DashXClient {
                 }
 
                 if let data = graphQLResult.data {
-                    let json = data.fetchStoredPreferences.preferenceData
-                    DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(String(describing: json))")
-                    completion(.success(json.value))
+                    let jsonString = data.fetchStoredPreferences.preferenceData
+                    DashXLog.d(tag: #function, "Sent fetchStoredPreferences with \(jsonString)")
+                    let decoded = Self.decodeJSONStringToDict(jsonString)
+                    completion(.success(decoded ?? [:]))
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during fetchStoredPreferences(): \(error)")
@@ -675,7 +676,7 @@ public class DashXClient {
 
         let saveStoredPreferencesInput = DashXGql.SaveStoredPreferencesInput(
             accountUid: uid,
-            preferenceData: DashXGql.JSON(preferenceData)
+            preferenceData: Self.encodeDictAsJSONString(preferenceData)
         )
 
         DashXLog.d(tag: #function, "Calling saveStoredPreferences with \(saveStoredPreferencesInput)")
@@ -735,9 +736,9 @@ public class DashXClient {
             resource: parts[0].isEmpty ? .null : .some(parts[0]),
             preview: preview.map { .some($0) } ?? .null,
             language: language.map { .some($0) } ?? .null,
-            fields: fields.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
-            include: include.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
-            exclude: exclude.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null
+            fields: fields.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
+            include: include.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
+            exclude: exclude.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null
         )
         Network.shared.apollo.fetch(query: DashXGql.FetchRecordQuery(input: input), cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
@@ -749,7 +750,7 @@ public class DashXClient {
                 }
                 if let data = graphQLResult.data {
                     DashXLog.d(tag: #function, "Sent fetchRecord with \(String(describing: data))")
-                    completion(.success(data.fetchRecord.value))
+                    completion(.success(Self.decodeJSONStringToDict(data.fetchRecord) ?? [:]))
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during fetchRecord(): \(error)")
@@ -773,15 +774,15 @@ public class DashXClient {
     ) {
         let input = DashXGql.SearchRecordsInput(
             resource: resource,
-            filter: filter.map { .some(DashXGql.JSON($0)) } ?? .null,
-            order: order.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
+            filter: filter.map { .some(Self.encodeDictAsJSONString($0)) } ?? .null,
+            order: order.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
             limit: limit.map { .some($0) } ?? .null,
             page: page.map { .some($0) } ?? .null,
             preview: preview.map { .some($0) } ?? .null,
             language: language.map { .some($0) } ?? .null,
-            fields: fields.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
-            include: include.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null,
-            exclude: exclude.map { .some($0.map { DashXGql.JSON($0) }) } ?? .null
+            fields: fields.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
+            include: include.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null,
+            exclude: exclude.map { .some($0.map(Self.encodeDictAsJSONString)) } ?? .null
         )
         Network.shared.apollo.fetch(query: DashXGql.SearchRecordsQuery(input: input), cachePolicy: .fetchIgnoringCacheData) { result in
             switch result {
@@ -793,7 +794,8 @@ public class DashXClient {
                 }
                 if let data = graphQLResult.data {
                     DashXLog.d(tag: #function, "Sent searchRecords with \(String(describing: data))")
-                    completion(.success(data.searchRecords.map { $0.value }))
+                    let decoded = data.searchRecords.map { Self.decodeJSONStringToDict($0) ?? [:] }
+                    completion(.success(decoded))
                 }
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during searchRecords(): \(error)")
@@ -898,17 +900,15 @@ public class DashXClient {
             case .success(let graphQLResult):
                 let gqlResult = graphQLResult.data?.prepareAsset
                 DashXLog.d(tag: #function, "Sent prepareAsset with \(String(describing: gqlResult))")
-                if let gqlResult = gqlResult, let jsonDictionary = gqlResult.resultMap as? [String: Any] {
-                    do {
-                        let jsonData = try JSONSerialization.data(withJSONObject: jsonDictionary)
-                        let data = try JSONDecoder().decode(PrepareAssetResponse.self, from: jsonData)
-                        completion(.success(data))
-                    } catch {
-                        completion(.failure(error))
-                    }
-                } else {
+                guard let gqlResult else {
                     completion(.failure(DashXClientError.assetIsNotUploaded))
+                    return
                 }
+                // The `data` field is a JSON string containing { "upload": { url, headers } }.
+                let responseAssetData: ResponseAssetData? = gqlResult.data.data(using: .utf8)
+                    .flatMap { try? JSONDecoder().decode(ResponseAssetData.self, from: $0) }
+                let response = PrepareAssetResponse(data: responseAssetData, id: gqlResult.id)
+                completion(.success(response))
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during prepareAsset(): \(error)")
                 completion(.failure(error))
@@ -959,24 +959,26 @@ public class DashXClient {
             case .success(let graphQLResult):
                 let gqlResult = graphQLResult.data?.asset
                 DashXLog.d(tag: #function, "Sent asset with \(String(describing: gqlResult))")
-                if let gqlResult = gqlResult, let jsonDictionary = gqlResult.resultMap as? [String: Any] {
-                    do {
-                        let jsonData = try JSONSerialization.data(withJSONObject: jsonDictionary)
-                        var data = try JSONDecoder().decode(AssetResponse.self, from: jsonData)
-                        if var assetData = data.data?.assetData,
-                           assetData.url == nil,
-                           let id = assetData.playbackIds?.first?.id
-                        {
-                            assetData.url = generateMuxVideoUrl(playbackId: id)
-                            data.data?.assetData = assetData
-                        }
-                        completion(.success(data))
-                    } catch {
-                        completion(.failure(error))
-                    }
-                } else {
+                guard let gqlResult else {
                     completion(.failure(DashXClientError.assetIsNotUploaded))
+                    return
                 }
+                // The `data` field is a JSON string carrying the full AssetResponse payload
+                // (status + nested asset object). Decode it, then backfill the mux playback
+                // URL when only a `playbackIds` array is present.
+                guard let bytes = gqlResult.data.data(using: .utf8),
+                      var response = try? JSONDecoder().decode(AssetResponse.self, from: bytes)
+                else {
+                    completion(.failure(DashXClientError.assetIsNotUploaded))
+                    return
+                }
+                if var assetData = response.data?.assetData,
+                   assetData.url == nil,
+                   let id = assetData.playbackIds?.first?.id {
+                    assetData.url = generateMuxVideoUrl(playbackId: id)
+                    response.data?.assetData = assetData
+                }
+                completion(.success(response))
             case .failure(let error):
                 DashXLog.e(tag: #function, "Encountered an error during asset(): \(error)")
                 completion(.failure(error))
@@ -1203,5 +1205,28 @@ extension DashXClient {
                 continuation.resume(with: result)
             }
         }
+    }
+
+    // MARK: - JSON / Dict helpers
+    //
+    // The GraphQL schema's `JSON` custom scalar is wire-encoded as a JSON string.
+    // The modern Apollo codegen surfaces it as `DashXGql.JSON = String` (see
+    // Sources/DashX/GraphQL/Schema/CustomScalars/JSON.swift), so every conversion
+    // between Swift dictionaries and the `JSON` scalar has to go through
+    // JSONSerialization. Hidden behind these two helpers to keep call sites tidy.
+
+    static func encodeDictAsJSONString(_ dict: [String: Any]) -> DashXGql.JSON {
+        guard JSONSerialization.isValidJSONObject(dict),
+              let data = try? JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys]),
+              let string = String(data: data, encoding: .utf8)
+        else {
+            return "{}"
+        }
+        return string
+    }
+
+    static func decodeJSONStringToDict(_ string: DashXGql.JSON) -> [String: Any?]? {
+        guard let data = string.data(using: .utf8) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any?]
     }
 }
