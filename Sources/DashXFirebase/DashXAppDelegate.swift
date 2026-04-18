@@ -1,4 +1,5 @@
 import DashX
+import DashXCore
 import FirebaseCore
 import FirebaseMessaging
 import Foundation
@@ -25,6 +26,29 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         }
 
         app.registerForRemoteNotifications()
+
+        registerDefaultDashXCategory()
+    }
+
+    /// Registers a no-actions fallback category at launch so alert pushes that reference
+    /// `DASHX_NOTIFICATION_CATEGORY_IDENTIFIER` resolve even when the app was killed
+    /// and no previous push has dynamically registered action buttons.
+    private func registerDefaultDashXCategory() {
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationCategories { existing in
+            if existing.contains(where: { $0.identifier == Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER }) {
+                return
+            }
+            let category = UNNotificationCategory(
+                identifier: Constants.DASHX_NOTIFICATION_CATEGORY_IDENTIFIER,
+                actions: [],
+                intentIdentifiers: [],
+                options: .customDismissAction
+            )
+            var merged = existing
+            merged.insert(category)
+            center.setNotificationCategories(merged)
+        }
     }
 
     // MARK: - APNS Token Management
@@ -89,6 +113,14 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
     public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         // Pass notification reciept information to Firebase
         Messaging.messaging().appDidReceiveMessage(userInfo)
+
+        // Alert pushes (aps.alert present) are displayed by iOS directly; a Notification
+        // Service Extension handles image attachment and delivered tracking. Skipping the
+        // legacy silent-push reconstruction here prevents a duplicate banner.
+        if let aps = userInfo["aps"] as? [AnyHashable: Any], aps["alert"] != nil {
+            completionHandler(.newData)
+            return
+        }
 
         guard let dashxData = userInfo.dashxNotificationData() else {
             DashXLog.e(tag: #function, "Unable to parse DashX notification data")

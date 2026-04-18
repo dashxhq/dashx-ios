@@ -35,7 +35,7 @@ https://github.com/dashxhq/dashx-ios.git
 
 3. Add the **DashX** library to your app target. If you use push notifications / Firebase integration helpers from this SDK, also add **DashXFirebase**.
 
-A [CocoaPods spec](https://github.com/dashxhq/dashx-ios/blob/main/DashX.podspec) publishes the core **DashX** library; the **DashXFirebase** helper is available via Swift Package Manager from the same repository.
+A [CocoaPods spec](https://github.com/dashxhq/dashx-ios/blob/main/DashX.podspec) publishes the SDK as three subspecs: `DashX/Core` (shared notification models), `DashX/SDK` (default), and `DashX/NotificationServiceExtension`.
 
 ## Documentation
 
@@ -44,3 +44,27 @@ For detailed documentation, visit [iOS SDK documentation](https://docs.dashx.com
 ## Deep linking and push navigation
 
 See the [Deep Linking & Push Navigation](https://docs.dashx.com/apps/messaging/deep-linking) guide for setup instructions, payload fields, and code examples.
+
+## Notification Service Extension (recommended for push)
+
+DashX 1.3.0+ delivers iOS push notifications as APNs alert pushes instead of the legacy silent-push + local-notification reconstruction pattern. To get image attachments, dynamic action buttons, and reliable delivered-tracking, add a Notification Service Extension target to your app:
+
+1. In Xcode, **File** > **New** > **Target…** > **Notification Service Extension**.
+2. Delete the auto-generated `NotificationService.swift`.
+3. In your main app target's Package Dependencies, add `DashXNotificationServiceExtension` to the new NSE target (SPM) or add `pod 'DashX/NotificationServiceExtension'` inside the extension target in your Podfile.
+4. Create `NotificationService.swift` in the NSE target:
+
+```swift
+import DashXNotificationServiceExtension
+
+final class NotificationService: DashXNotificationServiceExtension {}
+```
+
+5. Add two keys to the NSE target's `Info.plist` (same values and names as your main app):
+   - `DASHX_BASE_URI` — your DashX API base URL
+   - `DASHX_PUBLIC_KEY` — your DashX public key
+
+The NSE runs before iOS displays the notification and:
+- Downloads and attaches the image from `dashx.image`.
+- Registers a `UNNotificationCategory` for `dashx.action_buttons`.
+- Fires a `trackNotification(event: delivered)` analytics event — even when your app isn't running.

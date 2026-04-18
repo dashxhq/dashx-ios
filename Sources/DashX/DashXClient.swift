@@ -3,6 +3,7 @@ import Apollo
 import ApolloAPI
 #endif
 import AppTrackingTransparency
+@_exported import DashXCore
 #if canImport(FirebaseMessaging)
 import FirebaseMessaging
 #endif
@@ -507,7 +508,18 @@ public class DashXClient {
             osName: .some(UIDevice.current.systemName),
             osVersion: .some(UIDevice.current.systemVersion),
             deviceModel: .some(self.getDeviceModel()),
-            deviceManufacturer: .some("Apple")
+            deviceManufacturer: .some("Apple"),
+            // Recorded per-contact so the backend's FCM notifier can pick the right
+            // APNs payload shape (alert push vs. legacy silent push) for *this*
+            // device. See apps/messaging/src/notifiers/fcm.rs on the backend.
+            metadata: .some(DashXGql.ContactMetadataInput(
+                library: .some(DashXGql.ContactLibraryInput(
+                    name: .some(Constants.LIBRARY_NAME),
+                    version: .some(Constants.PACKAGE_VERSION)
+                )),
+                osName: .some(UIDevice.current.systemName),
+                osVersion: .some(UIDevice.current.systemVersion)
+            ))
         )
 
         DashXLog.d(tag: #function, "Calling subscribe with \(subscribeContactInput)")

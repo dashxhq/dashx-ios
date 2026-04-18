@@ -1,8 +1,19 @@
 import Foundation
 
 public struct Constants {
+    /// Reverse-DNS namespace used to derive stable `UserDefaults` keys (APNs token,
+    /// identity token, FCM token, etc.). Changing this value would re-key every
+    /// user's persisted state and appear as a silent logout — do not change without
+    /// a migration.
     static let PACKAGE_NAME = "com.dashx.ios"
-    static let PACKAGE_VERSION = "1.2.0"
+
+    /// Analytics / telemetry library identifier sent in `SystemContext.library.name`
+    /// and the subscribe-contact metadata. Matches the slug convention used by the
+    /// Android SDK (`dashx-android`) and most analytics SDKs — keep these aligned
+    /// across platforms so dashboard filters work uniformly.
+    static let LIBRARY_NAME = "dashx-ios"
+
+    static let PACKAGE_VERSION = "1.3.0"
     public static let USER_PREFERENCES_KEY_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
     public static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID = "\(PACKAGE_NAME).account_anonymous_uid"
     public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"

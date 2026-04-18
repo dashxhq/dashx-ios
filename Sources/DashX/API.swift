@@ -375,6 +375,38 @@ public enum DashXGql {
         }
     }
 
+    struct ContactLibraryInput: InputObject {
+        private(set) var __data: InputDict
+        init(_ data: InputDict) { __data = data }
+
+        init(
+            name: GraphQLNullable<String> = nil,
+            version: GraphQLNullable<String> = nil
+        ) {
+            __data = InputDict([
+                "name": name,
+                "version": version,
+            ])
+        }
+    }
+
+    struct ContactMetadataInput: InputObject {
+        private(set) var __data: InputDict
+        init(_ data: InputDict) { __data = data }
+
+        init(
+            library: GraphQLNullable<ContactLibraryInput> = nil,
+            osName: GraphQLNullable<String> = nil,
+            osVersion: GraphQLNullable<String> = nil
+        ) {
+            __data = InputDict([
+                "library": library,
+                "osName": osName,
+                "osVersion": osVersion,
+            ])
+        }
+    }
+
     struct SubscribeContactInput: InputObject {
         private(set) var __data: InputDict
         init(_ data: InputDict) { __data = data }
@@ -393,6 +425,7 @@ public enum DashXGql {
             deviceUid: GraphQLNullable<String> = nil,
             deviceAdvertisingUid: GraphQLNullable<String> = nil,
             isDeviceAdTrackingEnabled: GraphQLNullable<Bool> = nil,
+            metadata: GraphQLNullable<ContactMetadataInput> = nil,
             tag: GraphQLNullable<String> = nil,
             targetEnvironment: GraphQLNullable<String> = nil
         ) {
@@ -403,6 +436,7 @@ public enum DashXGql {
                 "deviceModel": deviceModel, "deviceManufacturer": deviceManufacturer,
                 "deviceUid": deviceUid, "deviceAdvertisingUid": deviceAdvertisingUid,
                 "isDeviceAdTrackingEnabled": isDeviceAdTrackingEnabled,
+                "metadata": metadata,
                 "tag": tag, "targetEnvironment": targetEnvironment
             ])
         }

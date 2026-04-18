@@ -128,7 +128,7 @@ class SystemContext: NSObject {
         if let libraryInfo = libraryInfo {
             return DashXGql.SystemContextLibraryInput(name: libraryInfo.name, version: libraryInfo.version)
         }
-        return DashXGql.SystemContextLibraryInput(name: Constants.PACKAGE_NAME, version: Constants.PACKAGE_VERSION)
+        return DashXGql.SystemContextLibraryInput(name: Constants.LIBRARY_NAME, version: Constants.PACKAGE_VERSION)
     }
 
     func getSystemContextNetworkInput() -> DashXGql.SystemContextNetworkInput? {
