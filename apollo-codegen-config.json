@@ -14,7 +14,7 @@
       "moduleType": {
         "embeddedInTarget": {
           "name": "DashX",
-          "accessModifier": "public"
+          "accessModifier": "internal"
         }
       }
     },

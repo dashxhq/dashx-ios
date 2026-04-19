@@ -1,0 +1,3895 @@
+{
+  "ABIRoot": {
+    "kind": "Root",
+    "name": "DashXNotificationServiceExtension",
+    "printedName": "DashXNotificationServiceExtension",
+    "children": [
+      {
+        "kind": "Import",
+        "name": "Foundation",
+        "printedName": "Foundation",
+        "declKind": "Import",
+        "moduleName": "DashXNotificationServiceExtension"
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "DashXNotificationKeys",
+        "printedName": "DashXNotificationKeys",
+        "children": [
+          {
+            "kind": "Var",
+            "name": "payloadBlock",
+            "printedName": "payloadBlock",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4KeysO12payloadBlockSSvpZ",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO12payloadBlockSSvpZ",
+            "moduleName": "DashXNotificationServiceExtension",
+            "static": true,
+            "declAttributes": [
+              "HasInitialValue",
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4KeysO12payloadBlockSSvgZ",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO12payloadBlockSSvgZ",
+                "moduleName": "DashXNotificationServiceExtension",
+                "static": true,
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "categoryIdentifier",
+            "printedName": "categoryIdentifier",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4KeysO18categoryIdentifierSSvpZ",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO18categoryIdentifierSSvpZ",
+            "moduleName": "DashXNotificationServiceExtension",
+            "static": true,
+            "declAttributes": [
+              "HasInitialValue",
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4KeysO18categoryIdentifierSSvgZ",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO18categoryIdentifierSSvgZ",
+                "moduleName": "DashXNotificationServiceExtension",
+                "static": true,
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "iosSdkName",
+            "printedName": "iosSdkName",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4KeysO10iosSdkNameSSvpZ",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO10iosSdkNameSSvpZ",
+            "moduleName": "DashXNotificationServiceExtension",
+            "static": true,
+            "declAttributes": [
+              "HasInitialValue",
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4KeysO10iosSdkNameSSvgZ",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO10iosSdkNameSSvgZ",
+                "moduleName": "DashXNotificationServiceExtension",
+                "static": true,
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          }
+        ],
+        "declKind": "Enum",
+        "usr": "s:33DashXNotificationServiceExtension0aB4KeysO",
+        "mangledName": "$s33DashXNotificationServiceExtension0aB4KeysO",
+        "moduleName": "DashXNotificationServiceExtension",
+        "declAttributes": [
+          "AccessControl",
+          "RawDocComment"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "NavigationAction",
+        "printedName": "NavigationAction",
+        "children": [
+          {
+            "kind": "Var",
+            "name": "deepLink",
+            "printedName": "deepLink",
+            "children": [
+              {
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "(DashXNotificationServiceExtension.NavigationAction.Type) -> (Foundation.URL) -> DashXNotificationServiceExtension.NavigationAction",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(Foundation.URL) -> DashXNotificationServiceExtension.NavigationAction",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Tuple",
+                        "printedName": "(url: Foundation.URL)",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "URL",
+                            "printedName": "Foundation.URL",
+                            "usr": "s:10Foundation3URLV"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Metatype",
+                    "printedName": "DashXNotificationServiceExtension.NavigationAction.Type",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "declKind": "EnumElement",
+            "usr": "s:33DashXNotificationServiceExtension16NavigationActionO8deepLinkyAC10Foundation3URLV_tcACmF",
+            "mangledName": "$s33DashXNotificationServiceExtension16NavigationActionO8deepLinkyAC10Foundation3URLV_tcACmF",
+            "moduleName": "DashXNotificationServiceExtension"
+          },
+          {
+            "kind": "Var",
+            "name": "screen",
+            "printedName": "screen",
+            "children": [
+              {
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "(DashXNotificationServiceExtension.NavigationAction.Type) -> (Swift.String, [Swift.String : Swift.String]?) -> DashXNotificationServiceExtension.NavigationAction",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(Swift.String, [Swift.String : Swift.String]?) -> DashXNotificationServiceExtension.NavigationAction",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Tuple",
+                        "printedName": "(name: Swift.String, data: [Swift.String : Swift.String]?)",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "String",
+                            "printedName": "Swift.String",
+                            "usr": "s:SS"
+                          },
+                          {
+                            "kind": "TypeNominal",
+                            "name": "Optional",
+                            "printedName": "[Swift.String : Swift.String]?",
+                            "children": [
+                              {
+                                "kind": "TypeNominal",
+                                "name": "Dictionary",
+                                "printedName": "[Swift.String : Swift.String]",
+                                "children": [
+                                  {
+                                    "kind": "TypeNominal",
+                                    "name": "String",
+                                    "printedName": "Swift.String",
+                                    "usr": "s:SS"
+                                  },
+                                  {
+                                    "kind": "TypeNominal",
+                                    "name": "String",
+                                    "printedName": "Swift.String",
+                                    "usr": "s:SS"
+                                  }
+                                ],
+                                "usr": "s:SD"
+                              }
+                            ],
+                            "usr": "s:Sq"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Metatype",
+                    "printedName": "DashXNotificationServiceExtension.NavigationAction.Type",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "declKind": "EnumElement",
+            "usr": "s:33DashXNotificationServiceExtension16NavigationActionO6screenyACSS_SDyS2SGSgtcACmF",
+            "mangledName": "$s33DashXNotificationServiceExtension16NavigationActionO6screenyACSS_SDyS2SGSgtcACmF",
+            "moduleName": "DashXNotificationServiceExtension"
+          },
+          {
+            "kind": "Var",
+            "name": "richLanding",
+            "printedName": "richLanding",
+            "children": [
+              {
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "(DashXNotificationServiceExtension.NavigationAction.Type) -> (Foundation.URL) -> DashXNotificationServiceExtension.NavigationAction",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(Foundation.URL) -> DashXNotificationServiceExtension.NavigationAction",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Tuple",
+                        "printedName": "(url: Foundation.URL)",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "URL",
+                            "printedName": "Foundation.URL",
+                            "usr": "s:10Foundation3URLV"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Metatype",
+                    "printedName": "DashXNotificationServiceExtension.NavigationAction.Type",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "declKind": "EnumElement",
+            "usr": "s:33DashXNotificationServiceExtension16NavigationActionO11richLandingyAC10Foundation3URLV_tcACmF",
+            "mangledName": "$s33DashXNotificationServiceExtension16NavigationActionO11richLandingyAC10Foundation3URLV_tcACmF",
+            "moduleName": "DashXNotificationServiceExtension"
+          },
+          {
+            "kind": "Var",
+            "name": "clickAction",
+            "printedName": "clickAction",
+            "children": [
+              {
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "(DashXNotificationServiceExtension.NavigationAction.Type) -> (Swift.String) -> DashXNotificationServiceExtension.NavigationAction",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(Swift.String) -> DashXNotificationServiceExtension.NavigationAction",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Tuple",
+                        "printedName": "(action: Swift.String)",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "String",
+                            "printedName": "Swift.String",
+                            "usr": "s:SS"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Metatype",
+                    "printedName": "DashXNotificationServiceExtension.NavigationAction.Type",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "NavigationAction",
+                        "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "declKind": "EnumElement",
+            "usr": "s:33DashXNotificationServiceExtension16NavigationActionO05clickF0yACSS_tcACmF",
+            "mangledName": "$s33DashXNotificationServiceExtension16NavigationActionO05clickF0yACSS_tcACmF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "RawDocComment"
+            ]
+          },
+          {
+            "kind": "Function",
+            "name": "==",
+            "printedName": "==(_:_:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Bool",
+                "printedName": "Swift.Bool",
+                "usr": "s:Sb"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "NavigationAction",
+                "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "NavigationAction",
+                "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:33DashXNotificationServiceExtension16NavigationActionO2eeoiySbAC_ACtFZ",
+            "mangledName": "$s33DashXNotificationServiceExtension16NavigationActionO2eeoiySbAC_ACtFZ",
+            "moduleName": "DashXNotificationServiceExtension",
+            "static": true,
+            "implicit": true,
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Enum",
+        "usr": "s:33DashXNotificationServiceExtension16NavigationActionO",
+        "mangledName": "$s33DashXNotificationServiceExtension16NavigationActionO",
+        "moduleName": "DashXNotificationServiceExtension",
+        "declAttributes": [
+          "AccessControl",
+          "RawDocComment"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Equatable",
+            "printedName": "Equatable",
+            "usr": "s:SQ",
+            "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "ActionButton",
+        "printedName": "ActionButton",
+        "children": [
+          {
+            "kind": "Var",
+            "name": "identifier",
+            "printedName": "identifier",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV10identifierSSvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV10identifierSSvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV10identifierSSvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV10identifierSSvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "label",
+            "printedName": "label",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV5labelSSvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV5labelSSvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV5labelSSvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV5labelSSvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "icon",
+            "printedName": "icon",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV4iconSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV4iconSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV4iconSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV4iconSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "url",
+            "printedName": "url",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV3urlSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV3urlSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV3urlSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV3urlSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "clickAction",
+            "printedName": "clickAction",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV05clickE0SSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV05clickE0SSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV05clickE0SSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV05clickE0SSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "screenName",
+            "printedName": "screenName",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV10screenNameSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV10screenNameSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV10screenNameSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV10screenNameSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "screenData",
+            "printedName": "screenData",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "[Swift.String : Swift.String]?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Dictionary",
+                    "printedName": "[Swift.String : Swift.String]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:SD"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV10screenDataSDyS2SGSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV10screenDataSDyS2SGSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "[Swift.String : Swift.String]?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Dictionary",
+                        "printedName": "[Swift.String : Swift.String]",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "String",
+                            "printedName": "Swift.String",
+                            "usr": "s:SS"
+                          },
+                          {
+                            "kind": "TypeNominal",
+                            "name": "String",
+                            "printedName": "Swift.String",
+                            "usr": "s:SS"
+                          }
+                        ],
+                        "usr": "s:SD"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV10screenDataSDyS2SGSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV10screenDataSDyS2SGSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "richLanding",
+            "printedName": "richLanding",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.Bool?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Bool",
+                    "printedName": "Swift.Bool",
+                    "usr": "s:Sb"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV11richLandingSbSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV11richLandingSbSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.Bool?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Bool",
+                        "printedName": "Swift.Bool",
+                        "usr": "s:Sb"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV11richLandingSbSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV11richLandingSbSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Constructor",
+            "name": "init",
+            "printedName": "init(from:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "ActionButton",
+                "printedName": "DashXNotificationServiceExtension.ActionButton",
+                "usr": "s:33DashXNotificationServiceExtension12ActionButtonV"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Decoder",
+                "printedName": "any Swift.Decoder",
+                "usr": "s:s7DecoderP"
+              }
+            ],
+            "declKind": "Constructor",
+            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV4fromACs7Decoder_p_tKcfc",
+            "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV4fromACs7Decoder_p_tKcfc",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "AccessControl"
+            ],
+            "throwing": true,
+            "init_kind": "Designated"
+          }
+        ],
+        "declKind": "Struct",
+        "usr": "s:33DashXNotificationServiceExtension12ActionButtonV",
+        "mangledName": "$s33DashXNotificationServiceExtension12ActionButtonV",
+        "moduleName": "DashXNotificationServiceExtension",
+        "declAttributes": [
+          "AccessControl"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Decodable",
+            "printedName": "Decodable",
+            "usr": "s:Se",
+            "mangledName": "$sSe"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "DashXNotificationData",
+        "printedName": "DashXNotificationData",
+        "children": [
+          {
+            "kind": "Var",
+            "name": "id",
+            "printedName": "id",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV2idSSvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV2idSSvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV2idSSvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV2idSSvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "title",
+            "printedName": "title",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV5titleSSvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV5titleSSvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV5titleSSvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV5titleSSvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "body",
+            "printedName": "body",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV4bodySSvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV4bodySSvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV4bodySSvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV4bodySSvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "image",
+            "printedName": "image",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV5imageSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV5imageSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV5imageSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV5imageSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "url",
+            "printedName": "url",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV3urlSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV3urlSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV3urlSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV3urlSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "screenName",
+            "printedName": "screenName",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10screenNameSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10screenNameSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10screenNameSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10screenNameSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "screenData",
+            "printedName": "screenData",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "[Swift.String : Swift.String]?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Dictionary",
+                    "printedName": "[Swift.String : Swift.String]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:SD"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV06screenE0SDyS2SGSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV06screenE0SDyS2SGSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "[Swift.String : Swift.String]?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Dictionary",
+                        "printedName": "[Swift.String : Swift.String]",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "String",
+                            "printedName": "Swift.String",
+                            "usr": "s:SS"
+                          },
+                          {
+                            "kind": "TypeNominal",
+                            "name": "String",
+                            "printedName": "Swift.String",
+                            "usr": "s:SS"
+                          }
+                        ],
+                        "usr": "s:SD"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV06screenE0SDyS2SGSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV06screenE0SDyS2SGSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "clickAction",
+            "printedName": "clickAction",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV11clickActionSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV11clickActionSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV11clickActionSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV11clickActionSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "actionButtons",
+            "printedName": "actionButtons",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "[DashXNotificationServiceExtension.ActionButton]?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Array",
+                    "printedName": "[DashXNotificationServiceExtension.ActionButton]",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "ActionButton",
+                        "printedName": "DashXNotificationServiceExtension.ActionButton",
+                        "usr": "s:33DashXNotificationServiceExtension12ActionButtonV"
+                      }
+                    ],
+                    "usr": "s:Sa"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV13actionButtonsSayAA12ActionButtonVGSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV13actionButtonsSayAA12ActionButtonVGSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "[DashXNotificationServiceExtension.ActionButton]?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Array",
+                        "printedName": "[DashXNotificationServiceExtension.ActionButton]",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "ActionButton",
+                            "printedName": "DashXNotificationServiceExtension.ActionButton",
+                            "usr": "s:33DashXNotificationServiceExtension12ActionButtonV"
+                          }
+                        ],
+                        "usr": "s:Sa"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV13actionButtonsSayAA12ActionButtonVGSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV13actionButtonsSayAA12ActionButtonVGSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "richLanding",
+            "printedName": "richLanding",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.Bool?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Bool",
+                    "printedName": "Swift.Bool",
+                    "usr": "s:Sb"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV11richLandingSbSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV11richLandingSbSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.Bool?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Bool",
+                        "printedName": "Swift.Bool",
+                        "usr": "s:Sb"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV11richLandingSbSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV11richLandingSbSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "interruptionLevel",
+            "printedName": "interruptionLevel",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV17interruptionLevelSSSgvp",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV17interruptionLevelSSSgvp",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.String?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV17interruptionLevelSSSgvg",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV17interruptionLevelSSSgvg",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "TypeDecl",
+            "name": "CodingKeys",
+            "printedName": "CodingKeys",
+            "children": [
+              {
+                "kind": "Var",
+                "name": "id",
+                "printedName": "id",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO2idyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO2idyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "title",
+                "printedName": "title",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO5titleyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO5titleyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "body",
+                "printedName": "body",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO4bodyyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO4bodyyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "image",
+                "printedName": "image",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO5imageyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO5imageyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "url",
+                "printedName": "url",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO3urlyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO3urlyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "actionButtons",
+                "printedName": "actionButtons",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO13actionButtonsyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO13actionButtonsyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "screenName",
+                "printedName": "screenName",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO10screenNameyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO10screenNameyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "screenData",
+                "printedName": "screenData",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO06screenE0yA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO06screenE0yA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "clickAction",
+                "printedName": "clickAction",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11clickActionyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11clickActionyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "richLanding",
+                "printedName": "richLanding",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11richLandingyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11richLandingyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Var",
+                "name": "interruptionLevel",
+                "printedName": "interruptionLevel",
+                "children": [
+                  {
+                    "kind": "TypeFunc",
+                    "name": "Function",
+                    "printedName": "(DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type) -> DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Metatype",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys.Type",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "CodingKeys",
+                            "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "declKind": "EnumElement",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO17interruptionLevelyA2EmF",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO17interruptionLevelyA2EmF",
+                "moduleName": "DashXNotificationServiceExtension"
+              },
+              {
+                "kind": "Constructor",
+                "name": "init",
+                "printedName": "init(rawValue:)",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Constructor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8rawValueAESgSS_tcfc",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8rawValueAESgSS_tcfc",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "init_kind": "Designated"
+              },
+              {
+                "kind": "Var",
+                "name": "rawValue",
+                "printedName": "rawValue",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Var",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8rawValueSSvp",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8rawValueSSvp",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessors": [
+                  {
+                    "kind": "Accessor",
+                    "name": "Get",
+                    "printedName": "Get()",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "declKind": "Accessor",
+                    "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8rawValueSSvg",
+                    "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8rawValueSSvg",
+                    "moduleName": "DashXNotificationServiceExtension",
+                    "implicit": true,
+                    "accessorKind": "get"
+                  }
+                ]
+              },
+              {
+                "kind": "Var",
+                "name": "stringValue",
+                "printedName": "stringValue",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Var",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11stringValueSSvp",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11stringValueSSvp",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessors": [
+                  {
+                    "kind": "Accessor",
+                    "name": "Get",
+                    "printedName": "Get()",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ],
+                    "declKind": "Accessor",
+                    "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11stringValueSSvg",
+                    "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11stringValueSSvg",
+                    "moduleName": "DashXNotificationServiceExtension",
+                    "implicit": true,
+                    "accessorKind": "get"
+                  }
+                ]
+              },
+              {
+                "kind": "Constructor",
+                "name": "init",
+                "printedName": "init(stringValue:)",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Constructor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11stringValueAESgSS_tcfc",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO11stringValueAESgSS_tcfc",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "init_kind": "Designated"
+              },
+              {
+                "kind": "Var",
+                "name": "intValue",
+                "printedName": "intValue",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "Swift.Int?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Int",
+                        "printedName": "Swift.Int",
+                        "usr": "s:Si"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  }
+                ],
+                "declKind": "Var",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8intValueSiSgvp",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8intValueSiSgvp",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "accessors": [
+                  {
+                    "kind": "Accessor",
+                    "name": "Get",
+                    "printedName": "Get()",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Optional",
+                        "printedName": "Swift.Int?",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "Int",
+                            "printedName": "Swift.Int",
+                            "usr": "s:Si"
+                          }
+                        ],
+                        "usr": "s:Sq"
+                      }
+                    ],
+                    "declKind": "Accessor",
+                    "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8intValueSiSgvg",
+                    "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8intValueSiSgvg",
+                    "moduleName": "DashXNotificationServiceExtension",
+                    "implicit": true,
+                    "accessorKind": "get"
+                  }
+                ]
+              },
+              {
+                "kind": "Constructor",
+                "name": "init",
+                "printedName": "init(intValue:)",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Optional",
+                    "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys?",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "CodingKeys",
+                        "printedName": "DashXNotificationServiceExtension.DashXNotificationData.CodingKeys",
+                        "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO"
+                      }
+                    ],
+                    "usr": "s:Sq"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int",
+                    "printedName": "Swift.Int",
+                    "usr": "s:Si"
+                  }
+                ],
+                "declKind": "Constructor",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8intValueAESgSi_tcfc",
+                "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO8intValueAESgSi_tcfc",
+                "moduleName": "DashXNotificationServiceExtension",
+                "implicit": true,
+                "init_kind": "Designated"
+              }
+            ],
+            "declKind": "Enum",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV10CodingKeysO",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV10CodingKeysO",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "AccessControl"
+            ],
+            "enumRawTypeName": "String",
+            "conformances": [
+              {
+                "kind": "Conformance",
+                "name": "CodingKey",
+                "printedName": "CodingKey",
+                "usr": "s:s9CodingKeyP",
+                "mangledName": "$ss9CodingKeyP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "Copyable",
+                "printedName": "Copyable",
+                "usr": "s:s8CopyableP",
+                "mangledName": "$ss8CopyableP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "Escapable",
+                "printedName": "Escapable",
+                "usr": "s:s9EscapableP",
+                "mangledName": "$ss9EscapableP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "Hashable",
+                "printedName": "Hashable",
+                "usr": "s:SH",
+                "mangledName": "$sSH"
+              },
+              {
+                "kind": "Conformance",
+                "name": "RawRepresentable",
+                "printedName": "RawRepresentable",
+                "children": [
+                  {
+                    "kind": "TypeWitness",
+                    "name": "RawValue",
+                    "printedName": "RawValue",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "String",
+                        "printedName": "Swift.String",
+                        "usr": "s:SS"
+                      }
+                    ]
+                  }
+                ],
+                "usr": "s:SY",
+                "mangledName": "$sSY"
+              },
+              {
+                "kind": "Conformance",
+                "name": "CustomDebugStringConvertible",
+                "printedName": "CustomDebugStringConvertible",
+                "usr": "s:s28CustomDebugStringConvertibleP",
+                "mangledName": "$ss28CustomDebugStringConvertibleP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "CustomStringConvertible",
+                "printedName": "CustomStringConvertible",
+                "usr": "s:s23CustomStringConvertibleP",
+                "mangledName": "$ss23CustomStringConvertibleP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "Sendable",
+                "printedName": "Sendable",
+                "usr": "s:s8SendableP",
+                "mangledName": "$ss8SendableP"
+              },
+              {
+                "kind": "Conformance",
+                "name": "Equatable",
+                "printedName": "Equatable",
+                "usr": "s:SQ",
+                "mangledName": "$sSQ"
+              },
+              {
+                "kind": "Conformance",
+                "name": "SendableMetatype",
+                "printedName": "SendableMetatype",
+                "usr": "s:s16SendableMetatypeP",
+                "mangledName": "$ss16SendableMetatypeP"
+              }
+            ]
+          },
+          {
+            "kind": "Constructor",
+            "name": "init",
+            "printedName": "init(from:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "DashXNotificationData",
+                "printedName": "DashXNotificationServiceExtension.DashXNotificationData",
+                "usr": "s:33DashXNotificationServiceExtension0aB4DataV"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Decoder",
+                "printedName": "any Swift.Decoder",
+                "usr": "s:s7DecoderP"
+              }
+            ],
+            "declKind": "Constructor",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV4fromACs7Decoder_p_tKcfc",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV4fromACs7Decoder_p_tKcfc",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "AccessControl"
+            ],
+            "throwing": true,
+            "init_kind": "Designated"
+          },
+          {
+            "kind": "Function",
+            "name": "navigationAction",
+            "printedName": "navigationAction(forActionIdentifier:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "DashXNotificationServiceExtension.NavigationAction?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "NavigationAction",
+                    "printedName": "DashXNotificationServiceExtension.NavigationAction",
+                    "usr": "s:33DashXNotificationServiceExtension16NavigationActionO"
+                  }
+                ],
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:33DashXNotificationServiceExtension0aB4DataV16navigationAction03forG10IdentifierAA010NavigationG0OSgSS_tF",
+            "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV16navigationAction03forG10IdentifierAA010NavigationG0OSgSS_tF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "declAttributes": [
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Struct",
+        "usr": "s:33DashXNotificationServiceExtension0aB4DataV",
+        "mangledName": "$s33DashXNotificationServiceExtension0aB4DataV",
+        "moduleName": "DashXNotificationServiceExtension",
+        "declAttributes": [
+          "AccessControl"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Decodable",
+            "printedName": "Decodable",
+            "usr": "s:Se",
+            "mangledName": "$sSe"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      },
+      {
+        "kind": "Import",
+        "name": "CryptoKit",
+        "printedName": "CryptoKit",
+        "declKind": "Import",
+        "moduleName": "DashXNotificationServiceExtension"
+      },
+      {
+        "kind": "Import",
+        "name": "Foundation",
+        "printedName": "Foundation",
+        "declKind": "Import",
+        "moduleName": "DashXNotificationServiceExtension"
+      },
+      {
+        "kind": "Import",
+        "name": "MobileCoreServices",
+        "printedName": "MobileCoreServices",
+        "declKind": "Import",
+        "moduleName": "DashXNotificationServiceExtension"
+      },
+      {
+        "kind": "Import",
+        "name": "UserNotifications",
+        "printedName": "UserNotifications",
+        "declKind": "Import",
+        "moduleName": "DashXNotificationServiceExtension"
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "DashXNotificationService",
+        "printedName": "DashXNotificationService",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "didReceive",
+            "printedName": "didReceive(_:withContentHandler:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "UNNotificationRequest",
+                "printedName": "UserNotifications.UNNotificationRequest",
+                "usr": "c:objc(cs)UNNotificationRequest"
+              },
+              {
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "(UserNotifications.UNNotificationContent) -> ()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Void",
+                    "printedName": "()"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "UNNotificationContent",
+                    "printedName": "UserNotifications.UNNotificationContent",
+                    "usr": "c:objc(cs)UNNotificationContent"
+                  }
+                ]
+              }
+            ],
+            "declKind": "Func",
+            "usr": "c:@M@DashXNotificationServiceExtension@objc(cs)DashXNotificationService(im)didReceiveNotificationRequest:withContentHandler:",
+            "mangledName": "$s33DashXNotificationServiceExtension0abC0C10didReceive_18withContentHandlerySo21UNNotificationRequestC_ySo0jH0CctF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "overriding": true,
+            "isOpen": true,
+            "objc_name": "didReceiveNotificationRequest:withContentHandler:",
+            "declAttributes": [
+              "Dynamic",
+              "ObjC",
+              "AccessControl",
+              "Override"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "serviceExtensionTimeWillExpire",
+            "printedName": "serviceExtensionTimeWillExpire()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "c:@M@DashXNotificationServiceExtension@objc(cs)DashXNotificationService(im)serviceExtensionTimeWillExpire",
+            "mangledName": "$s33DashXNotificationServiceExtension0abC0C07serviceD14TimeWillExpireyyF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "overriding": true,
+            "isOpen": true,
+            "objc_name": "serviceExtensionTimeWillExpire",
+            "declAttributes": [
+              "Dynamic",
+              "ObjC",
+              "AccessControl",
+              "Override"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "dashxCategoryId",
+            "printedName": "dashxCategoryId(forButtons:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Array",
+                "printedName": "[DashXNotificationServiceExtension.ActionButton]",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "ActionButton",
+                    "printedName": "DashXNotificationServiceExtension.ActionButton",
+                    "usr": "s:33DashXNotificationServiceExtension12ActionButtonV"
+                  }
+                ],
+                "usr": "s:Sa"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:33DashXNotificationServiceExtension0abC0C15dashxCategoryId10forButtonsSSSayAA12ActionButtonVG_tFZ",
+            "mangledName": "$s33DashXNotificationServiceExtension0abC0C15dashxCategoryId10forButtonsSSSayAA12ActionButtonVG_tFZ",
+            "moduleName": "DashXNotificationServiceExtension",
+            "static": true,
+            "declAttributes": [
+              "Final",
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Constructor",
+            "name": "init",
+            "printedName": "init()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "DashXNotificationService",
+                "printedName": "DashXNotificationServiceExtension.DashXNotificationService",
+                "usr": "c:@M@DashXNotificationServiceExtension@objc(cs)DashXNotificationService"
+              }
+            ],
+            "declKind": "Constructor",
+            "usr": "c:@M@DashXNotificationServiceExtension@objc(cs)DashXNotificationService(im)init",
+            "mangledName": "$s33DashXNotificationServiceExtension0abC0CACycfc",
+            "moduleName": "DashXNotificationServiceExtension",
+            "overriding": true,
+            "implicit": true,
+            "objc_name": "init",
+            "declAttributes": [
+              "Dynamic",
+              "ObjC",
+              "Override"
+            ],
+            "init_kind": "Designated"
+          }
+        ],
+        "declKind": "Class",
+        "usr": "c:@M@DashXNotificationServiceExtension@objc(cs)DashXNotificationService",
+        "mangledName": "$s33DashXNotificationServiceExtension0abC0C",
+        "moduleName": "DashXNotificationServiceExtension",
+        "isOpen": true,
+        "declAttributes": [
+          "AccessControl",
+          "RawDocComment",
+          "ObjC"
+        ],
+        "superclassUsr": "c:objc(cs)UNNotificationServiceExtension",
+        "inheritsConvenienceInitializers": true,
+        "superclassNames": [
+          "UserNotifications.UNNotificationServiceExtension",
+          "ObjectiveC.NSObject"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "_KeyValueCodingAndObserving",
+            "printedName": "_KeyValueCodingAndObserving",
+            "usr": "s:10Foundation27_KeyValueCodingAndObservingP",
+            "mangledName": "$s10Foundation27_KeyValueCodingAndObservingP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "_KeyValueCodingAndObservingPublishing",
+            "printedName": "_KeyValueCodingAndObservingPublishing",
+            "usr": "s:10Foundation37_KeyValueCodingAndObservingPublishingP",
+            "mangledName": "$s10Foundation37_KeyValueCodingAndObservingPublishingP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CVarArg",
+            "printedName": "CVarArg",
+            "usr": "s:s7CVarArgP",
+            "mangledName": "$ss7CVarArgP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomDebugStringConvertible",
+            "printedName": "CustomDebugStringConvertible",
+            "usr": "s:s28CustomDebugStringConvertibleP",
+            "mangledName": "$ss28CustomDebugStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomStringConvertible",
+            "printedName": "CustomStringConvertible",
+            "usr": "s:s23CustomStringConvertibleP",
+            "mangledName": "$ss23CustomStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Equatable",
+            "printedName": "Equatable",
+            "usr": "s:SQ",
+            "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Hashable",
+            "printedName": "Hashable",
+            "usr": "s:SH",
+            "mangledName": "$sSH"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "KeyedDecodingContainer",
+        "printedName": "KeyedDecodingContainer",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "decodeStringifiedJSONIfPresent",
+            "printedName": "decodeStringifiedJSONIfPresent(_:forKey:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "τ_1_0?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "GenericTypeParam",
+                    "printedName": "τ_1_0"
+                  }
+                ],
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Metatype",
+                "printedName": "τ_1_0.Type",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "GenericTypeParam",
+                    "printedName": "τ_1_0"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "GenericTypeParam",
+                "printedName": "τ_0_0"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:s22KeyedDecodingContainerV33DashXNotificationServiceExtensionE30decodeStringifiedJSONIfPresent_6forKeyqd__Sgqd__m_xtSeRd__lF",
+            "mangledName": "$ss22KeyedDecodingContainerV33DashXNotificationServiceExtensionE30decodeStringifiedJSONIfPresent_6forKeyqd__Sgqd__m_xtSeRd__lF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "genericSig": "<τ_0_0, τ_1_0 where τ_0_0 : Swift.CodingKey, τ_1_0 : Swift.Decodable>",
+            "sugared_genericSig": "<K, T where K : Swift.CodingKey, T : Swift.Decodable>",
+            "declAttributes": [
+              "RawDocComment"
+            ],
+            "isFromExtension": true,
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "decodeBoolFromStringIfPresent",
+            "printedName": "decodeBoolFromStringIfPresent(forKey:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.Bool?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Bool",
+                    "printedName": "Swift.Bool",
+                    "usr": "s:Sb"
+                  }
+                ],
+                "usr": "s:Sq"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "GenericTypeParam",
+                "printedName": "τ_0_0"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:s22KeyedDecodingContainerV33DashXNotificationServiceExtensionE29decodeBoolFromStringIfPresent6forKeySbSgx_tF",
+            "mangledName": "$ss22KeyedDecodingContainerV33DashXNotificationServiceExtensionE29decodeBoolFromStringIfPresent6forKeySbSgx_tF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "genericSig": "<τ_0_0 where τ_0_0 : Swift.CodingKey>",
+            "sugared_genericSig": "<K where K : Swift.CodingKey>",
+            "declAttributes": [
+              "RawDocComment"
+            ],
+            "isFromExtension": true,
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Struct",
+        "usr": "s:s22KeyedDecodingContainerV",
+        "mangledName": "$ss22KeyedDecodingContainerV",
+        "moduleName": "Swift",
+        "genericSig": "<τ_0_0 where τ_0_0 : Swift.CodingKey>",
+        "sugared_genericSig": "<K where K : Swift.CodingKey>",
+        "isExternal": true,
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "KeyedDecodingContainerProtocol",
+            "printedName": "KeyedDecodingContainerProtocol",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "Key",
+                "printedName": "Key",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "GenericTypeParam",
+                    "printedName": "τ_0_0"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:s30KeyedDecodingContainerProtocolP",
+            "mangledName": "$ss30KeyedDecodingContainerProtocolP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "Dictionary",
+        "printedName": "Dictionary",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "dashxNotificationData",
+            "printedName": "dashxNotificationData()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "DashXNotificationServiceExtension.DashXNotificationData?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "DashXNotificationData",
+                    "printedName": "DashXNotificationServiceExtension.DashXNotificationData",
+                    "usr": "s:33DashXNotificationServiceExtension0aB4DataV"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:SD33DashXNotificationServiceExtensions11AnyHashableVRszypRs_rlE21dashxNotificationDataAA0abI0VSgyF",
+            "mangledName": "$sSD33DashXNotificationServiceExtensions11AnyHashableVRszypRs_rlE21dashxNotificationDataAA0abI0VSgyF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "genericSig": "<τ_0_0, τ_0_1 where τ_0_0 == Swift.AnyHashable, τ_0_1 == Any>",
+            "sugared_genericSig": "<Key, Value where Key == Swift.AnyHashable, Value == Any>",
+            "isFromExtension": true,
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "dashxNotificationId",
+            "printedName": "dashxNotificationId()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Swift.String?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:SD33DashXNotificationServiceExtensions11AnyHashableVRszypRs_rlE19dashxNotificationIdSSSgyF",
+            "mangledName": "$sSD33DashXNotificationServiceExtensions11AnyHashableVRszypRs_rlE19dashxNotificationIdSSSgyF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "genericSig": "<τ_0_0, τ_0_1 where τ_0_0 == Swift.AnyHashable, τ_0_1 == Any>",
+            "sugared_genericSig": "<Key, Value where Key == Swift.AnyHashable, Value == Any>",
+            "isFromExtension": true,
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "dashxNotificationUrl",
+            "printedName": "dashxNotificationUrl()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Optional",
+                "printedName": "Foundation.URL?",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "URL",
+                    "printedName": "Foundation.URL",
+                    "usr": "s:10Foundation3URLV"
+                  }
+                ],
+                "usr": "s:Sq"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:SD33DashXNotificationServiceExtensions11AnyHashableVRszypRs_rlE20dashxNotificationUrl10Foundation3URLVSgyF",
+            "mangledName": "$sSD33DashXNotificationServiceExtensions11AnyHashableVRszypRs_rlE20dashxNotificationUrl10Foundation3URLVSgyF",
+            "moduleName": "DashXNotificationServiceExtension",
+            "genericSig": "<τ_0_0, τ_0_1 where τ_0_0 == Swift.AnyHashable, τ_0_1 == Any>",
+            "sugared_genericSig": "<Key, Value where Key == Swift.AnyHashable, Value == Any>",
+            "isFromExtension": true,
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Struct",
+        "usr": "s:SD",
+        "mangledName": "$sSD",
+        "moduleName": "Swift",
+        "genericSig": "<τ_0_0, τ_0_1 where τ_0_0 : Swift.Hashable>",
+        "sugared_genericSig": "<Key, Value where Key : Swift.Hashable>",
+        "declAttributes": [
+          "EagerMove",
+          "Frozen"
+        ],
+        "isExternal": true,
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "CVarArg",
+            "printedName": "CVarArg",
+            "usr": "s:s7CVarArgP",
+            "mangledName": "$ss7CVarArgP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Collection",
+            "printedName": "Collection",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "Element",
+                "printedName": "Element",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Tuple",
+                    "printedName": "(key: τ_0_0, value: τ_0_1)",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "GenericTypeParam",
+                        "printedName": "τ_0_0"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "GenericTypeParam",
+                        "printedName": "τ_0_1"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "TypeWitness",
+                "name": "Index",
+                "printedName": "Index",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Index",
+                    "printedName": "Swift.Dictionary<τ_0_0, τ_0_1>.Index",
+                    "usr": "s:SD5IndexV"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeWitness",
+                "name": "Iterator",
+                "printedName": "Iterator",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Iterator",
+                    "printedName": "Swift.Dictionary<τ_0_0, τ_0_1>.Iterator",
+                    "usr": "s:SD8IteratorV"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeWitness",
+                "name": "SubSequence",
+                "printedName": "SubSequence",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Slice",
+                    "printedName": "Swift.Slice<[τ_0_0 : τ_0_1]>",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Dictionary",
+                        "printedName": "[τ_0_0 : τ_0_1]",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "GenericTypeParam",
+                            "printedName": "τ_0_0"
+                          },
+                          {
+                            "kind": "TypeNominal",
+                            "name": "GenericTypeParam",
+                            "printedName": "τ_0_1"
+                          }
+                        ],
+                        "usr": "s:SD"
+                      }
+                    ],
+                    "usr": "s:s5SliceV"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeWitness",
+                "name": "Indices",
+                "printedName": "Indices",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "DefaultIndices",
+                    "printedName": "Swift.DefaultIndices<[τ_0_0 : τ_0_1]>",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Dictionary",
+                        "printedName": "[τ_0_0 : τ_0_1]",
+                        "children": [
+                          {
+                            "kind": "TypeNominal",
+                            "name": "GenericTypeParam",
+                            "printedName": "τ_0_0"
+                          },
+                          {
+                            "kind": "TypeNominal",
+                            "name": "GenericTypeParam",
+                            "printedName": "τ_0_1"
+                          }
+                        ],
+                        "usr": "s:SD"
+                      }
+                    ],
+                    "usr": "s:SI"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:Sl",
+            "mangledName": "$sSl"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomDebugStringConvertible",
+            "printedName": "CustomDebugStringConvertible",
+            "usr": "s:s28CustomDebugStringConvertibleP",
+            "mangledName": "$ss28CustomDebugStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomReflectable",
+            "printedName": "CustomReflectable",
+            "usr": "s:s17CustomReflectableP",
+            "mangledName": "$ss17CustomReflectableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomStringConvertible",
+            "printedName": "CustomStringConvertible",
+            "usr": "s:s23CustomStringConvertibleP",
+            "mangledName": "$ss23CustomStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Decodable",
+            "printedName": "Decodable",
+            "usr": "s:Se",
+            "mangledName": "$sSe"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Encodable",
+            "printedName": "Encodable",
+            "usr": "s:SE",
+            "mangledName": "$sSE"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Equatable",
+            "printedName": "Equatable",
+            "usr": "s:SQ",
+            "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "ExpressibleByDictionaryLiteral",
+            "printedName": "ExpressibleByDictionaryLiteral",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "Key",
+                "printedName": "Key",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "GenericTypeParam",
+                    "printedName": "τ_0_0"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeWitness",
+                "name": "Value",
+                "printedName": "Value",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "GenericTypeParam",
+                    "printedName": "τ_0_1"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:s30ExpressibleByDictionaryLiteralP",
+            "mangledName": "$ss30ExpressibleByDictionaryLiteralP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Hashable",
+            "printedName": "Hashable",
+            "usr": "s:SH",
+            "mangledName": "$sSH"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sendable",
+            "printedName": "Sendable",
+            "usr": "s:s8SendableP",
+            "mangledName": "$ss8SendableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "SendableMetatype",
+            "printedName": "SendableMetatype",
+            "usr": "s:s16SendableMetatypeP",
+            "mangledName": "$ss16SendableMetatypeP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Sequence",
+            "printedName": "Sequence",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "Element",
+                "printedName": "Element",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Tuple",
+                    "printedName": "(key: τ_0_0, value: τ_0_1)",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "GenericTypeParam",
+                        "printedName": "τ_0_0"
+                      },
+                      {
+                        "kind": "TypeNominal",
+                        "name": "GenericTypeParam",
+                        "printedName": "τ_0_1"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "TypeWitness",
+                "name": "Iterator",
+                "printedName": "Iterator",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Iterator",
+                    "printedName": "Swift.Dictionary<τ_0_0, τ_0_1>.Iterator",
+                    "usr": "s:SD8IteratorV"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:ST",
+            "mangledName": "$sST"
+          },
+          {
+            "kind": "Conformance",
+            "name": "_HasCustomAnyHashableRepresentation",
+            "printedName": "_HasCustomAnyHashableRepresentation",
+            "usr": "s:s35_HasCustomAnyHashableRepresentationP",
+            "mangledName": "$ss35_HasCustomAnyHashableRepresentationP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "_ObjectiveCBridgeable",
+            "printedName": "_ObjectiveCBridgeable",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "_ObjectiveCType",
+                "printedName": "_ObjectiveCType",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "NSDictionary",
+                    "printedName": "Foundation.NSDictionary",
+                    "usr": "c:objc(cs)NSDictionary"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:s21_ObjectiveCBridgeableP",
+            "mangledName": "$ss21_ObjectiveCBridgeableP"
+          }
+        ]
+      }
+    ],
+    "json_format_version": 8
+  },
+  "ConstValues": [
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 286,
+      "length": 7,
+      "value": "\"dashx\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 337,
+      "length": 20,
+      "value": "\"DASHX_NOTIFICATION\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 393,
+      "length": 15,
+      "value": "\"com.dashx.ios\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 1418,
+      "length": 6,
+      "value": "\"true\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 3350,
+      "length": 49,
+      "value": "\"com.apple.UNNotificationDefaultActionIdentifier\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4080,
+      "length": 16,
+      "value": "\"action_buttons\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4123,
+      "length": 13,
+      "value": "\"screen_name\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4163,
+      "length": 13,
+      "value": "\"screen_data\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4204,
+      "length": 14,
+      "value": "\"click_action\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4246,
+      "length": 14,
+      "value": "\"rich_landing\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4294,
+      "length": 20,
+      "value": "\"interruption_level\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4080,
+      "length": 16,
+      "value": "\"action_buttons\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4123,
+      "length": 13,
+      "value": "\"screen_name\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4163,
+      "length": 13,
+      "value": "\"screen_data\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4204,
+      "length": 14,
+      "value": "\"click_action\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4246,
+      "length": 14,
+      "value": "\"rich_landing\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "StringLiteral",
+      "offset": 4294,
+      "length": 20,
+      "value": "\"interruption_level\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "BooleanLiteral",
+      "offset": 5962,
+      "length": 4,
+      "value": "true"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXCore\/DashXNotificationModels.swift",
+      "kind": "BooleanLiteral",
+      "offset": 6810,
+      "length": 4,
+      "value": "true"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 2120,
+      "length": 2,
+      "value": "50"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 2125,
+      "length": 4,
+      "value": "1024"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 2132,
+      "length": 4,
+      "value": "1024"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 2502,
+      "length": 1,
+      "value": "3"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "BooleanLiteral",
+      "offset": 2706,
+      "length": 5,
+      "value": "false"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "BooleanLiteral",
+      "offset": 5782,
+      "length": 4,
+      "value": "true"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "Array",
+      "offset": 7317,
+      "length": 2,
+      "value": "[]"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 7479,
+      "length": 1,
+      "value": "0"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 8022,
+      "length": 1,
+      "value": "2"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 8388,
+      "length": 30,
+      "value": "\"\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 8405,
+      "length": 1,
+      "value": "\"|\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 8417,
+      "length": 23,
+      "value": "\"\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 8439,
+      "length": 8,
+      "value": "\"\u001F\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 8556,
+      "length": 6,
+      "value": "\"%02x\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 8594,
+      "length": 12,
+      "value": "\"DASHX_CAT_\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 8627,
+      "length": 2,
+      "value": "14"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 9652,
+      "length": 16,
+      "value": "\"DASHX_BASE_URI\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 9753,
+      "length": 18,
+      "value": "\"DASHX_PUBLIC_KEY\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 9931,
+      "length": 6,
+      "value": "\"POST\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 9963,
+      "length": 18,
+      "value": "\"application\/json\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10003,
+      "length": 14,
+      "value": "\"Content-Type\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10075,
+      "length": 14,
+      "value": "\"X-PUBLIC-KEY\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10167,
+      "length": 26,
+      "value": "\"DASHX_TARGET_ENVIRONMENT\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10276,
+      "length": 22,
+      "value": "\"X-TARGET-ENVIRONMENT\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10402,
+      "length": 135,
+      "value": "\"mutation TrackMessage($input: TrackMessageInput!) {\n  trackMessage(input: $input) { success }\n}\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10586,
+      "length": 7,
+      "value": "\"query\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10617,
+      "length": 11,
+      "value": "\"variables\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10648,
+      "length": 7,
+      "value": "\"input\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10679,
+      "length": 4,
+      "value": "\"id\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 10764,
+      "length": 11,
+      "value": "\"timestamp\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 10958,
+      "length": 1,
+      "value": "0"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "IntegerLiteral",
+      "offset": 11799,
+      "length": 1,
+      "value": "0"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 12019,
+      "length": 14,
+      "value": "\"Content-Type\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 12382,
+      "length": 5,
+      "value": "\"dat\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "Dictionary",
+      "offset": 12694,
+      "length": 3,
+      "value": "[]"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13494,
+      "length": 3,
+      "value": "\";\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13656,
+      "length": 12,
+      "value": "\"image\/jpeg\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13670,
+      "length": 11,
+      "value": "\"image\/jpg\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13690,
+      "length": 5,
+      "value": "\"jpg\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13709,
+      "length": 11,
+      "value": "\"image\/png\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13729,
+      "length": 5,
+      "value": "\"png\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13748,
+      "length": 11,
+      "value": "\"image\/gif\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13768,
+      "length": 5,
+      "value": "\"gif\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13787,
+      "length": 12,
+      "value": "\"image\/heic\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13808,
+      "length": 6,
+      "value": "\"heic\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13828,
+      "length": 12,
+      "value": "\"image\/webp\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13849,
+      "length": 6,
+      "value": "\"webp\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13869,
+      "length": 11,
+      "value": "\"video\/mp4\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13889,
+      "length": 5,
+      "value": "\"mp4\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13908,
+      "length": 12,
+      "value": "\"audio\/mpeg\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13922,
+      "length": 11,
+      "value": "\"audio\/mp3\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 13942,
+      "length": 5,
+      "value": "\"mp3\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
+      "kind": "StringLiteral",
+      "offset": 14328,
+      "length": 3,
+      "value": "\";\""
+    }
+  ]
+}

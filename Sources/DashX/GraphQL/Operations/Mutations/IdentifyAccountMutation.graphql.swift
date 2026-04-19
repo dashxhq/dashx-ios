@@ -1,12 +1,12 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_exported import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   class IdentifyAccountMutation: GraphQLMutation {
-    public static let operationName: String = "IdentifyAccount"
-    public static let operationDocument: ApolloAPI.OperationDocument = .init(
+    static let operationName: String = "IdentifyAccount"
+    static let operationDocument: ApolloAPI.OperationDocument = .init(
       definition: .init(
         #"mutation IdentifyAccount($input: IdentifyAccountInput!) { identifyAccount(input: $input) { __typename id } }"#
       ))
@@ -19,21 +19,21 @@ public extension DashXGql {
 
     public var __variables: Variables? { ["input": input] }
 
-    public struct Data: DashXGql.SelectionSet {
-      public let __data: DataDict
-      public init(_dataDict: DataDict) { __data = _dataDict }
+    struct Data: DashXGql.SelectionSet {
+      let __data: DataDict
+      init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
-      public static var __selections: [ApolloAPI.Selection] { [
+      static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
+      static var __selections: [ApolloAPI.Selection] { [
         .field("identifyAccount", IdentifyAccount.self, arguments: ["input": .variable("input")]),
       ] }
-      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         IdentifyAccountMutation.Data.self
       ] }
 
-      public var identifyAccount: IdentifyAccount { __data["identifyAccount"] }
+      var identifyAccount: IdentifyAccount { __data["identifyAccount"] }
 
-      public init(
+      init(
         identifyAccount: IdentifyAccount
       ) {
         self.init(unsafelyWithData: [
@@ -45,22 +45,22 @@ public extension DashXGql {
       /// IdentifyAccount
       ///
       /// Parent Type: `Account`
-      public struct IdentifyAccount: DashXGql.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
+      struct IdentifyAccount: DashXGql.SelectionSet {
+        let __data: DataDict
+        init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Account }
-        public static var __selections: [ApolloAPI.Selection] { [
+        static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Account }
+        static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("id", DashXGql.UUID.self),
         ] }
-        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
           IdentifyAccountMutation.Data.IdentifyAccount.self
         ] }
 
-        public var id: DashXGql.UUID { __data["id"] }
+        var id: DashXGql.UUID { __data["id"] }
 
-        public init(
+        init(
           id: DashXGql.UUID
         ) {
           self.init(unsafelyWithData: [

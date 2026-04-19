@@ -1,9 +1,9 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   enum TrackMessageStatus: String, EnumType {
     case delivered = "DELIVERED"
     case dismissed = "DISMISSED"

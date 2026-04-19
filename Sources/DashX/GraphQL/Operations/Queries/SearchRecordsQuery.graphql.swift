@@ -1,12 +1,12 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_exported import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   class SearchRecordsQuery: GraphQLQuery {
-    public static let operationName: String = "SearchRecords"
-    public static let operationDocument: ApolloAPI.OperationDocument = .init(
+    static let operationName: String = "SearchRecords"
+    static let operationDocument: ApolloAPI.OperationDocument = .init(
       definition: .init(
         #"query SearchRecords($input: SearchRecordsInput!) { searchRecords(input: $input) }"#
       ))
@@ -19,21 +19,21 @@ public extension DashXGql {
 
     public var __variables: Variables? { ["input": input] }
 
-    public struct Data: DashXGql.SelectionSet {
-      public let __data: DataDict
-      public init(_dataDict: DataDict) { __data = _dataDict }
+    struct Data: DashXGql.SelectionSet {
+      let __data: DataDict
+      init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Query }
-      public static var __selections: [ApolloAPI.Selection] { [
+      static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Query }
+      static var __selections: [ApolloAPI.Selection] { [
         .field("searchRecords", [DashXGql.JSON].self, arguments: ["input": .variable("input")]),
       ] }
-      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         SearchRecordsQuery.Data.self
       ] }
 
-      public var searchRecords: [DashXGql.JSON] { __data["searchRecords"] }
+      var searchRecords: [DashXGql.JSON] { __data["searchRecords"] }
 
-      public init(
+      init(
         searchRecords: [DashXGql.JSON]
       ) {
         self.init(unsafelyWithData: [

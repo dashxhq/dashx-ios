@@ -1,0 +1,92 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3.1 effective-5.10 (swiftlang-6.3.1.1.2 clang-2100.0.123.102)
+// swift-module-flags: -target arm64-apple-ios13.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name DashXNotificationServiceExtension -package-name DashX
+// swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.1
+import CryptoKit
+import Foundation
+import MobileCoreServices
+import Swift
+import UserNotifications
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+public enum DashXNotificationKeys {
+  public static let payloadBlock: Swift.String
+  public static let categoryIdentifier: Swift.String
+  public static let iosSdkName: Swift.String
+}
+extension Swift.KeyedDecodingContainer {
+  public func decodeStringifiedJSONIfPresent<T>(_ type: T.Type, forKey key: Swift.KeyedDecodingContainer<K>.Key) -> T? where T : Swift.Decodable
+  public func decodeBoolFromStringIfPresent(forKey key: Swift.KeyedDecodingContainer<K>.Key) -> Swift.Bool?
+}
+public enum NavigationAction : Swift.Equatable {
+  case deepLink(url: Foundation.URL)
+  case screen(name: Swift.String, data: [Swift.String : Swift.String]?)
+  case richLanding(url: Foundation.URL)
+  case clickAction(action: Swift.String)
+  public static func == (a: DashXNotificationServiceExtension.NavigationAction, b: DashXNotificationServiceExtension.NavigationAction) -> Swift.Bool
+}
+public struct ActionButton : Swift.Decodable {
+  public let identifier: Swift.String
+  public let label: Swift.String
+  public let icon: Swift.String?
+  public let url: Swift.String?
+  public let clickAction: Swift.String?
+  public let screenName: Swift.String?
+  public let screenData: [Swift.String : Swift.String]?
+  public let richLanding: Swift.Bool?
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DashXNotificationData : Swift.Decodable {
+  public let id: Swift.String
+  public let title: Swift.String
+  public let body: Swift.String
+  public let image: Swift.String?
+  public let url: Swift.String?
+  public let screenName: Swift.String?
+  public let screenData: [Swift.String : Swift.String]?
+  public let clickAction: Swift.String?
+  public let actionButtons: [DashXNotificationServiceExtension.ActionButton]?
+  public let richLanding: Swift.Bool?
+  public let interruptionLevel: Swift.String?
+  public enum CodingKeys : Swift.String, Swift.CodingKey {
+    case id, title, body, image, url
+    case actionButtons
+    case screenName
+    case screenData
+    case clickAction
+    case richLanding
+    case interruptionLevel
+    public init?(rawValue: Swift.String)
+    public init?(stringValue: Swift.String)
+    public init?(intValue: Swift.Int)
+    public typealias RawValue = Swift.String
+    public var intValue: Swift.Int? {
+      get
+    }
+    public var rawValue: Swift.String {
+      get
+    }
+    public var stringValue: Swift.String {
+      get
+    }
+  }
+  public init(from decoder: any Swift.Decoder) throws
+  public func navigationAction(forActionIdentifier actionIdentifier: Swift.String) -> DashXNotificationServiceExtension.NavigationAction?
+}
+public typealias DashXNotificationMessage = [Swift.AnyHashable : Any]
+extension Swift.Dictionary where Key == Swift.AnyHashable, Value == Any {
+  public func dashxNotificationData() -> DashXNotificationServiceExtension.DashXNotificationData?
+  public func dashxNotificationId() -> Swift.String?
+  public func dashxNotificationUrl() -> Foundation.URL?
+}
+@objc @_inheritsConvenienceInitializers open class DashXNotificationService : UserNotifications.UNNotificationServiceExtension {
+  @objc override dynamic open func didReceive(_ request: UserNotifications.UNNotificationRequest, withContentHandler contentHandler: @escaping (UserNotifications.UNNotificationContent) -> Swift.Void)
+  @objc override dynamic open func serviceExtensionTimeWillExpire()
+  public static func dashxCategoryId(forButtons buttons: [DashXNotificationServiceExtension.ActionButton]) -> Swift.String
+  @objc override dynamic public init()
+  @objc deinit
+}
+extension DashXNotificationServiceExtension.DashXNotificationData.CodingKeys : Swift.Equatable {}
+extension DashXNotificationServiceExtension.DashXNotificationData.CodingKeys : Swift.Hashable {}
+extension DashXNotificationServiceExtension.DashXNotificationData.CodingKeys : Swift.RawRepresentable {}

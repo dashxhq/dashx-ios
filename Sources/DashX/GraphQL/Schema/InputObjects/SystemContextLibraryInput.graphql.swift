@@ -1,17 +1,17 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   struct SystemContextLibraryInput: InputObject {
-    public private(set) var __data: InputDict
+    private(set) var __data: InputDict
 
-    public init(_ data: InputDict) {
+    init(_ data: InputDict) {
       __data = data
     }
 
-    public init(
+    init(
       name: String,
       version: String
     ) {
@@ -21,12 +21,12 @@ public extension DashXGql {
       ])
     }
 
-    public var name: String {
+    var name: String {
       get { __data["name"] }
       set { __data["name"] = newValue }
     }
 
-    public var version: String {
+    var version: String {
       get { __data["version"] }
       set { __data["version"] = newValue }
     }

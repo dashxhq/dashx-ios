@@ -5,9 +5,9 @@
 // Any changes to this file will not be overwritten by future
 // code generation execution.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   typealias Decimal = String
 
 }

@@ -1,9 +1,22 @@
-import Apollo
+// `@_implementationOnly` keeps Apollo out of DashX's public `.swiftinterface`,
+// which is critical for the CocoaPods binary distribution: Apollo is baked
+// into `DashX.xcframework` statically, so consumers must never see Apollo
+// names in the interface (they wouldn't have Apollo available as a module).
+// Safe because no public DashX API exposes Apollo types (DashXGql is
+// `internal`).
+@_implementationOnly import Apollo
 #if canImport(ApolloAPI)
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 #endif
 import AppTrackingTransparency
+// Under SPM, DashXCore is a separate target we re-export so integrators see
+// its models via `import DashX`. Under the xcodegen build path that drives
+// the CocoaPods binary release, DashXCore's sources are compiled into this
+// same DashX module, so the import doesn't apply (and would fail — no such
+// module). See project.yml for why Core is baked into each target.
+#if canImport(DashXCore)
 @_exported import DashXCore
+#endif
 #if canImport(FirebaseMessaging)
 import FirebaseMessaging
 #endif
@@ -133,6 +146,19 @@ public class DashXClient {
         set { stateLock.lock(); defer { stateLock.unlock() }; _isAdTrackingRequested = newValue }
     }
 
+    /// `trackMessage` calls that arrived before `configure(withPublicKey:)` set
+    /// up the Apollo interceptor. Without the public-key header the backend
+    /// returns "Permission denied" and the event is lost — a real problem for
+    /// killed-state push-clicked tracking, where iOS delivers the response to
+    /// `didReceive:` immediately on cold launch, often before the integrator's
+    /// `configure()` has run. Flushed from `configure()`.
+    private struct PendingTrackMessage {
+        let id: String
+        let status: DashXGql.TrackMessageStatus
+        let timestamp: String
+    }
+    private var _pendingMessageTracking: [PendingTrackMessage] = []
+
     private init() {
         self.loadIdentity()
     }
@@ -174,7 +200,24 @@ public class DashXClient {
             SystemContext.shared.setLibraryInfo(libraryInfo: libraryInfo)
         }
 
+        flushPendingMessageTracking()
         EventQueue.shared.flush()
+    }
+
+    /// Drains the pre-configure trackMessage buffer. Called from `configure()`
+    /// once `ConfigInterceptor.shared.publicKey` is set. Each buffered event
+    /// goes through the normal `trackMessage` path — which now sees the
+    /// public key and fires the Apollo request for real.
+    private func flushPendingMessageTracking() {
+        stateLock.lock()
+        let pending = _pendingMessageTracking
+        _pendingMessageTracking = []
+        stateLock.unlock()
+        guard !pending.isEmpty else { return }
+        DashXLog.d(tag: #function, "Flushing \(pending.count) buffered trackMessage event(s) after configure()")
+        for item in pending {
+            trackMessage(item.id, item.status, item.timestamp, completion: nil)
+        }
     }
 
     public func setFCMToken(to: String) {
@@ -447,6 +490,23 @@ public class DashXClient {
     }
 
     private func trackMessage(_ id: String, _ messageStatus: DashXGql.TrackMessageStatus, _ timeStamp: String, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        // If `configure(withPublicKey:)` hasn't run yet, the Apollo request
+        // would go out with no `X-PUBLIC-KEY` header and the backend would
+        // reject it with "Permission denied". That's the common case for
+        // killed-state push `.clicked` / `.dismissed` tracking — iOS fires
+        // `didReceive:` as part of the cold-launch before the integrator's
+        // `configure()` runs. Buffer in memory and flush in `configure()`.
+        if ConfigInterceptor.shared.publicKey == nil {
+            stateLock.lock()
+            _pendingMessageTracking.append(PendingTrackMessage(id: id, status: messageStatus, timestamp: timeStamp))
+            stateLock.unlock()
+            DashXLog.d(tag: #function, "Queued trackMessage(\(messageStatus.rawValue)) until configure()")
+            // The only existing caller (DashXAppDelegate hooks + the RN
+            // bridge's notification handler) passes `completion: nil`, so
+            // there's no one waiting on the result. Silently defer.
+            return
+        }
+
         let trackMessageInput = DashXGql.TrackMessageInput(id: id,
                                                            status: GraphQLEnum<DashXGql.TrackMessageStatus>(messageStatus),
                                                            timestamp: timeStamp)
@@ -525,6 +585,15 @@ public class DashXClient {
             // APNs payload shape (alert push vs. legacy silent push) for *this*
             // device. See apps/messaging/src/notifiers/fcm.rs on the backend.
             metadata: .some(DashXGql.ContactMetadataInput(
+                // Stamps the host app's identity so the backend can scope
+                // broadcasts to a specific app (see FCMSettings.app_identifier
+                // on the backend integration configuration). Without this,
+                // multi-app workspaces fan out to every token a user has.
+                app: .some(DashXGql.ContactAppInput(
+                    identifier: Bundle.main.bundleIdentifier.map { .some($0) } ?? .null,
+                    name: (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String).map { .some($0) } ?? .null,
+                    version: (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String).map { .some($0) } ?? .null
+                )),
                 library: .some(DashXGql.ContactLibraryInput(
                     name: .some(Constants.LIBRARY_NAME),
                     version: .some(Constants.PACKAGE_VERSION)
@@ -1040,9 +1109,15 @@ public class DashXClient {
 
     // MARK: - Track Message
 
-    public func trackMessage(message: DashXNotificationMessage, event: DashXGql.TrackMessageStatus, completion: ((Result<Void, Error>) -> Void)? = nil) {
+    /// Records a lifecycle event for a DashX-generated push notification.
+    /// Takes the public `MessageTrackingEvent` enum rather than the internal
+    /// `DashXGql.TrackMessageStatus` so that no Apollo-generated types leak
+    /// into the consumer-facing `.swiftinterface`. Called by
+    /// `DashXAppDelegate` (delivered / clicked / dismissed) and by the
+    /// `@dashx/react-native` bridge for the same purpose.
+    public func trackMessage(message: DashXNotificationMessage, event: MessageTrackingEvent, completion: ((Result<Void, Error>) -> Void)? = nil) {
         if let id = message.dashxNotificationId() {
-            self.trackMessage(id, event, ISO8601DateFormatter.timeStamp, completion: completion)
+            self.trackMessage(id, event.gqlStatus, ISO8601DateFormatter.timeStamp, completion: completion)
         } else if let completion {
             DispatchQueue.main.async { completion(.failure(DashXClientError.customError(message: "Message does not contain a DashX notification ID"))) }
         }

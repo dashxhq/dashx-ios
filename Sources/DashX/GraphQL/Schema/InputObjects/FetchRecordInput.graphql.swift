@@ -1,17 +1,17 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   struct FetchRecordInput: InputObject {
-    public private(set) var __data: InputDict
+    private(set) var __data: InputDict
 
-    public init(_ data: InputDict) {
+    init(_ data: InputDict) {
       __data = data
     }
 
-    public init(
+    init(
       recordId: UUID,
       resource: GraphQLNullable<String> = nil,
       preview: GraphQLNullable<Bool> = nil,
@@ -31,37 +31,37 @@ public extension DashXGql {
       ])
     }
 
-    public var recordId: UUID {
+    var recordId: UUID {
       get { __data["recordId"] }
       set { __data["recordId"] = newValue }
     }
 
-    public var resource: GraphQLNullable<String> {
+    var resource: GraphQLNullable<String> {
       get { __data["resource"] }
       set { __data["resource"] = newValue }
     }
 
-    public var preview: GraphQLNullable<Bool> {
+    var preview: GraphQLNullable<Bool> {
       get { __data["preview"] }
       set { __data["preview"] = newValue }
     }
 
-    public var language: GraphQLNullable<String> {
+    var language: GraphQLNullable<String> {
       get { __data["language"] }
       set { __data["language"] = newValue }
     }
 
-    public var fields: GraphQLNullable<[JSON]> {
+    var fields: GraphQLNullable<[JSON]> {
       get { __data["fields"] }
       set { __data["fields"] = newValue }
     }
 
-    public var include: GraphQLNullable<[JSON]> {
+    var include: GraphQLNullable<[JSON]> {
       get { __data["include"] }
       set { __data["include"] = newValue }
     }
 
-    public var exclude: GraphQLNullable<[JSON]> {
+    var exclude: GraphQLNullable<[JSON]> {
       get { __data["exclude"] }
       set { __data["exclude"] = newValue }
     }

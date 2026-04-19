@@ -41,6 +41,12 @@ Packages/
 # Package.pins
 # Package.resolved
 *.xcodeproj
+# Commit DashX.xcodeproj — it's generated from project.yml via xcodegen and
+# used by scripts/build_xcframeworks.sh to produce the CocoaPods binary
+# distribution. Contributors without xcodegen can still open/build the
+# project from the committed copy.
+!DashX.xcodeproj
+!DashX.xcodeproj/**
 #
 # Xcode automatically generates this directory with a .xcworkspacedata file and xcuserdata
 # hence it is not needed unless you have added a package configuration file to your project
@@ -91,9 +97,19 @@ iOSInjectionProject/
 
 .DS_Store
 /*.xcodeproj
+!/DashX.xcodeproj
 
 # Apollo CLI binary — installed per developer via `swift package apollo-cli-install`.
 apollo-ios-cli
 
 # GraphQL schema — fetched locally before running codegen (see CONTRIBUTING.md).
 schema.json
+
+# Transient xcodebuild archive output from scripts/build_xcframeworks.sh.
+# `xcframeworks/` itself (the committed output) is NOT gitignored.
+*.xcarchive
+
+
+# Other
+.claude
+ROADMAP.md

@@ -1,12 +1,12 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_exported import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   class PrepareAssetMutation: GraphQLMutation {
-    public static let operationName: String = "PrepareAsset"
-    public static let operationDocument: ApolloAPI.OperationDocument = .init(
+    static let operationName: String = "PrepareAsset"
+    static let operationDocument: ApolloAPI.OperationDocument = .init(
       definition: .init(
         #"mutation PrepareAsset($input: PrepareAssetInput!) { prepareAsset(input: $input) { __typename id resourceId attributeId storageProviderId uploadStatus data createdAt updatedAt } }"#
       ))
@@ -19,21 +19,21 @@ public extension DashXGql {
 
     public var __variables: Variables? { ["input": input] }
 
-    public struct Data: DashXGql.SelectionSet {
-      public let __data: DataDict
-      public init(_dataDict: DataDict) { __data = _dataDict }
+    struct Data: DashXGql.SelectionSet {
+      let __data: DataDict
+      init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
-      public static var __selections: [ApolloAPI.Selection] { [
+      static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
+      static var __selections: [ApolloAPI.Selection] { [
         .field("prepareAsset", PrepareAsset.self, arguments: ["input": .variable("input")]),
       ] }
-      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         PrepareAssetMutation.Data.self
       ] }
 
-      public var prepareAsset: PrepareAsset { __data["prepareAsset"] }
+      var prepareAsset: PrepareAsset { __data["prepareAsset"] }
 
-      public init(
+      init(
         prepareAsset: PrepareAsset
       ) {
         self.init(unsafelyWithData: [
@@ -45,12 +45,12 @@ public extension DashXGql {
       /// PrepareAsset
       ///
       /// Parent Type: `Asset`
-      public struct PrepareAsset: DashXGql.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
+      struct PrepareAsset: DashXGql.SelectionSet {
+        let __data: DataDict
+        init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Asset }
-        public static var __selections: [ApolloAPI.Selection] { [
+        static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Asset }
+        static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("id", DashXGql.UUID.self),
           .field("resourceId", DashXGql.UUID?.self),
@@ -61,20 +61,20 @@ public extension DashXGql {
           .field("createdAt", DashXGql.Timestamp.self),
           .field("updatedAt", DashXGql.Timestamp.self),
         ] }
-        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
           PrepareAssetMutation.Data.PrepareAsset.self
         ] }
 
-        public var id: DashXGql.UUID { __data["id"] }
-        public var resourceId: DashXGql.UUID? { __data["resourceId"] }
-        public var attributeId: DashXGql.UUID? { __data["attributeId"] }
-        public var storageProviderId: DashXGql.UUID? { __data["storageProviderId"] }
-        public var uploadStatus: GraphQLEnum<DashXGql.AssetUploadStatus> { __data["uploadStatus"] }
-        public var data: DashXGql.JSON { __data["data"] }
-        public var createdAt: DashXGql.Timestamp { __data["createdAt"] }
-        public var updatedAt: DashXGql.Timestamp { __data["updatedAt"] }
+        var id: DashXGql.UUID { __data["id"] }
+        var resourceId: DashXGql.UUID? { __data["resourceId"] }
+        var attributeId: DashXGql.UUID? { __data["attributeId"] }
+        var storageProviderId: DashXGql.UUID? { __data["storageProviderId"] }
+        var uploadStatus: GraphQLEnum<DashXGql.AssetUploadStatus> { __data["uploadStatus"] }
+        var data: DashXGql.JSON { __data["data"] }
+        var createdAt: DashXGql.Timestamp { __data["createdAt"] }
+        var updatedAt: DashXGql.Timestamp { __data["updatedAt"] }
 
-        public init(
+        init(
           id: DashXGql.UUID,
           resourceId: DashXGql.UUID? = nil,
           attributeId: DashXGql.UUID? = nil,

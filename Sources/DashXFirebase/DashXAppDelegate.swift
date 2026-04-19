@@ -59,7 +59,14 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
     public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         dashXClient.setAPNSToken(to: deviceToken)
-        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
+        // Force the APNs environment instead of `.unknown` — auto-detection
+        // occasionally mis-tags dev-signed builds as production, producing
+        // an FCM token whose pushes silently 410 at APNs.
+        #if DEBUG
+        Messaging.messaging().setAPNSToken(deviceToken, type: .sandbox)
+        #else
+        Messaging.messaging().setAPNSToken(deviceToken, type: .prod)
+        #endif
     }
 
     // MARK: - Push Notifications

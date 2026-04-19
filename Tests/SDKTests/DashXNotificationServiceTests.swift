@@ -6,7 +6,7 @@ import XCTest
 /// The backend (`apps/messaging/src/notifiers/fcm.rs::dashx_category_id_for_buttons`) has a
 /// matching assertion against the same golden value — if either side drifts, CI on one of
 /// the two sides fails loudly. Do not change the golden value without updating both.
-final class DashXNotificationServiceExtensionHashTests: XCTestCase {
+final class DashXNotificationServiceHashTests: XCTestCase {
     private func button(_ id: String, _ label: String) -> ActionButton {
         let json = """
         {
@@ -20,14 +20,14 @@ final class DashXNotificationServiceExtensionHashTests: XCTestCase {
 
     func testHashIsDeterministic() {
         let buttons = [button("ACCEPT", "Accept"), button("DECLINE", "Decline")]
-        let id1 = DashXNotificationServiceExtension.dashxCategoryId(forButtons: buttons)
-        let id2 = DashXNotificationServiceExtension.dashxCategoryId(forButtons: buttons)
+        let id1 = DashXNotificationService.dashxCategoryId(forButtons: buttons)
+        let id2 = DashXNotificationService.dashxCategoryId(forButtons: buttons)
         XCTAssertEqual(id1, id2)
     }
 
     func testHashFormat() {
         let buttons = [button("ACCEPT", "Accept")]
-        let id = DashXNotificationServiceExtension.dashxCategoryId(forButtons: buttons)
+        let id = DashXNotificationService.dashxCategoryId(forButtons: buttons)
         XCTAssertTrue(id.hasPrefix("DASHX_CAT_"))
         XCTAssertEqual(id.count, 24)
     }
@@ -35,7 +35,7 @@ final class DashXNotificationServiceExtensionHashTests: XCTestCase {
     func testHashMatchesBackendGoldenValue() {
         // Must equal the value asserted in `fcm.rs::tests::category_id_is_deterministic_and_stable`.
         let buttons = [button("ACCEPT", "Accept"), button("DECLINE", "Decline")]
-        let id = DashXNotificationServiceExtension.dashxCategoryId(forButtons: buttons)
+        let id = DashXNotificationService.dashxCategoryId(forButtons: buttons)
         XCTAssertEqual(id, "DASHX_CAT_eeb7e85ba820dd")
     }
 
@@ -43,8 +43,8 @@ final class DashXNotificationServiceExtensionHashTests: XCTestCase {
         let a = [button("ACCEPT", "Accept")]
         let b = [button("ACCEPT", "Yes")]
         XCTAssertNotEqual(
-            DashXNotificationServiceExtension.dashxCategoryId(forButtons: a),
-            DashXNotificationServiceExtension.dashxCategoryId(forButtons: b)
+            DashXNotificationService.dashxCategoryId(forButtons: a),
+            DashXNotificationService.dashxCategoryId(forButtons: b)
         )
     }
 }

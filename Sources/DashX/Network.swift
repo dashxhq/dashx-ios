@@ -1,6 +1,8 @@
-import Apollo
+// @_implementationOnly — see `DashXClient.swift` for rationale (keeps Apollo
+// off DashX's public swiftinterface for the CocoaPods binary distribution).
+@_implementationOnly import Apollo
 #if canImport(ApolloAPI)
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 #endif
 import Foundation
 

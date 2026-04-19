@@ -1,12 +1,12 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_exported import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   class UnsubscribeContactMutation: GraphQLMutation {
-    public static let operationName: String = "UnsubscribeContact"
-    public static let operationDocument: ApolloAPI.OperationDocument = .init(
+    static let operationName: String = "UnsubscribeContact"
+    static let operationDocument: ApolloAPI.OperationDocument = .init(
       definition: .init(
         #"mutation UnsubscribeContact($input: UnsubscribeContactInput!) { unsubscribeContact(input: $input) { __typename id value } }"#
       ))
@@ -19,21 +19,21 @@ public extension DashXGql {
 
     public var __variables: Variables? { ["input": input] }
 
-    public struct Data: DashXGql.SelectionSet {
-      public let __data: DataDict
-      public init(_dataDict: DataDict) { __data = _dataDict }
+    struct Data: DashXGql.SelectionSet {
+      let __data: DataDict
+      init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
-      public static var __selections: [ApolloAPI.Selection] { [
+      static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
+      static var __selections: [ApolloAPI.Selection] { [
         .field("unsubscribeContact", UnsubscribeContact.self, arguments: ["input": .variable("input")]),
       ] }
-      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         UnsubscribeContactMutation.Data.self
       ] }
 
-      public var unsubscribeContact: UnsubscribeContact { __data["unsubscribeContact"] }
+      var unsubscribeContact: UnsubscribeContact { __data["unsubscribeContact"] }
 
-      public init(
+      init(
         unsubscribeContact: UnsubscribeContact
       ) {
         self.init(unsafelyWithData: [
@@ -45,24 +45,24 @@ public extension DashXGql {
       /// UnsubscribeContact
       ///
       /// Parent Type: `Contact`
-      public struct UnsubscribeContact: DashXGql.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
+      struct UnsubscribeContact: DashXGql.SelectionSet {
+        let __data: DataDict
+        init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Contact }
-        public static var __selections: [ApolloAPI.Selection] { [
+        static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Contact }
+        static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("id", DashXGql.UUID.self),
           .field("value", String.self),
         ] }
-        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
           UnsubscribeContactMutation.Data.UnsubscribeContact.self
         ] }
 
-        public var id: DashXGql.UUID { __data["id"] }
-        public var value: String { __data["value"] }
+        var id: DashXGql.UUID { __data["id"] }
+        var value: String { __data["value"] }
 
-        public init(
+        init(
           id: DashXGql.UUID,
           value: String
         ) {
