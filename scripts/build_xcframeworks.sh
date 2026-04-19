@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 #
-# build_xcframeworks.sh — Build the three distribution xcframeworks for the
+# build_xcframeworks.sh — Build the distribution xcframeworks for the
 # CocoaPods binary release path.
 #
 # Produces under xcframeworks/:
-#   - DashXCore.xcframework                          shared models
-#   - DashX.xcframework                              main SDK (Apollo baked in)
-#   - DashXNotificationServiceExtension.xcframework  NSE base class
+#   - DashX.xcframework                              main SDK (Apollo + DashXCore baked in)
+#   - DashXNotificationServiceExtension.xcframework  NSE base class (DashXCore baked in)
+#
+# `DashXCore` sources are compiled into each framework directly (see
+# `project.yml` → "Each framework target includes a copy of DashXCore"),
+# so no separate Core xcframework is emitted on the CocoaPods path. SPM
+# consumers still see DashXCore as its own library via `Package.swift`.
 #
 # Each xcframework carries two slices: ios-arm64 (device) + ios-arm64_x86_64-simulator.
 # The build is driven by `DashX.xcodeproj` (regenerate from `project.yml` via
@@ -30,53 +34,49 @@ BUILD_DIR="$REPO_ROOT/build"
 OUTPUT_DIR="$REPO_ROOT/xcframeworks"
 SCHEMES=(DashX DashXNotificationServiceExtension)
 
+# Wipe the committed `xcframeworks/` before re-emitting. If xcodebuild fails
+# partway, the repo is left without binaries until the script completes —
+# recover with `git checkout -- xcframeworks/` and re-run.
 rm -rf "$BUILD_DIR" "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
 # Copy `.swiftinterface` files from the Xcode intermediate build dir into the
 # final framework's Modules/<name>.swiftmodule/ bundle. Xcode 26 ships them
 # as build products but omits the install step into the archived framework.
+#
+# A simulator archive on Apple Silicon contains both `arm64/` and `x86_64/`
+# subdirs under `Objects-normal/`, and `-create-xcframework` silently drops
+# any arch whose `.swiftinterface` is missing. Walk every arch dir rather
+# than picking one — filesystem ordering is not load-bearing.
 install_swiftinterfaces () {
-  local archive="$1"   # e.g. build/DashXCore-sim.xcarchive
+  local archive="$1"       # e.g. build/DashX-sim.xcarchive
   local scheme="$2"
-  local triple_root="$3"   # e.g. iphonesimulator / iphoneos
+  local triple_root="$3"   # iphonesimulator / iphoneos
 
   local modules_dir="$archive/Products/Library/Frameworks/$scheme.framework/Modules/$scheme.swiftmodule"
-  local intermediates_base
-  intermediates_base="$(find ~/Library/Developer/Xcode/DerivedData -type d \
-    -path "*ArchiveIntermediates/$scheme/IntermediateBuildFilesPath/DashX.build/Release-$triple_root/$scheme.build/Objects-normal/*" \
-    2>/dev/null | head -1)"
-
-  [ -z "$intermediates_base" ] && return 0
   [ ! -d "$modules_dir" ] && return 0
 
-  local arch
-  arch="$(basename "$intermediates_base")"  # e.g. arm64
-  local triple="$arch-apple-ios"
-  [ "$triple_root" = "iphonesimulator" ] && triple="$arch-apple-ios-simulator"
+  local arch_roots
+  arch_roots="$(find ~/Library/Developer/Xcode/DerivedData -type d \
+    -path "*ArchiveIntermediates/$scheme/IntermediateBuildFilesPath/DashX.build/Release-$triple_root/$scheme.build/Objects-normal/*" \
+    2>/dev/null)"
 
-  for iface in "$scheme.swiftinterface" "$scheme.private.swiftinterface"; do
-    if [ -f "$intermediates_base/$iface" ]; then
-      local dst_name="$triple.${iface#$scheme.}"
-      cp "$intermediates_base/$iface" "$modules_dir/$dst_name"
-    fi
-  done
+  [ -z "$arch_roots" ] && return 0
 
-  # Simulator archives also contain a second arch (x86_64) — pick it up too.
-  if [ "$triple_root" = "iphonesimulator" ]; then
-    local x86_base
-    x86_base="$(find ~/Library/Developer/Xcode/DerivedData -type d \
-      -path "*ArchiveIntermediates/$scheme/IntermediateBuildFilesPath/DashX.build/Release-$triple_root/$scheme.build/Objects-normal/x86_64" \
-      2>/dev/null | head -1)"
-    if [ -n "$x86_base" ]; then
-      for iface in "$scheme.swiftinterface" "$scheme.private.swiftinterface"; do
-        if [ -f "$x86_base/$iface" ]; then
-          local dst_name="x86_64-apple-ios-simulator.${iface#$scheme.}"
-          cp "$x86_base/$iface" "$modules_dir/$dst_name"
-        fi
-      done
-    fi
-  fi
+  while IFS= read -r arch_base; do
+    [ -z "$arch_base" ] && continue
+    local arch
+    arch="$(basename "$arch_base")"  # arm64 / x86_64
+    local triple="$arch-apple-ios"
+    [ "$triple_root" = "iphonesimulator" ] && triple="$arch-apple-ios-simulator"
+
+    for iface in "$scheme.swiftinterface" "$scheme.private.swiftinterface"; do
+      if [ -f "$arch_base/$iface" ]; then
+        local dst_name="$triple.${iface#$scheme.}"
+        cp "$arch_base/$iface" "$modules_dir/$dst_name"
+      fi
+    done
+  done <<< "$arch_roots"
 }
 
 for scheme in "${SCHEMES[@]}"; do
