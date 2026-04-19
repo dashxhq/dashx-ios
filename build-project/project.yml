@@ -1,16 +1,23 @@
 # xcodegen spec for the CocoaPods binary distribution path.
 #
+# Lives in `build-project/` rather than the repo root on purpose: a sibling
+# `DashX.xcodeproj` next to `Package.swift` shadows SPM for every
+# `xcodebuild -scheme …` invocation (CI, contributors running tests),
+# hiding the SPM auto-generated `DashX-Package` / `DashXFirebase` /
+# `DashXCore` schemes. Keeping it one level down lets both coexist.
+#
 # The source of truth for SDK code lives under `Sources/` and is driven by
 # `Package.swift` for SPM consumers. This spec wraps those same sources into
-# three framework targets so `xcodebuild archive` can produce real
-# `.framework` bundles (with `Modules/*.swiftmodule/*` inside) — which SPM's
-# archive path refuses to emit. Feeds into `scripts/build_xcframeworks.sh`.
+# framework targets so `xcodebuild archive` can produce real `.framework`
+# bundles (with `Modules/*.swiftmodule/*` inside) — which SPM's archive path
+# refuses to emit. Feeds into `scripts/build_xcframeworks.sh`.
 #
-# Regenerate after changing anything here:
+# Regenerate after changing anything here (run from `build-project/`):
 #   xcodegen generate
 #
-# The generated `DashX.xcodeproj/` is committed so developers without
-# xcodegen can still open/build the project.
+# The generated `build-project/DashX.xcodeproj/` is committed so PRs that
+# touch `project.yml` surface a reviewable pbxproj diff, and so contributors
+# without xcodegen still get a working release-build project.
 
 name: DashX
 options:
@@ -75,8 +82,8 @@ targets:
     type: framework
     platform: iOS
     sources:
-      - path: Sources/DashX
-      - path: Sources/DashXCore
+      - path: ../Sources/DashX
+      - path: ../Sources/DashXCore
     dependencies:
       - package: Apollo
         product: Apollo
@@ -90,8 +97,8 @@ targets:
     type: framework
     platform: iOS
     sources:
-      - path: Sources/DashXNotificationServiceExtension
-      - path: Sources/DashXCore
+      - path: ../Sources/DashXNotificationServiceExtension
+      - path: ../Sources/DashXCore
     dependencies:
       - sdk: UserNotifications.framework
     settings:

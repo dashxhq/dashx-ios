@@ -32,7 +32,21 @@ cd "$REPO_ROOT"
 
 BUILD_DIR="$REPO_ROOT/build"
 OUTPUT_DIR="$REPO_ROOT/xcframeworks"
+PROJECT_DIR="$REPO_ROOT/build-project"
+PROJECT_PATH="$PROJECT_DIR/DashX.xcodeproj"
 SCHEMES=(DashX DashXNotificationServiceExtension)
+
+# Regenerate `build-project/DashX.xcodeproj` from `build-project/project.yml`
+# if xcodegen is installed. Skipped gracefully when it's not — the committed
+# xcodeproj is a valid build input, so a release can proceed on a machine
+# without xcodegen as long as `project.yml` hasn't drifted. The project lives
+# in `build-project/` rather than the repo root so it doesn't shadow SPM
+# for `xcodebuild -scheme …` invocations (CI / contributor test runs).
+if command -v xcodegen >/dev/null 2>&1; then
+  (cd "$PROJECT_DIR" && xcodegen generate --quiet)
+else
+  echo "note: xcodegen not installed — skipping project regeneration, using committed $PROJECT_PATH" >&2
+fi
 
 # Wipe the committed `xcframeworks/` before re-emitting. If xcodebuild fails
 # partway, the repo is left without binaries until the script completes —
@@ -92,7 +106,7 @@ for scheme in "${SCHEMES[@]}"; do
     fi
 
     xcodebuild archive \
-      -project DashX.xcodeproj \
+      -project "$PROJECT_PATH" \
       -scheme "$scheme" \
       -destination "generic/platform=$platform" \
       -archivePath "$BUILD_DIR/$scheme-$slice.xcarchive" \

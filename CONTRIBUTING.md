@@ -81,25 +81,24 @@ The SDK ships two surfaces from the same tag:
 
 ### One-time setup
 
-The CocoaPods build requires [`xcodegen`](https://github.com/yonaskolb/XcodeGen) to regenerate `DashX.xcodeproj` from `project.yml`:
+The CocoaPods release path requires [`xcodegen`](https://github.com/yonaskolb/XcodeGen) to regenerate `build-project/DashX.xcodeproj` from `build-project/project.yml`:
 
 ```sh
 brew install xcodegen
 ```
 
-`DashX.xcodeproj` is committed, so contributors without xcodegen can still open and build the project. Regenerate only when `project.yml` or the source tree changes.
+`build-project/DashX.xcodeproj` is committed so PRs touching `project.yml` surface a reviewable pbxproj diff, and so a release can proceed on a machine without xcodegen if the project hasn't drifted. It lives in `build-project/` — not the repo root — so it doesn't shadow `Package.swift` when `xcodebuild -scheme …` runs in CI or locally. Day-to-day development uses SPM: open `Package.swift` in Xcode and all four library targets (`DashX`, `DashXCore`, `DashXFirebase`, `DashXNotificationServiceExtension`) resolve.
 
 ### Cutting a release
 
-1. Bump version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`), `DashX.podspec` (`s.version`), and `project.yml` (`MARKETING_VERSION`).
-2. Regenerate the Xcode project if `project.yml` changed: `xcodegen generate`
-3. Build the XCFrameworks: `./scripts/build_xcframeworks.sh`
-4. Commit the version bumps + the refreshed `xcframeworks/`:
+1. Bump version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`), `DashX.podspec` (`s.version`), and `build-project/project.yml` (`MARKETING_VERSION`).
+2. Build the XCFrameworks: `./scripts/build_xcframeworks.sh` (regenerates `build-project/DashX.xcodeproj` if xcodegen is installed).
+3. Commit the version bumps + the refreshed xcodeproj + xcframeworks:
    ```sh
-   git add Sources/DashX/Constants.swift DashX.podspec project.yml DashX.xcodeproj xcframeworks/
+   git add Sources/DashX/Constants.swift DashX.podspec build-project/ xcframeworks/
    git commit -m "Bump version to x.x.x"
    ```
-5. Tag and push: `git tag x.x.x && git push origin main --tags`
+4. Tag and push: `git tag x.x.x && git push origin main --tags`
 
 SPM and CocoaPods consumers both pick the new version up from the git tag — no trunk push needed.
 
