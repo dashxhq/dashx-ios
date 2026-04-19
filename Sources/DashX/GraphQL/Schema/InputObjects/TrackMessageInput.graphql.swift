@@ -1,17 +1,17 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   struct TrackMessageInput: InputObject {
-    public private(set) var __data: InputDict
+    private(set) var __data: InputDict
 
-    public init(_ data: InputDict) {
+    init(_ data: InputDict) {
       __data = data
     }
 
-    public init(
+    init(
       id: UUID,
       status: GraphQLEnum<TrackMessageStatus>,
       timestamp: Timestamp
@@ -23,17 +23,17 @@ public extension DashXGql {
       ])
     }
 
-    public var id: UUID {
+    var id: UUID {
       get { __data["id"] }
       set { __data["id"] = newValue }
     }
 
-    public var status: GraphQLEnum<TrackMessageStatus> {
+    var status: GraphQLEnum<TrackMessageStatus> {
       get { __data["status"] }
       set { __data["status"] = newValue }
     }
 
-    public var timestamp: Timestamp {
+    var timestamp: Timestamp {
       get { __data["timestamp"] }
       set { __data["timestamp"] = newValue }
     }

@@ -1,0 +1,117 @@
+# xcodegen spec for the CocoaPods binary distribution path.
+#
+# The source of truth for SDK code lives under `Sources/` and is driven by
+# `Package.swift` for SPM consumers. This spec wraps those same sources into
+# three framework targets so `xcodebuild archive` can produce real
+# `.framework` bundles (with `Modules/*.swiftmodule/*` inside) — which SPM's
+# archive path refuses to emit. Feeds into `scripts/build_xcframeworks.sh`.
+#
+# Regenerate after changing anything here:
+#   xcodegen generate
+#
+# The generated `DashX.xcodeproj/` is committed so developers without
+# xcodegen can still open/build the project.
+
+name: DashX
+options:
+  deploymentTarget:
+    iOS: "13.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    BUILD_LIBRARIES_FOR_DISTRIBUTION: YES
+    # `BUILD_LIBRARIES_FOR_DISTRIBUTION` alone doesn't always emit the
+    # `.swiftinterface` file on Xcode 15+ — `xcodebuild -create-xcframework`
+    # refuses to stitch slices together without it. Force the frontend flag
+    # explicitly so every archive lands a consumable `.swiftinterface`.
+    # `-package-name DashX` enables the `package` access level (Swift 5.9+)
+    # across the targets generated here — without it, `package` declarations
+    # fail to compile ("requires a package name"). SPM sets this automatically
+    # for sibling targets; Xcode projects have to opt in explicitly.
+    OTHER_SWIFT_FLAGS: "$(inherited) -enable-library-evolution -emit-module-interface -package-name DashX"
+    DEFINES_MODULE: YES
+    SKIP_INSTALL: NO
+    DYLIB_INSTALL_NAME_BASE: "@rpath"
+    LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks"]
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.3.1"
+    # Auto-generate the framework Info.plist — without it a framework bundle
+    # is malformed and Xcode rejects it at embed time ("Framework did not
+    # contain an Info.plist").
+    GENERATE_INFOPLIST_FILE: YES
+    # Signing is handled (or skipped) by xcodebuild flags at archive time;
+    # avoid baking anything developer-specific into the committed project.
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGNING_ALLOWED: NO
+
+packages:
+  # Pinned in lockstep with `Package.swift`. Apollo is baked into the produced
+  # DashX.xcframework at build time, so CocoaPods trunk availability is not a
+  # constraint — only that the codegen-emitted `.graphql.swift` API shape
+  # matches this version (see CONTRIBUTING.md → "Cutting a release").
+  Apollo:
+    url: https://github.com/apollographql/apollo-ios.git
+    exactVersion: "1.25.3"
+
+targets:
+  # Each framework target includes a copy of `Sources/DashXCore` directly
+  # rather than depending on a separate DashXCore target. The two resulting
+  # xcframeworks (DashX + NSE) run in separate processes so duplicated Core
+  # symbols don't clash at runtime. This avoids the "Multiple commands
+  # produce" build-system error that occurs when a shared vendored framework
+  # is extracted to the same path by multiple targets in the consumer's
+  # Xcode project.
+  #
+  # SPM still exposes `DashXCore` as its own library product via
+  # `Package.swift`, so sources stay shared and cross-imported under SPM.
+
+  DashX:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Sources/DashX
+      - path: Sources/DashXCore
+    dependencies:
+      - package: Apollo
+        product: Apollo
+      - package: Apollo
+        product: ApolloAPI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashX
+
+  DashXNotificationServiceExtension:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Sources/DashXNotificationServiceExtension
+      - path: Sources/DashXCore
+    dependencies:
+      - sdk: UserNotifications.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXNotificationServiceExtension
+        # App-extension-safe: the NSE host process runs with a restricted API
+        # surface. Any Foundation/UIKit call not allowed in app extensions
+        # will fail to link if the NSE code accidentally uses it.
+        APPLICATION_EXTENSION_API_ONLY: YES
+
+schemes:
+  DashX:
+    build:
+      targets:
+        DashX: all
+    archive:
+      config: Release
+  DashXNotificationServiceExtension:
+    build:
+      targets:
+        DashXNotificationServiceExtension: all
+    archive:
+      config: Release

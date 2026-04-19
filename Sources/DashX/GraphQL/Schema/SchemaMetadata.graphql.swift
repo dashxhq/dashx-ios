@@ -1,21 +1,21 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public protocol DashXGql_SelectionSet: ApolloAPI.SelectionSet & ApolloAPI.RootSelectionSet
+protocol DashXGql_SelectionSet: ApolloAPI.SelectionSet & ApolloAPI.RootSelectionSet
 where Schema == DashXGql.SchemaMetadata {}
 
-public protocol DashXGql_InlineFragment: ApolloAPI.SelectionSet & ApolloAPI.InlineFragment
+protocol DashXGql_InlineFragment: ApolloAPI.SelectionSet & ApolloAPI.InlineFragment
 where Schema == DashXGql.SchemaMetadata {}
 
-public protocol DashXGql_MutableSelectionSet: ApolloAPI.MutableRootSelectionSet
+protocol DashXGql_MutableSelectionSet: ApolloAPI.MutableRootSelectionSet
 where Schema == DashXGql.SchemaMetadata {}
 
-public protocol DashXGql_MutableInlineFragment: ApolloAPI.MutableSelectionSet & ApolloAPI.InlineFragment
+protocol DashXGql_MutableInlineFragment: ApolloAPI.MutableSelectionSet & ApolloAPI.InlineFragment
 where Schema == DashXGql.SchemaMetadata {}
 
-public extension DashXGql {
+extension DashXGql {
   typealias SelectionSet = DashXGql_SelectionSet
 
   typealias InlineFragment = DashXGql_InlineFragment
@@ -25,9 +25,9 @@ public extension DashXGql {
   typealias MutableInlineFragment = DashXGql_MutableInlineFragment
 
   enum SchemaMetadata: ApolloAPI.SchemaMetadata {
-    public static let configuration: any ApolloAPI.SchemaConfiguration.Type = SchemaConfiguration.self
+    static let configuration: any ApolloAPI.SchemaConfiguration.Type = SchemaConfiguration.self
 
-    public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
+    static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
       switch typename {
       case "Account": return DashXGql.Objects.Account
       case "Asset": return DashXGql.Objects.Asset

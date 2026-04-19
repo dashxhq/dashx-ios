@@ -1,12 +1,12 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_exported import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   class TrackMessageMutation: GraphQLMutation {
-    public static let operationName: String = "TrackMessage"
-    public static let operationDocument: ApolloAPI.OperationDocument = .init(
+    static let operationName: String = "TrackMessage"
+    static let operationDocument: ApolloAPI.OperationDocument = .init(
       definition: .init(
         #"mutation TrackMessage($input: TrackMessageInput!) { trackMessage(input: $input) { __typename success } }"#
       ))
@@ -19,21 +19,21 @@ public extension DashXGql {
 
     public var __variables: Variables? { ["input": input] }
 
-    public struct Data: DashXGql.SelectionSet {
-      public let __data: DataDict
-      public init(_dataDict: DataDict) { __data = _dataDict }
+    struct Data: DashXGql.SelectionSet {
+      let __data: DataDict
+      init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
-      public static var __selections: [ApolloAPI.Selection] { [
+      static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.Mutation }
+      static var __selections: [ApolloAPI.Selection] { [
         .field("trackMessage", TrackMessage.self, arguments: ["input": .variable("input")]),
       ] }
-      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         TrackMessageMutation.Data.self
       ] }
 
-      public var trackMessage: TrackMessage { __data["trackMessage"] }
+      var trackMessage: TrackMessage { __data["trackMessage"] }
 
-      public init(
+      init(
         trackMessage: TrackMessage
       ) {
         self.init(unsafelyWithData: [
@@ -45,22 +45,22 @@ public extension DashXGql {
       /// TrackMessage
       ///
       /// Parent Type: `TrackMessageResponse`
-      public struct TrackMessage: DashXGql.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
+      struct TrackMessage: DashXGql.SelectionSet {
+        let __data: DataDict
+        init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.TrackMessageResponse }
-        public static var __selections: [ApolloAPI.Selection] { [
+        static var __parentType: any ApolloAPI.ParentType { DashXGql.Objects.TrackMessageResponse }
+        static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("success", Bool.self),
         ] }
-        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
           TrackMessageMutation.Data.TrackMessage.self
         ] }
 
-        public var success: Bool { __data["success"] }
+        var success: Bool { __data["success"] }
 
-        public init(
+        init(
           success: Bool
         ) {
           self.init(unsafelyWithData: [

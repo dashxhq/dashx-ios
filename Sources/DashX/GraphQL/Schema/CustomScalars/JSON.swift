@@ -5,10 +5,10 @@
 // Any changes to this file will not be overwritten by future
 // code generation execution.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 import Foundation
 
-public extension DashXGql {
+extension DashXGql {
   /// A scalar that can represent any JSON value — object, array, string, number, bool, null.
   ///
   /// Backed by `ApolloAPI.JSONValue` (an `AnyHashable` in Apollo iOS 1.x) so it can
@@ -37,7 +37,7 @@ public extension DashXGql {
 
 extension DashXGql.JSON: Hashable {}
 
-public extension DashXGql.JSON {
+extension DashXGql.JSON {
   /// Unwraps to `[String: AnyHashable]` when the scalar carries a JSON object. Nil otherwise.
   var asDictionary: [String: AnyHashable]? {
     value as? [String: AnyHashable]

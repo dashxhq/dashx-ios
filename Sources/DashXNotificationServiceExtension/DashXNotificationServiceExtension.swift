@@ -1,8 +1,14 @@
 import CryptoKit
-import DashXCore
 import Foundation
 import MobileCoreServices
 import UserNotifications
+// Under SPM, DashXCore is a separate target. Under the xcodegen build path
+// (CocoaPods binary), DashXCore's sources are compiled into this same NSE
+// module. See project.yml → "Each framework target includes a copy of
+// Sources/DashXCore".
+#if canImport(DashXCore)
+import DashXCore
+#endif
 
 /// Base class for a Notification Service Extension that handles DashX push notifications.
 ///
@@ -21,7 +27,13 @@ import UserNotifications
 ///
 /// If these keys are absent, the NSE skips delivered tracking silently; image attachment
 /// and category registration still work.
-open class DashXNotificationServiceExtension: UNNotificationServiceExtension {
+// Named `DashXNotificationService` rather than `DashXNotificationServiceExtension`
+// to avoid a Swift module-interface verification bug: if a public class has
+// the same name as its enclosing module, the interface verifier resolves
+// same-module type references (e.g. `NavigationAction`) to nested lookups
+// inside the class instead of the module, making the emitted interface
+// unparseable. Distinct class/module names sidestep the issue entirely.
+open class DashXNotificationService: UNNotificationServiceExtension {
     /// Cap media downloads so a hostile server can't OOM the NSE (which has roughly a
     /// 24 MB memory budget). APNs itself allows up to 50 MB attachments.
     private static let maxMediaBytes: Int64 = 50 * 1024 * 1024

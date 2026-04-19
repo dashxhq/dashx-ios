@@ -1,17 +1,17 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   struct SystemContextDeviceInput: InputObject {
-    public private(set) var __data: InputDict
+    private(set) var __data: InputDict
 
-    public init(_ data: InputDict) {
+    init(_ data: InputDict) {
       __data = data
     }
 
-    public init(
+    init(
       id: String,
       advertisingId: String,
       adTrackingEnabled: Bool,
@@ -31,37 +31,37 @@ public extension DashXGql {
       ])
     }
 
-    public var id: String {
+    var id: String {
       get { __data["id"] }
       set { __data["id"] = newValue }
     }
 
-    public var advertisingId: String {
+    var advertisingId: String {
       get { __data["advertisingId"] }
       set { __data["advertisingId"] = newValue }
     }
 
-    public var adTrackingEnabled: Bool {
+    var adTrackingEnabled: Bool {
       get { __data["adTrackingEnabled"] }
       set { __data["adTrackingEnabled"] = newValue }
     }
 
-    public var manufacturer: String {
+    var manufacturer: String {
       get { __data["manufacturer"] }
       set { __data["manufacturer"] = newValue }
     }
 
-    public var model: String {
+    var model: String {
       get { __data["model"] }
       set { __data["model"] = newValue }
     }
 
-    public var name: String {
+    var name: String {
       get { __data["name"] }
       set { __data["name"] = newValue }
     }
 
-    public var kind: String {
+    var kind: String {
       get { __data["kind"] }
       set { __data["kind"] = newValue }
     }

@@ -24,7 +24,11 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.15.0"),
+        // CocoaPods consumers now receive DashX as a prebuilt XCFramework with
+        // Apollo baked in, so we no longer need the SPM pin to match whatever's
+        // available on CocoaPods trunk. Bumping is safe as long as the SDK's
+        // generated `.graphql.swift` code matches this version's API surface.
+        .package(url: "https://github.com/apollographql/apollo-ios.git", exact: "1.25.3"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", .upToNextMajor(from: "10.9.0")),
     ],
     targets: [

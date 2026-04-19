@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "DashX"
-  s.version      = "1.3.0"
+  s.version      = "1.3.1"
   s.summary      = "DashX iOS SDK"
   s.homepage     = "https://github.com/dashxhq/dashx-ios"
   s.license      = { :type => "MIT" }
@@ -10,31 +10,27 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/dashxhq/dashx-ios.git", :tag => s.version }
   s.swift_version = "5.9"
 
-  s.default_subspec = "Core"
+  s.default_subspec = "SDK"
 
-  # Shared notification-payload models. Used by the main SDK and the Notification
-  # Service Extension. Kept free of Apollo so it can be linked into the NSE target
-  # without bloating the extension binary.
-  s.subspec "Core" do |core|
-    core.source_files = "Sources/DashXCore/*.swift"
-  end
+  # Binary distribution. The two xcframeworks live under `xcframeworks/` in
+  # the repo and are built locally via `scripts/build_xcframeworks.sh` — see
+  # CONTRIBUTING.md → "Cutting a release". Each xcframework bundles the
+  # shared `DashXCore` sources internally so consumers never have to link a
+  # separate Core framework. That keeps SPM's three-target split (DashXCore,
+  # DashX, DashXNotificationServiceExtension) independent of how CocoaPods
+  # ships the SDK. Apollo is statically baked into DashX.xcframework; no
+  # runtime Apollo pod dependency is declared.
 
-  # Main DashX SDK. Depends on Apollo for GraphQL.
+  # Main DashX SDK — GraphQL client + runtime + shared models.
   s.subspec "SDK" do |sdk|
-    sdk.source_files = "Sources/DashX/*.swift"
-    sdk.dependency "DashX/Core"
-    sdk.dependency "Apollo", "~> 1.15"
-    sdk.resource_bundles = {
-      "DashX" => ["Sources/DashX/Resources/**/*"]
-    }
+    sdk.vendored_frameworks = "xcframeworks/DashX.xcframework"
   end
 
-  # Notification Service Extension base class. Integrators add a Notification Service
-  # Extension target in their Xcode project and add this subspec to it. See README
-  # for the required Info.plist keys (DashXBaseURI, DashXPublicKey).
+  # Notification Service Extension base class. Add this subspec to the NSE
+  # target in your Xcode project and subclass `DashXNotificationServiceExtension`.
+  # See README for required Info.plist keys (DASHX_BASE_URI, DASHX_PUBLIC_KEY).
   s.subspec "NotificationServiceExtension" do |nse|
-    nse.source_files = "Sources/DashXNotificationServiceExtension/*.swift"
-    nse.dependency "DashX/Core"
+    nse.vendored_frameworks = "xcframeworks/DashXNotificationServiceExtension.xcframework"
     nse.frameworks = "UserNotifications"
   end
 end

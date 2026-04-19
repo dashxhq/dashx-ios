@@ -1,0 +1,332 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3.1 effective-5.10 (swiftlang-6.3.1.1.2 clang-2100.0.123.102)
+// swift-module-flags: -target arm64-apple-ios13.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name DashX -package-name DashX
+// swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.1
+import AdSupport
+import AppTrackingTransparency
+import Foundation
+import MobileCoreServices
+import Network
+import SafariServices
+import Swift
+import UIKit
+import UniformTypeIdentifiers
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+import os.log
+import os
+public struct Constants {
+  public static let USER_PREFERENCES_KEY_ACCOUNT_UID: Swift.String
+  public static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID: Swift.String
+  public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN: Swift.String
+  public static let USER_PREFERENCES_KEY_APNS_TOKEN: Swift.String
+  public static let USER_PREFERENCES_KEY_FCM_TOKEN: Swift.String
+  public static let USER_PREFERENCES_KEY_BUILD: Swift.String
+  public static let INTERNAL_EVENT_APP_INSTALLED: Swift.String
+  public static let INTERNAL_EVENT_APP_UPDATED: Swift.String
+  public static let INTERNAL_EVENT_APP_OPENED: Swift.String
+  public static let INTERNAL_EVENT_APP_BACKGROUNDED: Swift.String
+  public static let INTERNAL_EVENT_APP_CRASHED: Swift.String
+  public static let INTERNAL_EVENT_APP_SCREEN_VIEWED: Swift.String
+  public static let EVENT_DEEP_LINK_OPENED: Swift.String
+  public static let EVENT_NOTIFICATION_NAVIGATED: Swift.String
+  public static let CONTENT_TYPE: Swift.String
+  public static let GCS_ASSET_UPLOAD_HEADER_KEY: Swift.String
+  public static let DASHX_NOTIFICATION_DATA_KEY: Swift.String
+  public static let DASHX_NOTIFICATION_CATEGORY_IDENTIFIER: Swift.String
+}
+public enum UserAttributes {
+  public static let UID: Swift.String
+  public static let ANONYMOUS_UID: Swift.String
+  public static let EMAIL: Swift.String
+  public static let PHONE: Swift.String
+  public static let NAME: Swift.String
+  public static let FIRST_NAME: Swift.String
+  public static let LAST_NAME: Swift.String
+}
+public enum HttpMethod : Swift.String {
+  case get
+  case post
+  case put
+  case patch
+  case delete
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
+}
+public enum DashXBrowser {
+  public static var safariConfiguration: ((SafariServices.SFSafariViewController) -> Swift.Void)?
+  public static func presentRichLanding(url: Foundation.URL, from presenter: UIKit.UIViewController? = nil)
+}
+@available(*, deprecated, message: "Use Result-based or async/await overloads instead")
+public typealias SuccessCallback = (Any?) -> ()
+@available(*, deprecated, message: "Use Result-based or async/await overloads instead")
+public typealias FailureCallback = (any Swift.Error) -> ()
+public enum DashXClientError : Swift.Error, Foundation.LocalizedError {
+  case noArgsInIdentify
+  case assetIsNotReady
+  case assetIsNotUploaded
+  case notIdentified
+  case graphQLErrors([Swift.String])
+  case networkError(underlying: any Swift.Error)
+  case customError(message: Swift.String)
+  public var errorDescription: Swift.String? {
+    get
+  }
+  public var recoverySuggestion: Swift.String? {
+    get
+  }
+  public var isRetryable: Swift.Bool {
+    get
+  }
+}
+public enum LocationPermissionType {
+  case always
+  case whenInUse
+  case current
+  public static func == (a: DashX.LocationPermissionType, b: DashX.LocationPermissionType) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public let DashX: DashX.DashXClient
+@_hasMissingDesignatedInitializers public class DashXClient {
+  public static let instance: DashX.DashXClient
+  public var isAdTrackingRequested: Swift.Bool {
+    get
+  }
+  public func setAPNSToken(to: Foundation.Data)
+  public func configure(withPublicKey publicKey: Swift.String, baseURI: Swift.String? = nil, targetEnvironment: Swift.String? = nil, libraryInfo: DashX.LibraryInfo? = nil)
+  public func setFCMToken(to: Swift.String)
+  public func enableLifecycleTracking()
+  public func enableAdTracking()
+  public func setIdentity(uid: Swift.String?, token: Swift.String?)
+  @available(*, deprecated, message: "Use identify(options:) instead")
+  public func identify(withOptions: Foundation.NSDictionary?) throws
+  public func identify(options: [Swift.String : Swift.String], completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
+  public func reset()
+  public func track(_ event: Swift.String, withData: [Swift.String : Any]? = nil)
+  public func flushEventQueue()
+  public func screen(_ screenName: Swift.String, withData: [Swift.String : Any]? = nil)
+  public func subscribe(completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
+  public func unsubscribe(completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
+  public func fetchStoredPreferences(completion: @escaping (Swift.Result<[Swift.String : Any?], any Swift.Error>) -> Swift.Void)
+  @available(*, deprecated, message: "Use fetchStoredPreferences(completion:) or async overload instead")
+  public func fetchStoredPreferences(successCallback: @escaping (Any?) -> Swift.Void, failureCallback: @escaping (any Swift.Error) -> Swift.Void)
+  public func saveStoredPreferences(preferenceData: [Swift.String : Any], completion: @escaping (Swift.Result<Swift.Bool, any Swift.Error>) -> Swift.Void)
+  @available(*, deprecated, message: "Use saveStoredPreferences(preferenceData:completion:) or async overload instead")
+  public func saveStoredPreferences(preferenceData: Foundation.NSDictionary?, successCallback: @escaping (Any?) -> Swift.Void, failureCallback: @escaping (any Swift.Error) -> Swift.Void)
+  public func fetchRecord(urn: Swift.String, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil, completion: @escaping (Swift.Result<[Swift.String : Any?], any Swift.Error>) -> Swift.Void)
+  public func searchRecords(resource: Swift.String, filter: [Swift.String : Any]? = nil, order: [[Swift.String : Any]]? = nil, limit: Swift.Int? = nil, page: Swift.Int? = nil, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil, completion: @escaping (Swift.Result<[[Swift.String : Any?]], any Swift.Error>) -> Swift.Void)
+  public func uploadAsset(fileURL: Foundation.URL, resource: Swift.String, attribute: Swift.String, completion: @escaping (Swift.Result<DashX.AssetResponse, any Swift.Error>) -> Swift.Void)
+  @available(*, deprecated, message: "Use uploadAsset(fileURL:resource:attribute:completion:) or async overload instead")
+  public func uploadAsset(fileURL: Foundation.URL, resource: Swift.String, attribute: Swift.String, successCallback: @escaping (Any?) -> Swift.Void, failureCallback: @escaping (any Swift.Error) -> Swift.Void)
+  public static var maxAssetPollRetries: Swift.Int
+  public static var assetPollBaseInterval: Swift.Double
+  public func fetchAsset(assetId: Swift.String, completion: @escaping (Swift.Result<DashX.AssetResponse, any Swift.Error>) -> Swift.Void)
+  @available(*, deprecated, renamed: "fetchAsset(assetId:completion:)")
+  public func asset(assetId: Swift.String, successCallback: @escaping (Any?) -> Swift.Void, failureCallback: @escaping (any Swift.Error) -> Swift.Void)
+  public func requestNotificationPermission(completion: @escaping (UserNotifications.UNAuthorizationStatus) -> ())
+  public func getNotificationPermissionStatus(completion: @escaping (UserNotifications.UNAuthorizationStatus) -> ())
+  public func trackMessage(message: DashX.DashXNotificationMessage, event: DashX.MessageTrackingEvent, completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
+  public var linkHandler: ((Foundation.URL) -> Swift.Void)?
+  public func processURL(_ url: Foundation.URL, source: Swift.String? = nil, forwardToLinkHandler: Swift.Bool = true)
+  public func trackNotificationNavigation(_ action: DashX.NavigationAction?, notificationId: Swift.String?)
+  public func handleUserActivity(userActivity: Foundation.NSUserActivity?)
+  @objc deinit
+}
+extension DashX.DashXClient {
+  public func fetchStoredPreferences() async throws -> [Swift.String : Any?]
+  public func saveStoredPreferences(preferenceData: [Swift.String : Any]) async throws -> Swift.Bool
+  public func uploadAsset(fileURL: Foundation.URL, resource: Swift.String, attribute: Swift.String) async throws -> DashX.AssetResponse
+  public func fetchAsset(assetId: Swift.String) async throws -> DashX.AssetResponse
+  public func requestNotificationPermission() async -> UserNotifications.UNAuthorizationStatus
+  public func getNotificationPermissionStatus() async -> UserNotifications.UNAuthorizationStatus
+  public func fetchRecord(urn: Swift.String, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil) async throws -> [Swift.String : Any?]
+  public func searchRecords(resource: Swift.String, filter: [Swift.String : Any]? = nil, order: [[Swift.String : Any]]? = nil, limit: Swift.Int? = nil, page: Swift.Int? = nil, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil) async throws -> [[Swift.String : Any?]]
+  public func identify(options: [Swift.String : Swift.String]) async throws
+  public func subscribe() async throws
+  public func unsubscribe() async throws
+}
+@_hasMissingDesignatedInitializers public class DashXLog {
+  public enum LogLevel : Swift.Int {
+    case debug
+    case info
+    case error
+    case off
+    public init?(rawValue: Swift.Int)
+    public typealias RawValue = Swift.Int
+    public var rawValue: Swift.Int {
+      get
+    }
+  }
+  public static func setLogLevel(to: DashX.DashXLog.LogLevel)
+  public static func d(tag: Swift.String, _ data: Swift.String)
+  public static func i(tag: Swift.String, _ data: Swift.String)
+  public static func e(tag: Swift.String, _ data: Swift.String)
+  @objc deinit
+}
+public enum DashXNotificationKeys {
+  public static let payloadBlock: Swift.String
+  public static let categoryIdentifier: Swift.String
+  public static let iosSdkName: Swift.String
+}
+extension Swift.KeyedDecodingContainer {
+  public func decodeStringifiedJSONIfPresent<T>(_ type: T.Type, forKey key: Swift.KeyedDecodingContainer<K>.Key) -> T? where T : Swift.Decodable
+  public func decodeBoolFromStringIfPresent(forKey key: Swift.KeyedDecodingContainer<K>.Key) -> Swift.Bool?
+}
+public enum NavigationAction : Swift.Equatable {
+  case deepLink(url: Foundation.URL)
+  case screen(name: Swift.String, data: [Swift.String : Swift.String]?)
+  case richLanding(url: Foundation.URL)
+  case clickAction(action: Swift.String)
+  public static func == (a: DashX.NavigationAction, b: DashX.NavigationAction) -> Swift.Bool
+}
+public struct ActionButton : Swift.Decodable {
+  public let identifier: Swift.String
+  public let label: Swift.String
+  public let icon: Swift.String?
+  public let url: Swift.String?
+  public let clickAction: Swift.String?
+  public let screenName: Swift.String?
+  public let screenData: [Swift.String : Swift.String]?
+  public let richLanding: Swift.Bool?
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DashXNotificationData : Swift.Decodable {
+  public let id: Swift.String
+  public let title: Swift.String
+  public let body: Swift.String
+  public let image: Swift.String?
+  public let url: Swift.String?
+  public let screenName: Swift.String?
+  public let screenData: [Swift.String : Swift.String]?
+  public let clickAction: Swift.String?
+  public let actionButtons: [DashX.ActionButton]?
+  public let richLanding: Swift.Bool?
+  public let interruptionLevel: Swift.String?
+  public enum CodingKeys : Swift.String, Swift.CodingKey {
+    case id, title, body, image, url
+    case actionButtons
+    case screenName
+    case screenData
+    case clickAction
+    case richLanding
+    case interruptionLevel
+    public init?(rawValue: Swift.String)
+    public init?(stringValue: Swift.String)
+    public init?(intValue: Swift.Int)
+    public typealias RawValue = Swift.String
+    public var intValue: Swift.Int? {
+      get
+    }
+    public var rawValue: Swift.String {
+      get
+    }
+    public var stringValue: Swift.String {
+      get
+    }
+  }
+  public init(from decoder: any Swift.Decoder) throws
+  public func navigationAction(forActionIdentifier actionIdentifier: Swift.String) -> DashX.NavigationAction?
+}
+public typealias DashXNotificationMessage = [Swift.AnyHashable : Any]
+extension Swift.Dictionary where Key == Swift.AnyHashable, Value == Any {
+  public func dashxNotificationData() -> DashX.DashXNotificationData?
+  public func dashxNotificationId() -> Swift.String?
+  public func dashxNotificationUrl() -> Foundation.URL?
+}
+@_inheritsConvenienceInitializers @objc(DashXSceneDelegate) @_Concurrency.MainActor @preconcurrency open class DashXSceneDelegate : UIKit.UIResponder, UIKit.UIWindowSceneDelegate {
+  @available(iOS 13.0, *)
+  @_Concurrency.MainActor @preconcurrency @objc open func sceneDidBecomeActive(_ scene: UIKit.UIScene)
+  @available(iOS 13.0, *)
+  @_Concurrency.MainActor @preconcurrency @objc open func scene(_ scene: UIKit.UIScene, openURLContexts URLContexts: Swift.Set<UIKit.UIOpenURLContext>)
+  @available(iOS 13.0, *)
+  @_Concurrency.MainActor @preconcurrency @objc open func scene(_ scene: UIKit.UIScene, continue userActivity: Foundation.NSUserActivity)
+  @_Concurrency.MainActor @preconcurrency @objc override dynamic public init()
+  @objc deinit
+}
+public enum MessageTrackingEvent {
+  case delivered
+  case dismissed
+  case opened
+  case clicked
+  case read
+  public static func == (a: DashX.MessageTrackingEvent, b: DashX.MessageTrackingEvent) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct Preference : Swift.Codable {
+  public var enabled: Swift.Bool?
+  public var email: Swift.Bool?
+  public var push: Swift.Bool?
+  public var sms: Swift.Bool?
+  public var whatsapp: Swift.Bool?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct PrepareAssetResponse : Swift.Codable {
+  public var data: DashX.ResponseAssetData?
+  public var id: Swift.String?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct ResponseAssetData : Swift.Codable {
+  public var upload: DashX.UploadData?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct UploadData : Swift.Codable {
+  public var headers: [Swift.String : Swift.String]?
+  public var url: Swift.String?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct AssetResponse : Swift.Codable {
+  public struct AssetDataResponse : Swift.Codable {
+    public var assetData: DashX.AssetData?
+    public func encode(to encoder: any Swift.Encoder) throws
+    public init(from decoder: any Swift.Decoder) throws
+  }
+  public var status: Swift.String?
+  public var data: DashX.AssetResponse.AssetDataResponse?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct AssetData : Swift.Codable {
+  public var status: Swift.String?
+  public var url: Swift.String?
+  public var playbackIds: [DashX.PlaybackData]?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct PlaybackData : Swift.Codable {
+  public var id: Swift.String?
+  public var policy: Swift.String?
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct LibraryInfo {
+  public let name: Swift.String
+  public let version: Swift.String
+  public init(name: Swift.String, version: Swift.String)
+}
+extension DashX.HttpMethod : Swift.Equatable {}
+extension DashX.HttpMethod : Swift.Hashable {}
+extension DashX.HttpMethod : Swift.RawRepresentable {}
+extension DashX.LocationPermissionType : Swift.Equatable {}
+extension DashX.LocationPermissionType : Swift.Hashable {}
+extension DashX.DashXLog.LogLevel : Swift.Equatable {}
+extension DashX.DashXLog.LogLevel : Swift.Hashable {}
+extension DashX.DashXLog.LogLevel : Swift.RawRepresentable {}
+extension DashX.DashXNotificationData.CodingKeys : Swift.Equatable {}
+extension DashX.DashXNotificationData.CodingKeys : Swift.Hashable {}
+extension DashX.DashXNotificationData.CodingKeys : Swift.RawRepresentable {}
+extension DashX.MessageTrackingEvent : Swift.Equatable {}
+extension DashX.MessageTrackingEvent : Swift.Hashable {}

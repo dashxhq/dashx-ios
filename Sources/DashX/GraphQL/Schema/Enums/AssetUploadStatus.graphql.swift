@@ -1,9 +1,9 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   enum AssetUploadStatus: String, EnumType {
     case pending = "PENDING"
     case uploaded = "UPLOADED"

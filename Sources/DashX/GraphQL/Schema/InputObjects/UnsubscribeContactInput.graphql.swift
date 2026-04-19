@@ -1,17 +1,17 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   struct UnsubscribeContactInput: InputObject {
-    public private(set) var __data: InputDict
+    private(set) var __data: InputDict
 
-    public init(_ data: InputDict) {
+    init(_ data: InputDict) {
       __data = data
     }
 
-    public init(
+    init(
       accountUid: GraphQLNullable<String> = nil,
       accountAnonymousUid: GraphQLNullable<String> = nil,
       value: String,
@@ -25,22 +25,22 @@ public extension DashXGql {
       ])
     }
 
-    public var accountUid: GraphQLNullable<String> {
+    var accountUid: GraphQLNullable<String> {
       get { __data["accountUid"] }
       set { __data["accountUid"] = newValue }
     }
 
-    public var accountAnonymousUid: GraphQLNullable<String> {
+    var accountAnonymousUid: GraphQLNullable<String> {
       get { __data["accountAnonymousUid"] }
       set { __data["accountAnonymousUid"] = newValue }
     }
 
-    public var value: String {
+    var value: String {
       get { __data["value"] }
       set { __data["value"] = newValue }
     }
 
-    public var targetEnvironment: GraphQLNullable<String> {
+    var targetEnvironment: GraphQLNullable<String> {
       get { __data["targetEnvironment"] }
       set { __data["targetEnvironment"] = newValue }
     }

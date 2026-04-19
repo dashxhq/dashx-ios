@@ -5,7 +5,7 @@
 // Any changes to this file will not be overwritten by future
 // code generation execution.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
 enum SchemaConfiguration: ApolloAPI.SchemaConfiguration {
   public static func cacheKeyInfo(for type: ApolloAPI.Object, object: ApolloAPI.ObjectData) -> CacheKeyInfo? {

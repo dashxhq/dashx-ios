@@ -1,17 +1,17 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-import ApolloAPI
+@_implementationOnly import ApolloAPI
 
-public extension DashXGql {
+extension DashXGql {
   struct ContactLibraryInput: InputObject {
-    public private(set) var __data: InputDict
+    private(set) var __data: InputDict
 
-    public init(_ data: InputDict) {
+    init(_ data: InputDict) {
       __data = data
     }
 
-    public init(
+    init(
       name: GraphQLNullable<String> = nil,
       version: GraphQLNullable<String> = nil
     ) {
@@ -21,12 +21,12 @@ public extension DashXGql {
       ])
     }
 
-    public var name: GraphQLNullable<String> {
+    var name: GraphQLNullable<String> {
       get { __data["name"] }
       set { __data["name"] = newValue }
     }
 
-    public var version: GraphQLNullable<String> {
+    var version: GraphQLNullable<String> {
       get { __data["version"] }
       set { __data["version"] = newValue }
     }

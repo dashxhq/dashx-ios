@@ -1,5 +1,6 @@
 import AdSupport
-import Apollo
+// @_implementationOnly — see DashXClient.swift for rationale.
+@_implementationOnly import Apollo
 import AppTrackingTransparency
 import Foundation
 import UIKit

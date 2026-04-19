@@ -74,9 +74,34 @@ instead of `swift build` (which tries to compile for every platform the package 
 
 ## Publishing
 
-1. Bump the version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`) & `DashX.podspec` (`s.version`).
-2. Commit the version bump: `Bump version to x.x.x`.
-3. Create a tag: `git tag 'x.x.x'`.
-4. Push the tag: `git push origin --tags`.
+The SDK ships two surfaces from the same tag:
 
-Apps that depend on this package via Swift Package Manager should pin that tag (or a branch). CI runs `xcodebuild` for the `DashX` and `DashXFirebase` schemes on pushes and pull requests to `main`.
+- **Swift Package Manager** — consumers compile from `Sources/**` driven by `Package.swift`. Pinning the git tag is enough.
+- **CocoaPods** — consumers link the prebuilt XCFrameworks under `xcframeworks/` via `DashX.podspec` (no source compilation on their end, no transitive Apollo dep surfaced). XCFrameworks are built locally on a Mac before tagging.
+
+### One-time setup
+
+The CocoaPods build requires [`xcodegen`](https://github.com/yonaskolb/XcodeGen) to regenerate `DashX.xcodeproj` from `project.yml`:
+
+```sh
+brew install xcodegen
+```
+
+`DashX.xcodeproj` is committed, so contributors without xcodegen can still open and build the project. Regenerate only when `project.yml` or the source tree changes.
+
+### Cutting a release
+
+1. Bump version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`), `DashX.podspec` (`s.version`), and `project.yml` (`MARKETING_VERSION`).
+2. Regenerate the Xcode project if `project.yml` changed: `xcodegen generate`
+3. Build the XCFrameworks: `./scripts/build_xcframeworks.sh`
+4. Commit the version bumps + the refreshed `xcframeworks/`:
+   ```sh
+   git add Sources/DashX/Constants.swift DashX.podspec project.yml DashX.xcodeproj xcframeworks/
+   git commit -m "Bump version to x.x.x"
+   ```
+5. Tag and push: `git tag x.x.x && git push origin main --tags`
+6. Publish to CocoaPods trunk: `pod trunk push DashX.podspec`
+
+SPM consumers get the new version automatically when they update their package pin.
+
+CI runs `xcodebuild` for the `DashX` and `DashXFirebase` schemes on pushes and pull requests to `main`.
