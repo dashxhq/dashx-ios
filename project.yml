@@ -101,6 +101,13 @@ targets:
         # surface. Any Foundation/UIKit call not allowed in app extensions
         # will fail to link if the NSE code accidentally uses it.
         APPLICATION_EXTENSION_API_ONLY: YES
+        # Ship as a static framework (OneSignal / Branch / Mixpanel pattern):
+        # the Mach-O is linked into the consumer's NSE binary at build time,
+        # so the `.appex` doesn't have to resolve a dynamic framework at
+        # runtime via `@rpath`. Consumers get the trivial Podfile shape —
+        # a separate top-level NSE target declaring only this pod — with no
+        # `inherit!`, no embed-frameworks hook, and no host-app leakage.
+        MACH_O_TYPE: staticlib
 
 schemes:
   DashX:
