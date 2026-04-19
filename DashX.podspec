@@ -27,7 +27,7 @@ Pod::Spec.new do |s|
   end
 
   # Notification Service Extension base class. Add this subspec to the NSE
-  # target in your Xcode project and subclass `DashXNotificationServiceExtension`.
+  # target in your Xcode project and subclass `DashXNotificationService`.
   # See README for required Info.plist keys (DASHX_BASE_URI, DASHX_PUBLIC_KEY).
   s.subspec "NotificationServiceExtension" do |nse|
     nse.vendored_frameworks = "xcframeworks/DashXNotificationServiceExtension.xcframework"

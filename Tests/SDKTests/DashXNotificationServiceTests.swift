@@ -6,7 +6,7 @@ import XCTest
 /// The backend (`apps/messaging/src/notifiers/fcm.rs::dashx_category_id_for_buttons`) has a
 /// matching assertion against the same golden value — if either side drifts, CI on one of
 /// the two sides fails loudly. Do not change the golden value without updating both.
-final class DashXNotificationServiceExtensionHashTests: XCTestCase {
+final class DashXNotificationServiceHashTests: XCTestCase {
     private func button(_ id: String, _ label: String) -> ActionButton {
         let json = """
         {

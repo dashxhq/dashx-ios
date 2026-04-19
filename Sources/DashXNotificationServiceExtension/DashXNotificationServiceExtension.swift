@@ -63,16 +63,6 @@ open class DashXNotificationService: UNNotificationServiceExtension {
         let userInfo = request.content.userInfo
         let dashx = userInfo.dashxNotificationData()
 
-        // Default the notification sound when the server didn't specify one. iOS
-        // copies `aps.sound` (if present) into `content.sound` before spawning the
-        // NSE; if it's nil, the banner renders silently. Matches the legacy
-        // silent-push path which hardcoded `UNNotificationSound.default` on the
-        // reconstructed local notification. Servers that want true silence can
-        // override by sending an explicit `aps.sound` the integrator recognizes.
-        if content.sound == nil {
-            content.sound = .default
-        }
-
         // 1. Synchronously register the action-button category before the content handler fires.
         //    iOS reads the category state at display time; if we set it asynchronously AFTER
         //    `contentHandler(...)`, action buttons won't appear on this notification.

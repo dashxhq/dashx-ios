@@ -3558,336 +3558,336 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "BooleanLiteral",
-      "offset": 6350,
+      "offset": 5782,
       "length": 4,
       "value": "true"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "Array",
-      "offset": 7885,
+      "offset": 7317,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "IntegerLiteral",
-      "offset": 8047,
+      "offset": 7479,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "IntegerLiteral",
-      "offset": 8590,
+      "offset": 8022,
       "length": 1,
       "value": "2"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 8956,
+      "offset": 8388,
       "length": 30,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 8973,
+      "offset": 8405,
       "length": 1,
       "value": "\"|\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 8985,
+      "offset": 8417,
       "length": 23,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 9007,
+      "offset": 8439,
       "length": 8,
       "value": "\"\u001F\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 9124,
+      "offset": 8556,
       "length": 6,
       "value": "\"%02x\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 9162,
+      "offset": 8594,
       "length": 12,
       "value": "\"DASHX_CAT_\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "IntegerLiteral",
-      "offset": 9195,
+      "offset": 8627,
       "length": 2,
       "value": "14"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10220,
+      "offset": 9652,
       "length": 16,
       "value": "\"DASHX_BASE_URI\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10321,
+      "offset": 9753,
       "length": 18,
       "value": "\"DASHX_PUBLIC_KEY\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10499,
+      "offset": 9931,
       "length": 6,
       "value": "\"POST\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10531,
+      "offset": 9963,
       "length": 18,
       "value": "\"application\/json\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10571,
+      "offset": 10003,
       "length": 14,
       "value": "\"Content-Type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10643,
+      "offset": 10075,
       "length": 14,
       "value": "\"X-PUBLIC-KEY\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10735,
+      "offset": 10167,
       "length": 26,
       "value": "\"DASHX_TARGET_ENVIRONMENT\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10844,
+      "offset": 10276,
       "length": 22,
       "value": "\"X-TARGET-ENVIRONMENT\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 10970,
+      "offset": 10402,
       "length": 135,
       "value": "\"mutation TrackMessage($input: TrackMessageInput!) {\n  trackMessage(input: $input) { success }\n}\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 11154,
+      "offset": 10586,
       "length": 7,
       "value": "\"query\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 11185,
+      "offset": 10617,
       "length": 11,
       "value": "\"variables\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 11216,
+      "offset": 10648,
       "length": 7,
       "value": "\"input\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 11247,
+      "offset": 10679,
       "length": 4,
       "value": "\"id\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 11332,
+      "offset": 10764,
       "length": 11,
       "value": "\"timestamp\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "IntegerLiteral",
-      "offset": 11526,
+      "offset": 10958,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "IntegerLiteral",
-      "offset": 12367,
+      "offset": 11799,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 12587,
+      "offset": 12019,
       "length": 14,
       "value": "\"Content-Type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 12950,
+      "offset": 12382,
       "length": 5,
       "value": "\"dat\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "Dictionary",
-      "offset": 13262,
+      "offset": 12694,
       "length": 3,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14062,
+      "offset": 13494,
       "length": 3,
       "value": "\";\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14224,
+      "offset": 13656,
       "length": 12,
       "value": "\"image\/jpeg\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14238,
+      "offset": 13670,
       "length": 11,
       "value": "\"image\/jpg\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14258,
+      "offset": 13690,
       "length": 5,
       "value": "\"jpg\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14277,
+      "offset": 13709,
       "length": 11,
       "value": "\"image\/png\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14297,
+      "offset": 13729,
       "length": 5,
       "value": "\"png\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14316,
+      "offset": 13748,
       "length": 11,
       "value": "\"image\/gif\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14336,
+      "offset": 13768,
       "length": 5,
       "value": "\"gif\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14355,
+      "offset": 13787,
       "length": 12,
       "value": "\"image\/heic\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14376,
+      "offset": 13808,
       "length": 6,
       "value": "\"heic\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14396,
+      "offset": 13828,
       "length": 12,
       "value": "\"image\/webp\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14417,
+      "offset": 13849,
       "length": 6,
       "value": "\"webp\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14437,
+      "offset": 13869,
       "length": 11,
       "value": "\"video\/mp4\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14457,
+      "offset": 13889,
       "length": 5,
       "value": "\"mp4\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14476,
+      "offset": 13908,
       "length": 12,
       "value": "\"audio\/mpeg\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14490,
+      "offset": 13922,
       "length": 11,
       "value": "\"audio\/mp3\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14510,
+      "offset": 13942,
       "length": 5,
       "value": "\"mp3\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashXNotificationServiceExtension\/DashXNotificationServiceExtension.swift",
       "kind": "StringLiteral",
-      "offset": 14896,
+      "offset": 14328,
       "length": 3,
       "value": "\";\""
     }
