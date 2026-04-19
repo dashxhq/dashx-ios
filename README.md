@@ -36,19 +36,19 @@ Full setup, configuration, push notifications (including Notification Service Ex
 
 ## Install (CocoaPods)
 
-CocoaPods consumers pull a prebuilt XCFramework — source compilation (and any downstream Apollo module surprises) happens on our Mac at release time, not on consumers' machines.
+CocoaPods consumers pull a prebuilt XCFramework — source compilation (and any downstream Apollo module surprises) happens on our Mac at release time, not on consumers' machines. The pod is **not** published to the CocoaPods trunk; reference it from git by tag:
 
 ```ruby
-pod 'DashX/SDK', '~> 1.3.1'
+pod 'DashX/SDK', :git => 'https://github.com/dashxhq/dashx-ios.git', :tag => '1.3.1'
 # For the Notification Service Extension target:
-pod 'DashX/NotificationServiceExtension', '~> 1.3.1'
+pod 'DashX/NotificationServiceExtension', :git => 'https://github.com/dashxhq/dashx-ios.git', :tag => '1.3.1'
 ```
 
 Apollo is statically baked into `DashX.xcframework`; no separate `Apollo` pod dependency is declared.
 
 React Native apps consume DashX transparently through `@dashx/react-native` — no Podfile change on their end.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) → *Cutting a release* for how the XCFrameworks get built and published.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) → *Cutting a release* for how the XCFrameworks get built.
 
 ## Contributing
 

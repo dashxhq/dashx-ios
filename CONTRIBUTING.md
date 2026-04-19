@@ -77,7 +77,7 @@ instead of `swift build` (which tries to compile for every platform the package 
 The SDK ships two surfaces from the same tag:
 
 - **Swift Package Manager** — consumers compile from `Sources/**` driven by `Package.swift`. Pinning the git tag is enough.
-- **CocoaPods** — consumers link the prebuilt XCFrameworks under `xcframeworks/` via `DashX.podspec` (no source compilation on their end, no transitive Apollo dep surfaced). XCFrameworks are built locally on a Mac before tagging.
+- **CocoaPods** — consumers link the prebuilt XCFrameworks under `xcframeworks/` via `DashX.podspec` (no source compilation on their end, no transitive Apollo dep surfaced). XCFrameworks are built locally on a Mac before tagging. `DashX.podspec` is **not** published to the CocoaPods trunk — consumers reference the pod directly from git by tag (e.g. `pod 'DashX/SDK', :git => '…', :tag => '1.3.1'`), so tagging is the entire release step.
 
 ### One-time setup
 
@@ -100,8 +100,7 @@ brew install xcodegen
    git commit -m "Bump version to x.x.x"
    ```
 5. Tag and push: `git tag x.x.x && git push origin main --tags`
-6. Publish to CocoaPods trunk: `pod trunk push DashX.podspec`
 
-SPM consumers get the new version automatically when they update their package pin.
+SPM and CocoaPods consumers both pick the new version up from the git tag — no trunk push needed.
 
 CI runs `xcodebuild` for the `DashX` and `DashXFirebase` schemes on pushes and pull requests to `main`.
