@@ -30,11 +30,19 @@ The first command drops an `apollo-ios-cli` binary at the repo root — re-run i
    }
    ```
 
-2. Run:
+2. Run the codegen, then apply the implementation-only-import patch:
 
    ```sh
    ./apollo-ios-cli generate
+   ./scripts/apply_implementation_only_imports.sh
    ```
+
+   The patch rewrites every `@_exported import ApolloAPI` (codegen's default) to
+   `@_implementationOnly import ApolloAPI`. Without it, Apollo shows up in the
+   xcframework's public `.swiftinterface` and CocoaPods consumers — who link
+   the statically-baked xcframework and have no `ApolloAPI` module visible —
+   fail to build with `no such module 'ApolloAPI'`. The script is idempotent,
+   so re-running it is safe.
 
 3. Use the generated type. Everything is namespaced under `DashXGql`:
 
@@ -57,10 +65,20 @@ The first command drops an `apollo-ios-cli` binary at the repo root — re-run i
 
 ### JSON scalars
 
-`DashXGql.JSON` is a typealias for `String` (the wire format). Convert between Swift dictionaries and the scalar via the helpers on `DashXClient`:
+`DashXGql.JSON` is a `CustomScalarType` struct wrapping an `ApolloAPI.JSONValue` (an `AnyHashable`). It serializes on the wire as a real JSON value — object, array, primitive — not a stringified JSON literal, so backend resolvers that assert `data.is_object()` (e.g. `track_event.rs::validate_event_data`) accept it.
 
-- `DashXClient.encodeDictAsJSONString([String: Any]) -> DashXGql.JSON`
-- `DashXClient.decodeJSONStringToDict(DashXGql.JSON) -> [String: Any?]?`
+Construct one from any `Hashable` payload (typically a dictionary):
+
+```swift
+let scalar = DashXGql.JSON(["foo": "bar", "n": 42] as [String: AnyHashable])
+```
+
+When a caller hands you a looser `[String: Any]`, use the internal helpers on `DashXClient`, which silently drop entries whose values aren't `Hashable`:
+
+- `DashXClient.toJSONScalar([String: Any]) -> DashXGql.JSON`
+- `DashXClient.fromJSONScalar(DashXGql.JSON) -> [String: Any?]`
+
+On the read side, `DashXGql.JSON` also exposes typed accessors — `asDictionary`, `asArray`, `asString`, `asBool`, `asInt`, `asDouble`, `isNull` — which return nil when the underlying value has a different shape. Prefer those over raw `value as? T` casts.
 
 ## Compile-check locally
 

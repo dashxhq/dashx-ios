@@ -1,7 +1,7 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_exported import ApolloAPI
+@_implementationOnly import ApolloAPI
 
 extension DashXGql {
   class PrepareAssetMutation: GraphQLMutation {
