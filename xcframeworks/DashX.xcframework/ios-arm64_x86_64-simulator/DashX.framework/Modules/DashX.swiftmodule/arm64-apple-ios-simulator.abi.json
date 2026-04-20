@@ -1661,39 +1661,6 @@
       },
       {
         "kind": "Import",
-        "name": "ApolloAPI",
-        "printedName": "ApolloAPI",
-        "declKind": "Import",
-        "moduleName": "DashX",
-        "declAttributes": [
-          "ImplementationOnly",
-          "RawDocComment"
-        ]
-      },
-      {
-        "kind": "Import",
-        "name": "ApolloAPI",
-        "printedName": "ApolloAPI",
-        "declKind": "Import",
-        "moduleName": "DashX",
-        "declAttributes": [
-          "ImplementationOnly",
-          "RawDocComment"
-        ]
-      },
-      {
-        "kind": "Import",
-        "name": "ApolloAPI",
-        "printedName": "ApolloAPI",
-        "declKind": "Import",
-        "moduleName": "DashX",
-        "declAttributes": [
-          "ImplementationOnly",
-          "RawDocComment"
-        ]
-      },
-      {
-        "kind": "Import",
         "name": "Foundation",
         "printedName": "Foundation",
         "declKind": "Import",
@@ -14253,7 +14220,7 @@
       "kind": "StringLiteral",
       "offset": 759,
       "length": 7,
-      "value": "\"1.3.1\""
+      "value": "\"1.3.2\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
@@ -14557,69 +14524,6 @@
       "value": "[]"
     },
     {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 469,
-      "length": 12,
-      "value": "\"identifier\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 503,
-      "length": 6,
-      "value": "\"name\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 525,
-      "length": 9,
-      "value": "\"version\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 625,
-      "length": 12,
-      "value": "\"identifier\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 660,
-      "length": 12,
-      "value": "\"identifier\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 753,
-      "length": 6,
-      "value": "\"name\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 782,
-      "length": 6,
-      "value": "\"name\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 872,
-      "length": 9,
-      "value": "\"version\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactAppInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 904,
-      "length": 9,
-      "value": "\"version\""
-    },
-    {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/Enums\/ContactKind.graphql.swift",
       "kind": "StringLiteral",
       "offset": 198,
@@ -14702,132 +14606,6 @@
       "offset": 322,
       "length": 10,
       "value": "\"WHATSAPP\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactLibraryInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 424,
-      "length": 6,
-      "value": "\"name\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactLibraryInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 446,
-      "length": 9,
-      "value": "\"version\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactLibraryInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 540,
-      "length": 6,
-      "value": "\"name\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactLibraryInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 569,
-      "length": 6,
-      "value": "\"name\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactLibraryInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 659,
-      "length": 9,
-      "value": "\"version\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactLibraryInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 691,
-      "length": 9,
-      "value": "\"version\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 539,
-      "length": 5,
-      "value": "\"app\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 559,
-      "length": 9,
-      "value": "\"library\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 587,
-      "length": 8,
-      "value": "\"osName\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 613,
-      "length": 11,
-      "value": "\"osVersion\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 719,
-      "length": 5,
-      "value": "\"app\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 747,
-      "length": 5,
-      "value": "\"app\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 849,
-      "length": 9,
-      "value": "\"library\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 881,
-      "length": 9,
-      "value": "\"library\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 973,
-      "length": 8,
-      "value": "\"osName\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 1004,
-      "length": 8,
-      "value": "\"osName\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 1098,
-      "length": 11,
-      "value": "\"osVersion\""
-    },
-    {
-      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/ContactMetadataInput.graphql.swift",
-      "kind": "StringLiteral",
-      "offset": 1132,
-      "length": 11,
-      "value": "\"osVersion\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXApplicationLifecycleCallbacks.swift",
@@ -15468,848 +15246,904 @@
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
-      "kind": "StringLiteral",
-      "offset": 24465,
-      "length": 7,
-      "value": "\"Apple\""
+      "kind": "Dictionary",
+      "offset": 23972,
+      "length": 3,
+      "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 25295,
+      "offset": 24055,
+      "length": 12,
+      "value": "\"identifier\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 24158,
       "length": 14,
       "value": "\"CFBundleName\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 25422,
+      "offset": 24207,
+      "length": 6,
+      "value": "\"name\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 24304,
       "length": 28,
       "value": "\"CFBundleShortVersionString\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 25897,
+      "offset": 24367,
+      "length": 9,
+      "value": "\"version\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 24461,
+      "length": 5,
+      "value": "\"app\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 24489,
+      "length": 9,
+      "value": "\"library\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 24518,
+      "length": 6,
+      "value": "\"name\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 24566,
+      "length": 9,
+      "value": "\"version\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 25193,
+      "length": 7,
+      "value": "\"Apple\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 25302,
       "length": 49,
       "value": "\"Calling subscribe with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 25945,
+      "offset": 25350,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 26332,
+      "offset": 25737,
       "length": 58,
       "value": "\"Encountered GraphQL errors during subscribe(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 26389,
+      "offset": 25794,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 26561,
+      "offset": 25966,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 26833,
+      "offset": 26238,
       "length": 58,
       "value": "\"Sent subscribe with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 26890,
+      "offset": 26295,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 27132,
+      "offset": 26537,
       "length": 51,
       "value": "\"Encountered an error during subscribe(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 27182,
+      "offset": 26587,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 27736,
+      "offset": 27141,
       "length": 48,
       "value": "\"unsubscribe() called without subscribing first\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 27920,
+      "offset": 27325,
       "length": 64,
       "value": "\"'unsubscribe' called without accountAnonymousUid; returning...\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 28528,
+      "offset": 27933,
       "length": 53,
       "value": "\"Calling unsubscribe with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 28580,
+      "offset": 27985,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 28999,
+      "offset": 28404,
       "length": 60,
       "value": "\"Encountered GraphQL errors during unsubscribe(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 29058,
+      "offset": 28463,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 29238,
+      "offset": 28643,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 29374,
+      "offset": 28779,
       "length": 60,
       "value": "\"Sent unsubscribe with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 29433,
+      "offset": 28838,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 29665,
+      "offset": 29070,
       "length": 53,
       "value": "\"Encountered an error during unsubscribe(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 29717,
+      "offset": 29122,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 30569,
+      "offset": 29974,
       "length": 68,
       "value": "\"Calling fetchStoredPreferences with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 30636,
+      "offset": 30041,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31071,
+      "offset": 30476,
       "length": 71,
       "value": "\"Encountered GraphQL errors during fetchStoredPreferences(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31141,
+      "offset": 30546,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31242,
+      "offset": 30647,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31472,
+      "offset": 30877,
       "length": 46,
       "value": "\"Sent fetchStoredPreferences with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31517,
+      "offset": 30922,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31691,
+      "offset": 31096,
       "length": 64,
       "value": "\"Encountered an error during fetchStoredPreferences(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 31754,
+      "offset": 31159,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 32817,
+      "offset": 32222,
       "length": 66,
       "value": "\"Calling saveStoredPreferences with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 32882,
+      "offset": 32287,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 33253,
+      "offset": 32658,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 33302,
+      "offset": 32707,
       "length": 52,
       "value": "\"Sent saveStoredPreferences with success=\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 33353,
+      "offset": 32758,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 33483,
+      "offset": 32888,
       "length": 63,
       "value": "\"Encountered an error during saveStoredPreferences(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 33545,
+      "offset": 32950,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 34064,
+      "offset": 33469,
       "length": 25,
       "value": "\"Invalid preference data\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 34744,
+      "offset": 34149,
       "length": 3,
       "value": "\"\/\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 34760,
+      "offset": 34165,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 34809,
+      "offset": 34214,
       "length": 1,
       "value": "2"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 34835,
+      "offset": 34240,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 34923,
+      "offset": 34328,
       "length": 40,
       "value": "\"URN must be of form: {resource}\/{uuid}\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 35040,
+      "offset": 34445,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 35150,
+      "offset": 34555,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 35183,
+      "offset": 34588,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 35878,
+      "offset": 35283,
       "length": 60,
       "value": "\"Encountered GraphQL errors during fetchRecord(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 35937,
+      "offset": 35342,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 36038,
+      "offset": 35443,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 36189,
+      "offset": 35594,
       "length": 51,
       "value": "\"Sent fetchRecord with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 36239,
+      "offset": 35644,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 36421,
+      "offset": 35826,
       "length": 53,
       "value": "\"Encountered an error during fetchRecord(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 36473,
+      "offset": 35878,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38030,
+      "offset": 37435,
       "length": 62,
       "value": "\"Encountered GraphQL errors during searchRecords(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38091,
+      "offset": 37496,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38192,
+      "offset": 37597,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38343,
+      "offset": 37748,
       "length": 53,
       "value": "\"Sent searchRecords with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38395,
+      "offset": 37800,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38583,
+      "offset": 37988,
       "length": 55,
       "value": "\"Encountered an error during searchRecords(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 38637,
+      "offset": 38042,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 40442,
+      "offset": 39847,
       "length": 3,
       "value": "200"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 41790,
+      "offset": 41195,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 41927,
+      "offset": 41332,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 41986,
+      "offset": 41391,
       "length": 34,
       "value": "\"Unable to get file size \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 42019,
+      "offset": 41424,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 42298,
+      "offset": 41703,
       "length": 48,
       "value": "\"Calling prepareAsset with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 42345,
+      "offset": 41750,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 42705,
+      "offset": 42110,
       "length": 57,
       "value": "\"Sent prepareAsset with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 42761,
+      "offset": 42166,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Dictionary",
-      "offset": 43257,
+      "offset": 42662,
       "length": 3,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 43728,
+      "offset": 43133,
       "length": 54,
       "value": "\"Encountered an error during prepareAsset(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 43781,
+      "offset": 43186,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 44007,
+      "offset": 43412,
       "length": 1,
       "value": "5"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "FloatLiteral",
-      "offset": 44069,
+      "offset": 43474,
       "length": 3,
       "value": "2.0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 44400,
+      "offset": 43805,
       "length": 7,
       "value": "\"ready\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 44424,
+      "offset": 43829,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "FloatLiteral",
-      "offset": 44640,
+      "offset": 44045,
       "length": 3,
       "value": "2.0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 44713,
+      "offset": 44118,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 44717,
+      "offset": 44122,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 44777,
+      "offset": 44182,
       "length": 2,
       "value": "60"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 44817,
+      "offset": 44222,
       "length": 22,
       "value": "\"pollTillAssetIsReady\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 44841,
+      "offset": 44246,
       "length": 77,
       "value": "\"Retrying in \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 44871,
+      "offset": 44276,
       "length": 6,
       "value": "\"%.1f\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 44891,
+      "offset": 44296,
       "length": 1,
       "value": "\"s (attempt \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 44914,
+      "offset": 44319,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 44916,
+      "offset": 44321,
       "length": 1,
       "value": "\")\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 45077,
+      "offset": 44482,
       "length": 1,
       "value": "1"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 45440,
+      "offset": 44845,
       "length": 31,
       "value": "\"Calling asset with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 45470,
+      "offset": 44875,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 45775,
+      "offset": 45180,
       "length": 50,
       "value": "\"Sent asset with \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 45824,
+      "offset": 45229,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Dictionary",
-      "offset": 46317,
+      "offset": 45722,
       "length": 3,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 47114,
+      "offset": 46519,
       "length": 47,
       "value": "\"Encountered an error during asset(): \""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 47160,
+      "offset": 46565,
       "length": 2,
       "value": "\"\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 49475,
+      "offset": 48880,
       "length": 50,
       "value": "\"Message does not contain a DashX notification ID\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 50100,
+      "offset": 49505,
       "length": 4,
       "value": "true"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50156,
+      "offset": 49561,
       "length": 5,
       "value": "\"url\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50195,
+      "offset": 49600,
       "length": 11,
       "value": "\"timestamp\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50303,
+      "offset": 49708,
       "length": 8,
       "value": "\"source\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50736,
+      "offset": 50141,
       "length": 11,
       "value": "\"timestamp\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50852,
+      "offset": 50257,
       "length": 17,
       "value": "\"notification_id\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50972,
+      "offset": 50377,
       "length": 6,
       "value": "\"type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 50982,
+      "offset": 50387,
       "length": 11,
       "value": "\"deep_link\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51011,
+      "offset": 50416,
       "length": 5,
       "value": "\"url\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51100,
+      "offset": 50505,
       "length": 6,
       "value": "\"type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51110,
+      "offset": 50515,
       "length": 8,
       "value": "\"screen\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51136,
+      "offset": 50541,
       "length": 13,
       "value": "\"screen_name\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51211,
+      "offset": 50616,
       "length": 13,
       "value": "\"screen_data\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51306,
+      "offset": 50711,
       "length": 6,
       "value": "\"type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51316,
+      "offset": 50721,
       "length": 14,
       "value": "\"rich_landing\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51348,
+      "offset": 50753,
       "length": 5,
       "value": "\"url\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51432,
+      "offset": 50837,
       "length": 6,
       "value": "\"type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51442,
+      "offset": 50847,
       "length": 14,
       "value": "\"click_action\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51474,
+      "offset": 50879,
       "length": 14,
       "value": "\"click_action\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51534,
+      "offset": 50939,
       "length": 6,
       "value": "\"type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51544,
+      "offset": 50949,
       "length": 9,
       "value": "\"default\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 51901,
+      "offset": 51306,
       "length": 16,
       "value": "\"universal_link\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Dictionary",
-      "offset": 56568,
+      "offset": 55973,
       "length": 3,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Dictionary",
-      "offset": 56866,
+      "offset": 56271,
       "length": 3,
       "value": "[]"
     },
@@ -18829,336 +18663,336 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1122,
+      "offset": 1106,
       "length": 12,
       "value": "\"accountUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1156,
+      "offset": 1140,
       "length": 21,
       "value": "\"accountAnonymousUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1208,
+      "offset": 1192,
       "length": 6,
       "value": "\"name\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1230,
+      "offset": 1214,
       "length": 6,
       "value": "\"kind\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1252,
+      "offset": 1236,
       "length": 7,
       "value": "\"value\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1276,
+      "offset": 1260,
       "length": 11,
       "value": "\"userAgent\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1308,
+      "offset": 1292,
       "length": 8,
       "value": "\"osName\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1334,
+      "offset": 1318,
       "length": 11,
       "value": "\"osVersion\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1366,
+      "offset": 1350,
       "length": 13,
       "value": "\"deviceModel\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1402,
+      "offset": 1386,
       "length": 20,
       "value": "\"deviceManufacturer\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1452,
+      "offset": 1436,
       "length": 11,
       "value": "\"deviceUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1484,
+      "offset": 1468,
       "length": 22,
       "value": "\"deviceAdvertisingUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1538,
+      "offset": 1522,
       "length": 27,
       "value": "\"isDeviceAdTrackingEnabled\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1602,
+      "offset": 1586,
       "length": 10,
       "value": "\"metadata\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1632,
+      "offset": 1616,
       "length": 5,
       "value": "\"tag\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1652,
+      "offset": 1636,
       "length": 19,
       "value": "\"targetEnvironment\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1772,
+      "offset": 1756,
       "length": 12,
       "value": "\"accountUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1807,
+      "offset": 1791,
       "length": 12,
       "value": "\"accountUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1915,
+      "offset": 1899,
       "length": 21,
       "value": "\"accountAnonymousUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 1959,
+      "offset": 1943,
       "length": 21,
       "value": "\"accountAnonymousUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2061,
+      "offset": 2045,
       "length": 6,
       "value": "\"name\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2090,
+      "offset": 2074,
       "length": 6,
       "value": "\"name\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2178,
+      "offset": 2162,
       "length": 6,
       "value": "\"kind\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2207,
+      "offset": 2191,
       "length": 6,
       "value": "\"kind\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2278,
+      "offset": 2262,
       "length": 7,
       "value": "\"value\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2308,
+      "offset": 2292,
       "length": 7,
       "value": "\"value\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2401,
+      "offset": 2385,
       "length": 11,
       "value": "\"userAgent\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2435,
+      "offset": 2419,
       "length": 11,
       "value": "\"userAgent\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2529,
+      "offset": 2513,
       "length": 8,
       "value": "\"osName\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2560,
+      "offset": 2544,
       "length": 8,
       "value": "\"osName\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2654,
+      "offset": 2638,
       "length": 11,
       "value": "\"osVersion\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2688,
+      "offset": 2672,
       "length": 11,
       "value": "\"osVersion\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2787,
+      "offset": 2771,
       "length": 13,
       "value": "\"deviceModel\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2823,
+      "offset": 2807,
       "length": 13,
       "value": "\"deviceModel\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2931,
+      "offset": 2915,
       "length": 20,
       "value": "\"deviceManufacturer\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 2974,
+      "offset": 2958,
       "length": 20,
       "value": "\"deviceManufacturer\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3080,
+      "offset": 3064,
       "length": 11,
       "value": "\"deviceUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3114,
+      "offset": 3098,
       "length": 11,
       "value": "\"deviceUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3222,
+      "offset": 3206,
       "length": 22,
       "value": "\"deviceAdvertisingUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3267,
+      "offset": 3251,
       "length": 22,
       "value": "\"deviceAdvertisingUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3389,
+      "offset": 3373,
       "length": 27,
       "value": "\"isDeviceAdTrackingEnabled\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3439,
+      "offset": 3423,
       "length": 27,
       "value": "\"isDeviceAdTrackingEnabled\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3565,
+      "offset": 3533,
       "length": 10,
       "value": "\"metadata\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3598,
+      "offset": 3566,
       "length": 10,
       "value": "\"metadata\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3688,
+      "offset": 3656,
       "length": 5,
       "value": "\"tag\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3716,
+      "offset": 3684,
       "length": 5,
       "value": "\"tag\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3815,
+      "offset": 3783,
       "length": 19,
       "value": "\"targetEnvironment\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/GraphQL\/Schema\/InputObjects\/SubscribeContactInput.graphql.swift",
       "kind": "StringLiteral",
-      "offset": 3857,
+      "offset": 3825,
       "length": 19,
       "value": "\"targetEnvironment\""
     },

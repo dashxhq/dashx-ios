@@ -25,7 +25,7 @@ extension DashXGql {
       deviceUid: GraphQLNullable<String> = nil,
       deviceAdvertisingUid: GraphQLNullable<String> = nil,
       isDeviceAdTrackingEnabled: GraphQLNullable<Bool> = nil,
-      metadata: GraphQLNullable<ContactMetadataInput> = nil,
+      metadata: GraphQLNullable<JSON> = nil,
       tag: GraphQLNullable<String> = nil,
       targetEnvironment: GraphQLNullable<String> = nil
     ) {
@@ -114,7 +114,7 @@ extension DashXGql {
       set { __data["isDeviceAdTrackingEnabled"] = newValue }
     }
 
-    var metadata: GraphQLNullable<ContactMetadataInput> {
+    var metadata: GraphQLNullable<JSON> {
       get { __data["metadata"] }
       set { __data["metadata"] = newValue }
     }

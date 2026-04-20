@@ -36,13 +36,10 @@
 		697CC55A4786C3C446EB288B /* AdvertisingMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF37A7FD8F4CEA4820C01CC9 /* AdvertisingMonitor.swift */; };
 		73703E00ED231AB7B30C0C26 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370AED59CAAF59E3D77EE8B /* Utils.swift */; };
 		74CE1BE92360A0D4255E370F /* ApolloAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 7ACD41EDD9EF462B03348AEE /* ApolloAPI */; };
-		77C61630769CB448FB2E9C90 /* ContactMetadataInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935EB36FD766C8F5A77B57BD /* ContactMetadataInput.graphql.swift */; };
 		7C49674BE1D6C76A587EC165 /* UnsubscribeContactMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = D045C590AEB908C8AC52CC93 /* UnsubscribeContactMutation.graphql.swift */; };
 		800D18B32C821FF8AF5400D2 /* SystemContextInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CE4AD72B3D560A9952B8AC /* SystemContextInput.graphql.swift */; };
 		85D5303AF9C18C8B3C469B18 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C132373BA08A940D481F5EBA /* Decimal.swift */; };
 		9192DB54FEBC69B6FC35F339 /* TrackEventInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417E834859EBBF8F065EA4F8 /* TrackEventInput.graphql.swift */; };
-		91C053EF1E18342A2A18E400 /* ContactAppInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5537A8080ADF974CB74B142C /* ContactAppInput.graphql.swift */; };
-		933A79F1B818C00831060DD3 /* ContactLibraryInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF71473C7469AD2D9F729478 /* ContactLibraryInput.graphql.swift */; };
 		94788687C9052694F4888277 /* DashXNotificationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE1EE084834640BB914A1F2 /* DashXNotificationModels.swift */; };
 		973970BC23158B9FE92F48BD /* DashXNotificationServiceExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA1CFC59052FDB460766AB3 /* DashXNotificationServiceExtension.swift */; };
 		98E354E40C5485AA1AAE1923 /* FetchRecordQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEB2923909748CC9E036A0E8 /* FetchRecordQuery.graphql.swift */; };
@@ -118,7 +115,6 @@
 		4C29723CC258DF1A4D7394A3 /* MessageTrackingEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTrackingEvent.swift; sourceTree = "<group>"; };
 		4F25C0C0876C7A0EC68CB4D9 /* SearchRecordsInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchRecordsInput.graphql.swift; sourceTree = "<group>"; };
 		4FE1EE084834640BB914A1F2 /* DashXNotificationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXNotificationModels.swift; sourceTree = "<group>"; };
-		5537A8080ADF974CB74B142C /* ContactAppInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactAppInput.graphql.swift; sourceTree = "<group>"; };
 		57068999E218B8C123B47AE5 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		599D3A5D17B8BB53147D93E9 /* AssetQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetQuery.graphql.swift; sourceTree = "<group>"; };
 		5AB30356EE2C13EE2FEA7EF0 /* SchemaConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaConfiguration.swift; sourceTree = "<group>"; };
@@ -138,7 +134,6 @@
 		87537B3BCC7C5CF8872E1FC9 /* IdentifyAccountMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifyAccountMutation.graphql.swift; sourceTree = "<group>"; };
 		8DAEA05310D159BAA078F6D0 /* TrackEventResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackEventResponse.graphql.swift; sourceTree = "<group>"; };
 		917DBFD0D399EB8A0CCC3ED5 /* UnsubscribeContactInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeContactInput.graphql.swift; sourceTree = "<group>"; };
-		935EB36FD766C8F5A77B57BD /* ContactMetadataInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactMetadataInput.graphql.swift; sourceTree = "<group>"; };
 		98B176F1249F982A4599D27E /* DashXNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DashXNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AD7448B3775046745DC4B56 /* SaveStoredPreferencesMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStoredPreferencesMutation.graphql.swift; sourceTree = "<group>"; };
 		9E54A735C35B011A56160C47 /* SaveStoredPreferencesInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStoredPreferencesInput.graphql.swift; sourceTree = "<group>"; };
@@ -158,7 +153,6 @@
 		E31471304B5E32062770726F /* DashXBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXBrowser.swift; sourceTree = "<group>"; };
 		ED707184539A7B20614CFD40 /* SystemContextScreenInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextScreenInput.graphql.swift; sourceTree = "<group>"; };
 		EF37A7FD8F4CEA4820C01CC9 /* AdvertisingMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisingMonitor.swift; sourceTree = "<group>"; };
-		EF71473C7469AD2D9F729478 /* ContactLibraryInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactLibraryInput.graphql.swift; sourceTree = "<group>"; };
 		F77F7035A50265F45B507BBB /* SystemContextDeviceInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextDeviceInput.graphql.swift; sourceTree = "<group>"; };
 		FA4F0274729BF55DCD2F3A1B /* TrackMessageStatus.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMessageStatus.graphql.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -219,9 +213,6 @@
 		5134D8A86298AEC64E85F487 /* InputObjects */ = {
 			isa = PBXGroup;
 			children = (
-				5537A8080ADF974CB74B142C /* ContactAppInput.graphql.swift */,
-				EF71473C7469AD2D9F729478 /* ContactLibraryInput.graphql.swift */,
-				935EB36FD766C8F5A77B57BD /* ContactMetadataInput.graphql.swift */,
 				1251A1DD23E52CA6D8E171F5 /* FetchRecordInput.graphql.swift */,
 				1BE80A398F424FA7FC72FDE9 /* FetchStoredPreferencesInput.graphql.swift */,
 				6160B03B879C8D64C064C5D9 /* IdentifyAccountInput.graphql.swift */,
@@ -507,10 +498,7 @@
 				3569109B954E91180069D820 /* AssetUploadStatus.graphql.swift in Sources */,
 				12EA69F51B88BAD49A971278 /* Constants.swift in Sources */,
 				37393808A1CD0C422AA3BB62 /* Contact.graphql.swift in Sources */,
-				91C053EF1E18342A2A18E400 /* ContactAppInput.graphql.swift in Sources */,
 				67901E0B60E5B04A1396A3D0 /* ContactKind.graphql.swift in Sources */,
-				933A79F1B818C00831060DD3 /* ContactLibraryInput.graphql.swift in Sources */,
-				77C61630769CB448FB2E9C90 /* ContactMetadataInput.graphql.swift in Sources */,
 				F5AF2AA9E04C383FB2A2C7BD /* DashXApplicationLifecycleCallbacks.swift in Sources */,
 				160C08F3746EC415BA3ABCDC /* DashXBrowser.swift in Sources */,
 				AF2BFABDE7E5E1063E7112B6 /* DashXClient.swift in Sources */,
@@ -669,7 +657,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.1;
+				MARKETING_VERSION = 1.3.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -enable-library-evolution -emit-module-interface -package-name DashX";
@@ -816,7 +804,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.1;
+				MARKETING_VERSION = 1.3.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

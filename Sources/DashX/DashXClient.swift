@@ -571,6 +571,24 @@ public class DashXClient {
             return
         }
 
+        var appDict: [String: AnyHashable] = [:]
+        if let identifier = Bundle.main.bundleIdentifier {
+            appDict["identifier"] = identifier
+        }
+        if let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String {
+            appDict["name"] = appName
+        }
+        if let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
+            appDict["version"] = appVersion
+        }
+        let metadata: [String: AnyHashable] = [
+            "app": appDict,
+            "library": [
+                "name": Constants.LIBRARY_NAME,
+                "version": Constants.PACKAGE_VERSION,
+            ] as [String: AnyHashable],
+        ]
+
         let subscribeContactInput = DashXGql.SubscribeContactInput(
             accountUid: self.accountUid.map { .some($0) } ?? .null,
             accountAnonymousUid: .some(anonymousUid),
@@ -581,26 +599,7 @@ public class DashXClient {
             osVersion: .some(UIDevice.current.systemVersion),
             deviceModel: .some(self.getDeviceModel()),
             deviceManufacturer: .some("Apple"),
-            // Recorded per-contact so the backend's FCM notifier can pick the right
-            // APNs payload shape (alert push vs. legacy silent push) for *this*
-            // device. See apps/messaging/src/notifiers/fcm.rs on the backend.
-            metadata: .some(DashXGql.ContactMetadataInput(
-                // Stamps the host app's identity so the backend can scope
-                // broadcasts to a specific app (see FCMSettings.app_identifier
-                // on the backend integration configuration). Without this,
-                // multi-app workspaces fan out to every token a user has.
-                app: .some(DashXGql.ContactAppInput(
-                    identifier: Bundle.main.bundleIdentifier.map { .some($0) } ?? .null,
-                    name: (Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String).map { .some($0) } ?? .null,
-                    version: (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String).map { .some($0) } ?? .null
-                )),
-                library: .some(DashXGql.ContactLibraryInput(
-                    name: .some(Constants.LIBRARY_NAME),
-                    version: .some(Constants.PACKAGE_VERSION)
-                )),
-                osName: .some(UIDevice.current.systemName),
-                osVersion: .some(UIDevice.current.systemVersion)
-            ))
+            metadata: .some(DashXGql.JSON(metadata))
         )
 
         DashXLog.d(tag: #function, "Calling subscribe with \(subscribeContactInput)")
