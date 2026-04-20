@@ -109,6 +109,10 @@ schema.json
 # `xcframeworks/` itself (the committed output) is NOT gitignored.
 *.xcarchive
 
+# xcodebuild test result bundles — produced by `xcodebuild test
+# -resultBundlePath …` locally and in CI. Never belongs in git.
+*.xcresult
+
 
 # Other
 .claude

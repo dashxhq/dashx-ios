@@ -30,22 +30,21 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    BUILD_LIBRARIES_FOR_DISTRIBUTION: YES
-    # `BUILD_LIBRARIES_FOR_DISTRIBUTION` alone doesn't always emit the
-    # `.swiftinterface` file on Xcode 15+ — `xcodebuild -create-xcframework`
-    # refuses to stitch slices together without it. Force the frontend flag
-    # explicitly so every archive lands a consumable `.swiftinterface`.
+    # Library-evolution mode is required for archive → xcframework. Scoped to
+    # Release below — Debug builds (which power DashXTests) skip it so that
+    # `@testable import DashX` sees internal symbols normally instead of going
+    # through the sealed `.swiftinterface`.
     # `-package-name DashX` enables the `package` access level (Swift 5.9+)
     # across the targets generated here — without it, `package` declarations
     # fail to compile ("requires a package name"). SPM sets this automatically
     # for sibling targets; Xcode projects have to opt in explicitly.
-    OTHER_SWIFT_FLAGS: "$(inherited) -enable-library-evolution -emit-module-interface -package-name DashX"
+    OTHER_SWIFT_FLAGS: "$(inherited) -package-name DashX"
     DEFINES_MODULE: YES
     SKIP_INSTALL: NO
     DYLIB_INSTALL_NAME_BASE: "@rpath"
     LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks"]
     CURRENT_PROJECT_VERSION: "1"
-    MARKETING_VERSION: "1.3.2"
+    MARKETING_VERSION: "1.4.0"
     # Auto-generate the framework Info.plist — without it a framework bundle
     # is malformed and Xcode rejects it at embed time ("Framework did not
     # contain an Info.plist").
@@ -56,6 +55,16 @@ settings:
     CODE_SIGN_IDENTITY: ""
     CODE_SIGNING_REQUIRED: NO
     CODE_SIGNING_ALLOWED: NO
+  configs:
+    Debug:
+      ENABLE_TESTABILITY: YES
+      BUILD_LIBRARIES_FOR_DISTRIBUTION: NO
+    Release:
+      ENABLE_TESTABILITY: NO
+      BUILD_LIBRARIES_FOR_DISTRIBUTION: YES
+      # Emit the `.swiftinterface` alongside the `.swiftmodule` —
+      # `xcodebuild -create-xcframework` won't stitch slices without it.
+      OTHER_SWIFT_FLAGS: "$(inherited) -enable-library-evolution -emit-module-interface -package-name DashX"
 
 packages:
   # Pinned in lockstep with `Package.swift`. Apollo is baked into the produced
@@ -108,13 +117,49 @@ targets:
         # surface. Any Foundation/UIKit call not allowed in app extensions
         # will fail to link if the NSE code accidentally uses it.
         APPLICATION_EXTENSION_API_ONLY: YES
-        # Ship as a static framework (OneSignal / Branch / Mixpanel pattern):
+        # Ship as a static framework:
         # the Mach-O is linked into the consumer's NSE binary at build time,
         # so the `.appex` doesn't have to resolve a dynamic framework at
         # runtime via `@rpath`. Consumers get the trivial Podfile shape —
         # a separate top-level NSE target declaring only this pod — with no
         # `inherit!`, no embed-frameworks hook, and no host-app leakage.
         MACH_O_TYPE: staticlib
+
+  # Unit tests live here rather than in `Package.swift`'s `.testTarget`
+  # because binary SPM targets can't satisfy `@testable import` — the test
+  # suite needs internal symbols from DashX/NSE source.
+  #
+  # DashX-facing tests and NSE-facing tests run as SEPARATE test targets on
+  # purpose: DashX.framework and DashXNotificationServiceExtension.framework
+  # each bake in a copy of `Sources/DashXCore`, so a test target that links
+  # both sees every Core extension (`Dictionary.dashxNotificationData()`,
+  # etc.) twice and fails to resolve the call. Splitting the test targets
+  # means each one sees a single Core copy through its one dependency.
+  DashXTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../Tests/SDKTests
+        excludes:
+          - DashXNotificationServiceTests.swift
+    dependencies:
+      - target: DashX
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXTests
+        GENERATE_INFOPLIST_FILE: YES
+
+  DashXNotificationServiceExtensionTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../Tests/SDKTests/DashXNotificationServiceTests.swift
+    dependencies:
+      - target: DashXNotificationServiceExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXNotificationServiceExtensionTests
+        GENERATE_INFOPLIST_FILE: YES
 
 schemes:
   DashX:
@@ -129,3 +174,15 @@ schemes:
         DashXNotificationServiceExtension: all
     archive:
       config: Release
+  # Aggregate scheme — run `xcodebuild test -scheme DashXTests` and both
+  # test bundles execute in one pass.
+  DashXTests:
+    build:
+      targets:
+        DashXTests: [test]
+        DashXNotificationServiceExtensionTests: [test]
+    test:
+      config: Debug
+      targets:
+        - DashXTests
+        - DashXNotificationServiceExtensionTests

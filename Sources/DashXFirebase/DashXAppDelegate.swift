@@ -1,5 +1,4 @@
 import DashX
-import DashXCore
 import FirebaseCore
 import FirebaseMessaging
 import Foundation
