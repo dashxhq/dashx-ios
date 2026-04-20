@@ -95,7 +95,7 @@ instead of `swift build` (which tries to compile for every platform the package 
 The SDK ships two surfaces from the same tag:
 
 - **Swift Package Manager** — consumers compile from `Sources/**` driven by `Package.swift`. Pinning the git tag is enough.
-- **CocoaPods** — consumers link the prebuilt XCFrameworks under `xcframeworks/` via `DashX.podspec` (no source compilation on their end, no transitive Apollo dep surfaced). XCFrameworks are built locally on a Mac before tagging. `DashX.podspec` is **not** published to the CocoaPods trunk — consumers reference the pod directly from git by tag (e.g. `pod 'DashX/SDK', :git => '…', :tag => '1.3.1'`), so tagging is the entire release step.
+- **CocoaPods** — consumers link the prebuilt XCFrameworks under `xcframeworks/` via `DashX.podspec` (no source compilation on their end, no transitive Apollo dep surfaced). XCFrameworks are built locally on a Mac before tagging. `DashX.podspec` is **not** published to the CocoaPods trunk — consumers reference the pod directly from git by tag (e.g. `pod 'DashX/SDK', :git => '…', :tag => '1.3.2'`), so tagging is the entire release step.
 
 ### One-time setup
 
