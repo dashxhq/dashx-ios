@@ -108,7 +108,7 @@ Tests do not live in `Package.swift`'s `.testTarget` — binary SPM targets can'
 xcodebuild test \
   -project build-project/DashX.xcodeproj \
   -scheme DashXTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+  -destination 'platform=iOS Simulator,name=iPhone 17e,OS=latest'
 ```
 
 The `DashXTests` scheme aggregates two bundles that ship as separate test targets — `DashXTests` (linked against `DashX`) and `DashXNotificationServiceExtensionTests` (linked against NSE) — because DashX and NSE each bake in a private copy of `Sources/DashXCore`. A single test target linking both would see every `DashXCore` extension twice (e.g. `Dictionary.dashxNotificationData()`) and fail to disambiguate. Splitting the targets gives each one exactly one Core copy.

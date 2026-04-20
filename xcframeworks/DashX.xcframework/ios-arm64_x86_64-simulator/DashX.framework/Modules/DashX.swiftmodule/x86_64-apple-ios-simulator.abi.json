@@ -14220,7 +14220,7 @@
       "kind": "StringLiteral",
       "offset": 759,
       "length": 7,
-      "value": "\"1.3.2\""
+      "value": "\"1.4.0\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
