@@ -1,4 +1,3 @@
-import DashXCore
 @testable import DashXNotificationServiceExtension
 import XCTest
 

@@ -26,6 +26,8 @@ _DashX SDK for iOS_
 2. Enter `https://github.com/dashxhq/dashx-ios.git`
 3. Add **DashX** to your app target. For push notifications, add **DashXFirebase** as well, and set up a Notification Service Extension with **DashXNotificationServiceExtension**.
 
+SPM consumers get the same prebuilt XCFrameworks as CocoaPods consumers — `DashX` and `DashXNotificationServiceExtension` are `.binaryTarget` entries in `Package.swift`, with Apollo statically baked into `DashX.xcframework` and hidden behind `@_implementationOnly import`. **Your own Apollo version (if any) won't collide with ours.** `DashXFirebase` stays a source target so your app's `FirebaseMessaging` version is the one DashX talks to at runtime.
+
 ## Documentation
 
 Full setup, configuration, push notifications (including Notification Service Extension), deep linking, and API reference live on the docs site:

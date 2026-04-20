@@ -80,6 +80,16 @@ When a caller hands you a looser `[String: Any]`, use the internal helpers on `D
 
 On the read side, `DashXGql.JSON` also exposes typed accessors — `asDictionary`, `asArray`, `asString`, `asBool`, `asInt`, `asDouble`, `isNull` — which return nil when the underlying value has a different shape. Prefer those over raw `value as? T` casts.
 
+## Repo layout (binary SPM)
+
+`Package.swift` ships three products:
+
+- **`DashX`** — a `.binaryTarget` pointing at `xcframeworks/DashX.xcframework`. The main SDK, with Apollo + `DashXCore` statically baked in. Apollo is hidden via `@_implementationOnly import` so its symbols never appear in DashX's public `.swiftinterface` — consumers on any Apollo version don't collide with ours.
+- **`DashXNotificationServiceExtension`** — a `.binaryTarget` pointing at `xcframeworks/DashXNotificationServiceExtension.xcframework`. NSE base class, Core baked in, shipped as `MACH_O_TYPE = staticlib` so the consumer's `.appex` links us straight in (no runtime `@rpath` hop).
+- **`DashXFirebase`** — a regular source `.target` that depends on binary `DashX` + `FirebaseMessaging`. Kept source on purpose: Firebase is a runtime-shared dep (singleton `FirebaseApp`, `Messaging.delegate`, APNs token registration) and has to be the same instance the host app uses.
+
+`Sources/DashXCore/` and `Sources/DashXNotificationServiceExtension/` still exist in the repo — they're compiled INTO each framework target via `build-project/project.yml`. They're no longer SPM products, so consumers can't `import DashXCore` directly; Core's public API (`NavigationAction`, `ActionButton`, `Constants`, …) is exposed as part of the `DashX` module.
+
 ## Compile-check locally
 
 `platforms` in `Package.swift` only specifies the *minimum* supported version (e.g. `.iOS(...)`). To restrict the compilation to a single platform, either set the destination in Xcode to `Any iOS Device` or run:
@@ -90,22 +100,41 @@ xcodebuild -scheme DashX -destination 'generic/platform=iOS'
 
 instead of `swift build` (which tries to compile for every platform the package lists).
 
+## Running tests
+
+Tests do not live in `Package.swift`'s `.testTarget` — binary SPM targets can't satisfy `@testable import` (the sealed `.swiftinterface` hides internal symbols). They live in `build-project/DashX.xcodeproj` instead, which compiles the same `Sources/**` with `ENABLE_TESTABILITY = YES` in the Debug config.
+
+```sh
+xcodebuild test \
+  -project build-project/DashX.xcodeproj \
+  -scheme DashXTests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+```
+
+The `DashXTests` scheme aggregates two bundles that ship as separate test targets — `DashXTests` (linked against `DashX`) and `DashXNotificationServiceExtensionTests` (linked against NSE) — because DashX and NSE each bake in a private copy of `Sources/DashXCore`. A single test target linking both would see every `DashXCore` extension twice (e.g. `Dictionary.dashxNotificationData()`) and fail to disambiguate. Splitting the targets gives each one exactly one Core copy.
+
+If you edit `Tests/SDKTests/**` or `build-project/project.yml`, regenerate the xcodeproj before running tests:
+
+```sh
+cd build-project && xcodegen generate
+```
+
 ## Publishing
 
-The SDK ships two surfaces from the same tag:
+The SDK ships two surfaces from the same tag, both binary:
 
-- **Swift Package Manager** — consumers compile from `Sources/**` driven by `Package.swift`. Pinning the git tag is enough.
-- **CocoaPods** — consumers link the prebuilt XCFrameworks under `xcframeworks/` via `DashX.podspec` (no source compilation on their end, no transitive Apollo dep surfaced). XCFrameworks are built locally on a Mac before tagging. `DashX.podspec` is **not** published to the CocoaPods trunk — consumers reference the pod directly from git by tag (e.g. `pod 'DashX/SDK', :git => '…', :tag => '1.3.2'`), so tagging is the entire release step.
+- **Swift Package Manager** — consumers add `.package(url: "https://github.com/dashxhq/dashx-ios.git", from: "x.x.x")`. SPM resolves to the committed `xcframeworks/` via `.binaryTarget(path: ...)`. No Apollo dep surfaces, no version conflicts.
+- **CocoaPods** — consumers reference `pod 'DashX/SDK', :git => '…', :tag => 'x.x.x'`. Same xcframeworks, shipped through `DashX.podspec`'s `vendored_frameworks`. Not published to the CocoaPods trunk — tagging is the entire release step.
 
 ### One-time setup
 
-The CocoaPods release path requires [`xcodegen`](https://github.com/yonaskolb/XcodeGen) to regenerate `build-project/DashX.xcodeproj` from `build-project/project.yml`:
+Building the XCFrameworks requires [`xcodegen`](https://github.com/yonaskolb/XcodeGen) to regenerate `build-project/DashX.xcodeproj` from `build-project/project.yml`:
 
 ```sh
 brew install xcodegen
 ```
 
-`build-project/DashX.xcodeproj` is committed so PRs touching `project.yml` surface a reviewable pbxproj diff, and so a release can proceed on a machine without xcodegen if the project hasn't drifted. It lives in `build-project/` — not the repo root — so it doesn't shadow `Package.swift` when `xcodebuild -scheme …` runs in CI or locally. Day-to-day development uses SPM: open `Package.swift` in Xcode and all four library targets (`DashX`, `DashXCore`, `DashXFirebase`, `DashXNotificationServiceExtension`) resolve.
+`build-project/DashX.xcodeproj` is committed so PRs touching `project.yml` surface a reviewable pbxproj diff, and so a release can proceed on a machine without xcodegen if the project hasn't drifted. It lives in `build-project/` — not the repo root — so it doesn't shadow `Package.swift` when `xcodebuild -scheme …` runs in CI or locally.
 
 ### Cutting a release
 
@@ -120,4 +149,4 @@ brew install xcodegen
 
 SPM and CocoaPods consumers both pick the new version up from the git tag — no trunk push needed.
 
-CI runs `xcodebuild` for the `DashX` and `DashXFirebase` schemes on pushes and pull requests to `main`.
+CI runs tests on every push and PR via `xcodebuild test -project build-project/DashX.xcodeproj -scheme DashXTests`, and smoke-builds `DashXFirebase` against the committed xcframework.

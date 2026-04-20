@@ -12,18 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build DashX
-        run: xcodebuild -scheme DashX -destination 'generic/platform=iOS' build
-
-      - name: Build DashXFirebase
+      # Package.swift ships binary targets (DashX, DashXNotificationServiceExtension)
+      # so consumers don't collide on Apollo. Build DashXFirebase to confirm
+      # the source target still compiles against the binary DashX.
+      - name: Build DashXFirebase (SPM, source, against binary DashX)
         run: xcodebuild -scheme DashXFirebase -destination 'generic/platform=iOS' build
 
+      # Tests live in build-project/DashX.xcodeproj rather than a `.testTarget`
+      # in Package.swift because binary SPM targets can't satisfy `@testable
+      # import`. The Debug config of this xcodeproj builds the same Sources/**
+      # with ENABLE_TESTABILITY=YES. The DashXTests scheme aggregates both
+      # DashXTests and DashXNotificationServiceExtensionTests bundles.
+      # See CONTRIBUTING.md → "Running tests".
       - name: Run Tests
         run: |
           xcodebuild test \
-            -scheme DashX-Package \
+            -project build-project/DashX.xcodeproj \
+            -scheme DashXTests \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-            -only-testing:DashXTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 
