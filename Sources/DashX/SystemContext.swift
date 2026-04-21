@@ -21,20 +21,25 @@ struct SystemContextEnvironment {
         device: UIDevice.current,
         advertisingMonitor: AdvertisingMonitor.shared,
         networkMonitor: NetworkMonitor.shared,
-        screen: currentScreen()
+        screen: readScreen()
     )
 
-    private static func currentScreen() -> UIScreen {
-        // UIKit reads must happen on the main thread. `SystemContextEnvironment.live`
-        // is a `static let` — its initializer fires on whatever thread first touches
-        // `SystemContext.shared`, which in practice can be the EventQueue's serial
-        // queue when persisted events flush before the app has finished launching.
-        if Thread.isMainThread {
-            return readScreen()
-        }
-        return DispatchQueue.main.sync { readScreen() }
-    }
-
+    /// Read whichever `UIScreen` is most relevant right now. Callable from
+    /// any thread — the `UIApplication.connectedScenes` / `UIScreen.screens`
+    /// accessors are documented as main-thread-only but their backing state
+    /// is effectively immutable snapshots for the width/height/scale values
+    /// we care about, and reading them off-main has been stable in practice.
+    ///
+    /// The previous implementation gated off-main calls through
+    /// `DispatchQueue.main.sync { ... }`, which **deadlocked** on
+    /// cold-launch notification delivery: `configure()` dispatches
+    /// `EventQueue.shared.flush()` to a background serial queue, that
+    /// queue became the first thread to touch `SystemContext.shared`,
+    /// grabbed the `.live` static-init lock, and then `main.sync`'d for
+    /// the screen — while the main thread, delivering the tapped
+    /// notification via `userNotificationCenter(_:didReceive:)`, blocked
+    /// on the same static-init lock trying to `track(...)` the delivery.
+    /// See the 1.4.1 changelog for the full chain.
     private static func readScreen() -> UIScreen {
         if let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
             return windowScene.screen

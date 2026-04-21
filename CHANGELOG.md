@@ -2,6 +2,12 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.4.1] — 2026-04-21
+
+### Fixed
+
+- **Main-thread deadlock on cold-launch notification tap.** `SystemContextEnvironment.live`'s static-init path gated off-main `UIScreen` reads through `DispatchQueue.main.sync`. On cold launch, `DashX.configure()`'s `EventQueue.shared.flush()` dispatch made the background serial queue the first thread to touch `SystemContext.shared` — it grabbed the `.live` init lock and began `main.sync`'ing for the screen. Meanwhile iOS delivered `userNotificationCenter(_:didReceive:)` on main, which flowed into `DashXClient.track(...)` and also tried to touch `SystemContext.shared` — blocking on the same Swift static-init lock the background was holding. Main waited on background, background waited on main → app froze with a white screen until the iOS watchdog killed it. Fix drops the `main.sync` hop and reads the screen directly from whatever thread touches `.live` first — restores the pre-1.3.0 behaviour. Bug was introduced in 1.3.0 (silent → alert push migration); 1.3.x and 1.4.0 are all affected. See `Sources/DashX/SystemContext.swift`.
+
 ## [1.4.0] — 2026-04-20
 
 ### Breaking
