@@ -124,7 +124,7 @@ cd build-project && xcodegen generate
 The SDK ships two surfaces from the same tag, both binary:
 
 - **Swift Package Manager** — consumers add `.package(url: "https://github.com/dashxhq/dashx-ios.git", from: "x.x.x")`. SPM resolves to the committed `xcframeworks/` via `.binaryTarget(path: ...)`. No Apollo dep surfaces, no version conflicts.
-- **CocoaPods** — consumers reference `pod 'DashX/SDK', :git => '…', :tag => 'x.x.x'`. Same xcframeworks, shipped through `DashX.podspec`'s `vendored_frameworks`. Not published to the CocoaPods trunk — tagging is the entire release step.
+- **CocoaPods** — consumers reference `pod 'DashX/SDK', :git => '…', :tag => 'x.x.x'`. Same xcframeworks, shipped through `DashX.podspec`'s `vendored_frameworks`. Tagging the git ref is the entire release step — consumers point at the tag via `:git` + `:tag`.
 
 ### One-time setup
 
@@ -147,6 +147,6 @@ brew install xcodegen
    ```
 4. Tag and push: `git tag x.x.x && git push origin main --tags`
 
-SPM and CocoaPods consumers both pick the new version up from the git tag — no trunk push needed.
+SPM and CocoaPods consumers both pick the new version up from the git tag.
 
 CI runs tests on every push and PR via `xcodebuild test -project build-project/DashX.xcodeproj -scheme DashXTests`, and smoke-builds `DashXFirebase` against the committed xcframework.
