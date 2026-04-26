@@ -651,9 +651,21 @@ public class DashXClient {
         }
 
         guard let anonymousUid = self.accountAnonymousUid else {
+            // Distinct from the no-saved-token guard above. Missing
+            // `accountAnonymousUid` is a "shouldn't happen after configure()"
+            // SDK-state problem — `generateAnonymousUid()` always produces a
+            // value during configure() and the property is never written to
+            // nil from anywhere else. If we hit this, the SDK was used
+            // before `configure()` ran, so surface that as a real error
+            // rather than squashing it into `success: false` (which is
+            // reserved for the "no matching contact" non-error outcome).
             DashXLog.d(tag: #function, "'unsubscribe' called without accountAnonymousUid; returning...")
             if let completion {
-                DispatchQueue.main.async { completion(.success(false)) }
+                DispatchQueue.main.async {
+                    completion(.failure(DashXClientError.customError(
+                        message: "unsubscribe() called before configure() — no anonymous UID available"
+                    )))
+                }
             }
             return
         }

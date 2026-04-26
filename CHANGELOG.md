@@ -13,7 +13,9 @@ All notable changes to `dashx-ios` are documented in this file. Format loosely f
 - **Call-site migration:**
   - Call sites using `case .success:` without a value binding or `try await DashX.unsubscribe()` without capturing the return compile unchanged (the async overload is `@discardableResult`).
   - Call sites that extracted the old `Void`/`()` value (rare — `.success(let v)` where `v: Void`) now capture a `Bool` instead. Rename or branch accordingly.
-- **Early-return paths now call completion.** Previously, calling `unsubscribe(completion:)` when no FCM token was saved locally (or when `accountAnonymousUid` was missing) silently dropped the completion handler. These paths now invoke `completion(.success(false))` so callers awaiting the result don't hang.
+- **Early-return paths now call completion.** Previously, calling `unsubscribe(completion:)` when no FCM token was saved locally (or when `accountAnonymousUid` was missing) silently dropped the completion handler. These paths now always fire completion so callers awaiting the result don't hang. Differentiation between the two:
+  - **No saved FCM token** (the "user hasn't subscribed in this device session" case) → `completion(.success(false))`. Same semantics as the backend's "no matching contact" outcome.
+  - **No `accountAnonymousUid`** (the "`unsubscribe()` called before `configure()`" SDK-misuse case) → `completion(.failure(DashXClientError.customError(message: ...)))`. Distinct from `success: false` so callers can branch — and so the boolean stays a clean signal for legitimate non-error outcomes only.
 
 ### Changed
 
