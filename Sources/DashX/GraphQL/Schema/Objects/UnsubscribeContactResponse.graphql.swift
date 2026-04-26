@@ -4,8 +4,8 @@
 import ApolloAPI
 
 extension DashXGql.Objects {
-  static let TrackMessageResponse = ApolloAPI.Object(
-    typename: "TrackMessageResponse",
+  static let UnsubscribeContactResponse = ApolloAPI.Object(
+    typename: "UnsubscribeContactResponse",
     implementedInterfaces: [],
     keyFields: nil
   )

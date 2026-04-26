@@ -3,6 +3,7 @@
 // swift-module-flags: -target x86_64-apple-ios13.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name DashX -package-name DashX
 // swift-module-flags-ignorable:  -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.1
 import AdSupport
+@_exported import ApolloAPI
 import AppTrackingTransparency
 import Foundation
 import MobileCoreServices
@@ -113,7 +114,7 @@ public let DashX: DashX.DashXClient
   public func flushEventQueue()
   public func screen(_ screenName: Swift.String, withData: [Swift.String : Any]? = nil)
   public func subscribe(completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
-  public func unsubscribe(completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
+  public func unsubscribe(completion: ((Swift.Result<Swift.Bool, any Swift.Error>) -> Swift.Void)? = nil)
   public func fetchStoredPreferences(completion: @escaping (Swift.Result<[Swift.String : Any?], any Swift.Error>) -> Swift.Void)
   @available(*, deprecated, message: "Use fetchStoredPreferences(completion:) or async overload instead")
   public func fetchStoredPreferences(successCallback: @escaping (Any?) -> Swift.Void, failureCallback: @escaping (any Swift.Error) -> Swift.Void)
@@ -150,7 +151,8 @@ extension DashX.DashXClient {
   public func searchRecords(resource: Swift.String, filter: [Swift.String : Any]? = nil, order: [[Swift.String : Any]]? = nil, limit: Swift.Int? = nil, page: Swift.Int? = nil, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil) async throws -> [[Swift.String : Any?]]
   public func identify(options: [Swift.String : Swift.String]) async throws
   public func subscribe() async throws
-  public func unsubscribe() async throws
+  @discardableResult
+  public func unsubscribe() async throws -> Swift.Bool
 }
 @_hasMissingDesignatedInitializers public class DashXLog {
   public enum LogLevel : Swift.Int {

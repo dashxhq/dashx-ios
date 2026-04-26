@@ -1,7 +1,7 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_implementationOnly import ApolloAPI
+import ApolloAPI
 
 protocol DashXGql_SelectionSet: ApolloAPI.SelectionSet & ApolloAPI.RootSelectionSet
 where Schema == DashXGql.SchemaMetadata {}
@@ -38,6 +38,7 @@ extension DashXGql {
       case "SaveStoredPreferencesResponse": return DashXGql.Objects.SaveStoredPreferencesResponse
       case "TrackEventResponse": return DashXGql.Objects.TrackEventResponse
       case "TrackMessageResponse": return DashXGql.Objects.TrackMessageResponse
+      case "UnsubscribeContactResponse": return DashXGql.Objects.UnsubscribeContactResponse
       default: return nil
       }
     }

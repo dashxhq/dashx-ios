@@ -1,7 +1,7 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
-@_implementationOnly import ApolloAPI
+import ApolloAPI
 
 extension DashXGql {
   struct SystemContextLocationInput: InputObject {
