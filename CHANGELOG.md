@@ -17,11 +17,6 @@ All notable changes to `dashx-ios` are documented in this file. Format loosely f
   - **No saved FCM token** (the "user hasn't subscribed in this device session" case) → `completion(.success(false))`. Same semantics as the backend's "no matching contact" outcome.
   - **No `accountAnonymousUid`** (the "`unsubscribe()` called before `configure()`" SDK-misuse case) → `completion(.failure(DashXClientError.customError(message: ...)))`. Distinct from `success: false` so callers can branch — and so the boolean stays a clean signal for legitimate non-error outcomes only.
 
-### Changed
-
-- GraphQL schema refreshed from `https://api.dashx-staging.com/graphql` via `./apollo-ios-cli fetch-schema`. Regenerated types via `./apollo-ios-cli generate`. New `UnsubscribeContactResponse` object type is now part of the generated schema module (`Sources/DashX/GraphQL/Schema/Objects/UnsubscribeContactResponse.graphql.swift`). `UnsubscribeContactMutation` selection set is now `{ success }` (was `{ id, value }`).
-- `build-project/DashX.xcodeproj` regenerated via `xcodegen` to pick up the new schema file. Consumers building from the xcodeproj will see no change; binary distribution (CocoaPods vendored xcframeworks + SPM `.binaryTarget`) consumers get the update when new xcframeworks are cut.
-
 ### Fixed
 
 - **`reset()` no longer races with the in-flight `unsubscribe()` mutation it triggers.** `reset()` calls `unsubscribe()` and then immediately wipes `self.accountUid`. The unsubscribe mutation was reading `self.accountUid` lazily (inside Firebase's `deleteToken` callback that fires after `reset()` has already returned) — so the mutation went to the backend with `accountUid: null` even when the user had a non-null UID at unsubscribe-call time. For contacts created during an identified session, the backend's lookup couldn't match, the mutation silently returned `success: false`, and the contact remained subscribed on the server. `unsubscribe()` now snapshots `self.accountUid` into a local at call-entry alongside the existing `token` and `anonymousUid` snapshots, so the mutation sees the pre-reset identity correctly even when the wipe happens concurrently. `reset()`'s public behavior is unchanged — still synchronous, still wipes state immediately on the calling thread.
