@@ -36,6 +36,16 @@ PROJECT_DIR="$REPO_ROOT/build-project"
 PROJECT_PATH="$PROJECT_DIR/DashX.xcodeproj"
 SCHEMES=(DashX DashXNotificationServiceExtension)
 
+# Defensively re-run the implementation-only-import patch on every build.
+# Without it, `apollo-ios-cli generate` leaves the GraphQL files with
+# `@_exported import ApolloAPI`, which leaks Apollo into the xcframework's
+# public `.swiftinterface` and fails CocoaPods consumers' builds with
+# "no such module 'ApolloAPI'". The script is idempotent — it skips files
+# already rewritten — so re-running here is cheap and prevents a
+# release-blocking footgun if a contributor forgot the manual step after
+# regenerating codegen.
+./scripts/apply_implementation_only_imports.sh
+
 # Regenerate `build-project/DashX.xcodeproj` from `build-project/project.yml`
 # if xcodegen is installed. Skipped gracefully when it's not — the committed
 # xcodeproj is a valid build input, so a release can proceed on a machine

@@ -38,6 +38,7 @@ extension DashXGql {
       case "SaveStoredPreferencesResponse": return DashXGql.Objects.SaveStoredPreferencesResponse
       case "TrackEventResponse": return DashXGql.Objects.TrackEventResponse
       case "TrackMessageResponse": return DashXGql.Objects.TrackMessageResponse
+      case "UnsubscribeContactResponse": return DashXGql.Objects.UnsubscribeContactResponse
       default: return nil
       }
     }

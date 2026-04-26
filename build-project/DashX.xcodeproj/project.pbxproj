@@ -80,6 +80,7 @@
 		E425F6FB9129EDC8EC121FDD /* SchemaMetadata.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B1A5362B53EA62EADCEC9F /* SchemaMetadata.graphql.swift */; };
 		E4A7CE997E1509C535D1D218 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69D141910A4723630D4CFA22 /* UserNotifications.framework */; };
 		E77DB210AD02B5BF57A63C66 /* Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AE4C6EF85AB2DDB00FBDCC /* Network.swift */; };
+		E839A57E84524A15F533512B /* UnsubscribeContactResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D29D8274DC0C62C1209EC4 /* UnsubscribeContactResponse.graphql.swift */; };
 		E992F5E6857992C3F9830BF8 /* SubscribeContactMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E1F30600ECE455B68DD53CF /* SubscribeContactMutation.graphql.swift */; };
 		EFF621B2F915980234E7A8EA /* DashXNotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B940469ABF4501D320C9A20D /* DashXNotificationServiceTests.swift */; };
 		F1AB50478B9A7E6ED2546D52 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = B851EC0FB4D0DA772ED73817 /* JSON.swift */; };
@@ -177,6 +178,7 @@
 		7B23E780F9C7292213A5100F /* SystemContextNetworkInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextNetworkInput.graphql.swift; sourceTree = "<group>"; };
 		7CEBCEBEFCEF16059765705E /* EventQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventQueue.swift; sourceTree = "<group>"; };
 		81521A2D53F5399A98A24919 /* SystemContextLibraryInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextLibraryInput.graphql.swift; sourceTree = "<group>"; };
+		86D29D8274DC0C62C1209EC4 /* UnsubscribeContactResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeContactResponse.graphql.swift; sourceTree = "<group>"; };
 		87537B3BCC7C5CF8872E1FC9 /* IdentifyAccountMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifyAccountMutation.graphql.swift; sourceTree = "<group>"; };
 		8DAEA05310D159BAA078F6D0 /* TrackEventResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackEventResponse.graphql.swift; sourceTree = "<group>"; };
 		917DBFD0D399EB8A0CCC3ED5 /* UnsubscribeContactInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeContactInput.graphql.swift; sourceTree = "<group>"; };
@@ -264,6 +266,7 @@
 				2063694A9273759F84A0C3ED /* SaveStoredPreferencesResponse.graphql.swift */,
 				8DAEA05310D159BAA078F6D0 /* TrackEventResponse.graphql.swift */,
 				052C2F0E0C20906696BFBDE1 /* TrackMessageResponse.graphql.swift */,
+				86D29D8274DC0C62C1209EC4 /* UnsubscribeContactResponse.graphql.swift */,
 			);
 			path = Objects;
 			sourceTree = "<group>";
@@ -695,6 +698,7 @@
 				09460548D9762A55346FB409 /* UUID.swift in Sources */,
 				D00E318C7E3AF31FE31B4084 /* UnsubscribeContactInput.graphql.swift in Sources */,
 				7C49674BE1D6C76A587EC165 /* UnsubscribeContactMutation.graphql.swift in Sources */,
+				E839A57E84524A15F533512B /* UnsubscribeContactResponse.graphql.swift in Sources */,
 				73703E00ED231AB7B30C0C26 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -830,7 +834,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.5.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -enable-library-evolution -emit-module-interface -package-name DashX";
@@ -1025,7 +1029,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.5.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

@@ -2,6 +2,25 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.5.0] — 2026-04-23
+
+### Breaking
+
+- **`unsubscribe` now reports a `Bool` success status.** Backend mutation `unsubscribeContact` changed its return type from `Contact!` (with `id`, `value`) to `UnsubscribeContactResponse!` (with `success: Boolean!`). The SDK now forwards this value to callers:
+  - `public func unsubscribe(completion: ((Result<Void, Error>) -> Void)? = nil)` → `public func unsubscribe(completion: ((Result<Bool, Error>) -> Void)? = nil)`
+  - `public func unsubscribe() async throws` → `@discardableResult public func unsubscribe() async throws -> Bool`
+  - `success: false` is a non-error outcome meaning "no matching contact found to unsubscribe" — typically happens when the anonymous UID rotated since subscribe, the FCM token is stale, or the contact is already unsubscribed. From the end-user's perspective the state is equivalent in both cases; the boolean is useful for diagnostics and analytics.
+- **Call-site migration:**
+  - Call sites using `case .success:` without a value binding or `try await DashX.unsubscribe()` without capturing the return compile unchanged (the async overload is `@discardableResult`).
+  - Call sites that extracted the old `Void`/`()` value (rare — `.success(let v)` where `v: Void`) now capture a `Bool` instead. Rename or branch accordingly.
+- **Early-return paths now call completion.** Previously, calling `unsubscribe(completion:)` when no FCM token was saved locally (or when `accountAnonymousUid` was missing) silently dropped the completion handler. These paths now always fire completion so callers awaiting the result don't hang. Differentiation between the two:
+  - **No saved FCM token** (the "user hasn't subscribed in this device session" case) → `completion(.success(false))`. Same semantics as the backend's "no matching contact" outcome.
+  - **No `accountAnonymousUid`** (the "`unsubscribe()` called before `configure()`" SDK-misuse case) → `completion(.failure(DashXClientError.customError(message: ...)))`. Distinct from `success: false` so callers can branch — and so the boolean stays a clean signal for legitimate non-error outcomes only.
+
+### Fixed
+
+- **`reset()` no longer races with the in-flight `unsubscribe()` mutation it triggers.** `reset()` calls `unsubscribe()` and then immediately wipes `self.accountUid`. The unsubscribe mutation was reading `self.accountUid` lazily (inside Firebase's `deleteToken` callback that fires after `reset()` has already returned) — so the mutation went to the backend with `accountUid: null` even when the user had a non-null UID at unsubscribe-call time. For contacts created during an identified session, the backend's lookup couldn't match, the mutation silently returned `success: false`, and the contact remained subscribed on the server. `unsubscribe()` now snapshots `self.accountUid` into a local at call-entry alongside the existing `token` and `anonymousUid` snapshots, so the mutation sees the pre-reset identity correctly even when the wipe happens concurrently. `reset()`'s public behavior is unchanged — still synchronous, still wipes state immediately on the calling thread.
+
 ## [1.4.1] — 2026-04-21
 
 ### Fixed

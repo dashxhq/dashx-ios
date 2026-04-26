@@ -632,20 +632,52 @@ public class DashXClient {
         }
     }
 
-    public func unsubscribe(completion: ((Result<Void, Error>) -> Void)? = nil) {
+    public func unsubscribe(completion: ((Result<Bool, Error>) -> Void)? = nil) {
         let preferences = UserDefaults.standard
         let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
         let savedToken = preferences.string(forKey: fcmTokenKey)
 
         guard let token = savedToken else {
+            // No FCM token stored locally — nothing to tell the backend about.
+            // Surface this as `success: false` (same semantics as the
+            // backend's "no matching contact" path) so callers waiting on the
+            // completion don't hang. Before this change, completion was
+            // silently dropped here.
             DashXLog.d(tag: #function, "unsubscribe() called without subscribing first")
+            if let completion {
+                DispatchQueue.main.async { completion(.success(false)) }
+            }
             return
         }
 
         guard let anonymousUid = self.accountAnonymousUid else {
+            // Distinct from the no-saved-token guard above. Missing
+            // `accountAnonymousUid` is a "shouldn't happen after configure()"
+            // SDK-state problem — `generateAnonymousUid()` always produces a
+            // value during configure() and the property is never written to
+            // nil from anywhere else. If we hit this, the SDK was used
+            // before `configure()` ran, so surface that as a real error
+            // rather than squashing it into `success: false` (which is
+            // reserved for the "no matching contact" non-error outcome).
             DashXLog.d(tag: #function, "'unsubscribe' called without accountAnonymousUid; returning...")
+            if let completion {
+                DispatchQueue.main.async {
+                    completion(.failure(DashXClientError.customError(
+                        message: "unsubscribe() called before configure() — no anonymous UID available"
+                    )))
+                }
+            }
             return
         }
+
+        // Snapshot the current accountUid alongside `token` and `anonymousUid`
+        // so the closure below uses the identity at unsubscribe-call time.
+        // Without this snapshot, the mutation reads `self.accountUid` lazily
+        // inside the deleteToken callback — and if `reset()` (which calls
+        // unsubscribe and then immediately wipes `self.accountUid`) is in
+        // flight, the mutation would send `accountUid: null` and the backend
+        // would fail to match a contact created during an identified session.
+        let uidSnapshot = self.accountUid
 
         // Clear saved token immediately so subscribe() works on re-login
         // regardless of whether the server call succeeds.
@@ -653,7 +685,7 @@ public class DashXClient {
 
         let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
-                accountUid: self.accountUid.map { .some($0) } ?? .null,
+                accountUid: uidSnapshot.map { .some($0) } ?? .null,
                 accountAnonymousUid: .some(anonymousUid),
                 value: token
             )
@@ -672,9 +704,15 @@ public class DashXClient {
                         }
                         return
                     }
-                    DashXLog.d(tag: #function, "Sent unsubscribe with \(String(describing: graphQLResult))")
+                    // `success: false` is a valid non-error outcome meaning
+                    // "no matching contact found to unsubscribe" — surface it
+                    // to callers verbatim. Default to `false` if the response
+                    // unexpectedly omits the field (shouldn't happen per
+                    // schema, defensive).
+                    let success = graphQLResult.data?.unsubscribeContact.success ?? false
+                    DashXLog.d(tag: #function, "Sent unsubscribe (success=\(success))")
                     if let completion {
-                        DispatchQueue.main.async { completion(.success(())) }
+                        DispatchQueue.main.async { completion(.success(success)) }
                     }
                 case .failure(let error):
                     DashXLog.e(tag: #function, "Encountered an error during unsubscribe(): \(error)")
@@ -1288,7 +1326,8 @@ extension DashXClient {
         }
     }
 
-    public func unsubscribe() async throws {
+    @discardableResult
+    public func unsubscribe() async throws -> Bool {
         try await withCheckedThrowingContinuation { continuation in
             unsubscribe { result in
                 continuation.resume(with: result)
