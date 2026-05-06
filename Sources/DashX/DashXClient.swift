@@ -202,6 +202,9 @@ public class DashXClient {
 
         flushPendingMessageTracking()
         EventQueue.shared.flush()
+        if mustSubscribe {
+            subscribe()
+        }
     }
 
     /// Drains the pre-configure trackMessage buffer. Called from `configure()`
@@ -547,6 +550,16 @@ public class DashXClient {
     // MARK: - Contact Management
 
     public func subscribe(completion: ((Result<Void, Error>) -> Void)? = nil) {
+        // Defer until configure() runs. Without this, an early subscribe (e.g.
+        // setFCMToken arriving before JS has called configure() in a React
+        // Native app) fires the Apollo mutation with no public key header and
+        // the contact is silently never registered.
+        guard ConfigInterceptor.shared.publicKey != nil else {
+            DashXLog.d(tag: #function, "'subscribe' called before configure(); deferring")
+            self.mustSubscribe = true
+            return
+        }
+
         guard let fcmToken = self.fcmToken else {
             DashXLog.d(tag: #function, "'subscribe' called without fcmToken; returning...")
             self.mustSubscribe = true
@@ -562,8 +575,17 @@ public class DashXClient {
 
         let preferences = UserDefaults.standard
         let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
+        let libraryVersionKey = Constants.USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION
 
-        if preferences.string(forKey: fcmTokenKey) == self.fcmToken {
+        // Cache-hit gate: skip the mutation only when both the FCM token AND
+        // the library version recorded on the contact match what we'd send
+        // now. Without the version check, an SDK upgrade (e.g. from a pre-1.3
+        // release that took the silent-push path on the backend) never
+        // refreshes the contact's `metadata.library`, leaving long-lived users
+        // permanently on the legacy delivery path.
+        if preferences.string(forKey: fcmTokenKey) == self.fcmToken,
+           preferences.string(forKey: libraryVersionKey) == Constants.PACKAGE_VERSION
+        {
             DashXLog.d(tag: #function, "Already subscribed: \(String(describing: self.fcmToken))")
             if let completion {
                 DispatchQueue.main.async { completion(.success(())) }
@@ -618,6 +640,7 @@ public class DashXClient {
                 }
                 if graphQLResult.data != nil {
                     preferences.set(graphQLResult.data?.subscribeContact.value, forKey: fcmTokenKey)
+                    preferences.set(Constants.PACKAGE_VERSION, forKey: libraryVersionKey)
                     DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
                     if let completion {
                         DispatchQueue.main.async { completion(.success(())) }
@@ -682,6 +705,7 @@ public class DashXClient {
         // Clear saved token immediately so subscribe() works on re-login
         // regardless of whether the server call succeeds.
         preferences.removeObject(forKey: fcmTokenKey)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION)
 
         let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
@@ -1123,17 +1147,63 @@ public class DashXClient {
 
     // MARK: - Request pemissions for Notifications
 
-    public func requestNotificationPermission(completion: @escaping (UNAuthorizationStatus) -> ()) {
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: [.alert, .badge, .sound],
-            completionHandler: { _, _ in
+    /// Request authorization to display notifications.
+    ///
+    /// - Parameter fallbackToSettings: When `true`, if the user has previously
+    ///   determined the permission (granted or denied), opens the system
+    ///   notification settings page instead of calling `requestAuthorization`
+    ///   (which would be a no-op). Use this to recover users who previously
+    ///   granted permission before the SDK started requesting `.timeSensitive`
+    ///   — they need to flip the toggle in Settings, since iOS won't add new
+    ///   options to an existing grant. Default `false` preserves the original
+    ///   ask-once behavior for fresh installs.
+    public func requestNotificationPermission(
+        fallbackToSettings: Bool = false,
+        completion: @escaping (UNAuthorizationStatus) -> ()
+    ) {
+        // `.timeSensitive` is required for `interruption-level: time-sensitive`
+        // payloads to actually bypass Focus / Reduce Interruptions / Scheduled
+        // Summary on iOS 15+. Without it, iOS silently downgrades them to
+        // standard alerts and the Focus filter still applies — which on iOS
+        // 18+ defaults aggressive enough to look like "notification not
+        // received" to end users.
+        var options: UNAuthorizationOptions = [.alert, .badge, .sound]
+        if #available(iOS 15.0, *) {
+            options.insert(.timeSensitive)
+        }
 
-                // Get the full status of the permission (delivered on main queue).
-                self.getNotificationPermissionStatus { permission in
-                    completion(permission)
-                }
+        guard fallbackToSettings else {
+            performAuthorizationRequest(options: options, completion: completion)
+            return
+        }
+
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            if settings.authorizationStatus == .notDetermined {
+                self.performAuthorizationRequest(options: options, completion: completion)
+            } else {
+                self.openSystemNotificationSettings()
+                self.getNotificationPermissionStatus(completion: completion)
+            }
+        }
+    }
+
+    private func performAuthorizationRequest(
+        options: UNAuthorizationOptions,
+        completion: @escaping (UNAuthorizationStatus) -> ()
+    ) {
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: options,
+            completionHandler: { _, _ in
+                self.getNotificationPermissionStatus(completion: completion)
             }
         )
+    }
+
+    private func openSystemNotificationSettings() {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+            UIApplication.shared.open(url)
+        }
     }
 
     public func getNotificationPermissionStatus(completion: @escaping (UNAuthorizationStatus) -> ()) {
@@ -1257,9 +1327,9 @@ extension DashXClient {
         }
     }
 
-    public func requestNotificationPermission() async -> UNAuthorizationStatus {
+    public func requestNotificationPermission(fallbackToSettings: Bool = false) async -> UNAuthorizationStatus {
         await withCheckedContinuation { continuation in
-            requestNotificationPermission { status in
+            requestNotificationPermission(fallbackToSettings: fallbackToSettings) { status in
                 continuation.resume(returning: status)
             }
         }
