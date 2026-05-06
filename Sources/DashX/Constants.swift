@@ -13,12 +13,13 @@ public struct Constants {
     /// across platforms so dashboard filters work uniformly.
     static let LIBRARY_NAME = "dashx-ios"
 
-    static let PACKAGE_VERSION = "1.5.0"
+    static let PACKAGE_VERSION = "1.5.1"
     public static let USER_PREFERENCES_KEY_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
     public static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID = "\(PACKAGE_NAME).account_anonymous_uid"
     public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"
     public static let USER_PREFERENCES_KEY_APNS_TOKEN = "\(PACKAGE_NAME).apns_token"
     public static let USER_PREFERENCES_KEY_FCM_TOKEN = "\(PACKAGE_NAME).fcm_token"
+    public static let USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION = "\(PACKAGE_NAME).subscribed_library_version"
     public static let USER_PREFERENCES_KEY_BUILD = "\(PACKAGE_NAME).build"
     public static let INTERNAL_EVENT_APP_INSTALLED = "Application Installed"
     public static let INTERNAL_EVENT_APP_UPDATED = "Application Updated"
