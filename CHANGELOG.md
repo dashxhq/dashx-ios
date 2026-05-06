@@ -2,6 +2,18 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.5.1] — 2026-05-06
+
+### Fixed
+
+- **`requestNotificationPermission` now requests `.timeSensitive` on iOS 15+.** Without it, payloads with `interruption-level: time-sensitive` silently downgrade to standard alerts on the device and stay subject to Focus / Reduce Interruptions / Scheduled Summary filtering — visible on iOS 18 / 26 as "notification not received, second attempt works." Only takes effect for fresh installs; iOS won't add new options to an already-granted authorization.
+- **`subscribe()` re-fires after an SDK upgrade.** The cache-hit gate now compares both FCM token *and* the stored library version (new `USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION`) so contact `metadata.library` refreshes once per device per upgrade.
+- **`subscribe()` defers when called before `configure()`.** Previously the Apollo mutation fired with no `X-PUBLIC-KEY` header and the contact was silently never registered. Now sets `mustSubscribe = true` and returns; `configure()` flushes at the end of its init.
+
+### Added
+
+- **`requestNotificationPermission(fallbackToSettings:)`.** New optional `Bool` parameter (default `false`). When `true` and the user has already granted or denied, opens the app's notification settings page instead of calling `requestAuthorization` (which iOS no-ops in that state). Use this to route existing users to the Time Sensitive toggle after upgrading from 1.5.0 or earlier.
+
 ## [1.5.0] — 2026-04-23
 
 ### Breaking

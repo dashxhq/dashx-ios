@@ -22,6 +22,7 @@ public struct Constants {
   public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN: Swift.String
   public static let USER_PREFERENCES_KEY_APNS_TOKEN: Swift.String
   public static let USER_PREFERENCES_KEY_FCM_TOKEN: Swift.String
+  public static let USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION: Swift.String
   public static let USER_PREFERENCES_KEY_BUILD: Swift.String
   public static let INTERNAL_EVENT_APP_INSTALLED: Swift.String
   public static let INTERNAL_EVENT_APP_UPDATED: Swift.String
@@ -130,7 +131,7 @@ public let DashX: DashX.DashXClient
   public func fetchAsset(assetId: Swift.String, completion: @escaping (Swift.Result<DashX.AssetResponse, any Swift.Error>) -> Swift.Void)
   @available(*, deprecated, renamed: "fetchAsset(assetId:completion:)")
   public func asset(assetId: Swift.String, successCallback: @escaping (Any?) -> Swift.Void, failureCallback: @escaping (any Swift.Error) -> Swift.Void)
-  public func requestNotificationPermission(completion: @escaping (UserNotifications.UNAuthorizationStatus) -> ())
+  public func requestNotificationPermission(fallbackToSettings: Swift.Bool = false, completion: @escaping (UserNotifications.UNAuthorizationStatus) -> ())
   public func getNotificationPermissionStatus(completion: @escaping (UserNotifications.UNAuthorizationStatus) -> ())
   public func trackMessage(message: DashX.DashXNotificationMessage, event: DashX.MessageTrackingEvent, completion: ((Swift.Result<Swift.Void, any Swift.Error>) -> Swift.Void)? = nil)
   public var linkHandler: ((Foundation.URL) -> Swift.Void)?
@@ -144,7 +145,7 @@ extension DashX.DashXClient {
   public func saveStoredPreferences(preferenceData: [Swift.String : Any]) async throws -> Swift.Bool
   public func uploadAsset(fileURL: Foundation.URL, resource: Swift.String, attribute: Swift.String) async throws -> DashX.AssetResponse
   public func fetchAsset(assetId: Swift.String) async throws -> DashX.AssetResponse
-  public func requestNotificationPermission() async -> UserNotifications.UNAuthorizationStatus
+  public func requestNotificationPermission(fallbackToSettings: Swift.Bool = false) async -> UserNotifications.UNAuthorizationStatus
   public func getNotificationPermissionStatus() async -> UserNotifications.UNAuthorizationStatus
   public func fetchRecord(urn: Swift.String, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil) async throws -> [Swift.String : Any?]
   public func searchRecords(resource: Swift.String, filter: [Swift.String : Any]? = nil, order: [[Swift.String : Any]]? = nil, limit: Swift.Int? = nil, page: Swift.Int? = nil, preview: Swift.Bool? = nil, language: Swift.String? = nil, fields: [[Swift.String : Any]]? = nil, include: [[Swift.String : Any]]? = nil, exclude: [[Swift.String : Any]]? = nil) async throws -> [[Swift.String : Any?]]
