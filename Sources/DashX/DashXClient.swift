@@ -611,16 +611,22 @@ public class DashXClient {
             ] as [String: AnyHashable],
         ]
 
+        let userAgent = userAgentString()
+        let advertisingId = AdvertisingMonitor.shared.advertisingId
         let subscribeContactInput = DashXGql.SubscribeContactInput(
             accountUid: self.accountUid.map { .some($0) } ?? .null,
             accountAnonymousUid: .some(anonymousUid),
             name: .some(UIDevice.current.model),
             kind: GraphQLEnum<DashXGql.ContactKind>(.ios),
             value: fcmToken,
+            userAgent: userAgent.isEmpty ? .null : .some(userAgent),
             osName: .some(UIDevice.current.systemName),
             osVersion: .some(UIDevice.current.systemVersion),
             deviceModel: .some(self.getDeviceModel()),
             deviceManufacturer: .some("Apple"),
+            deviceUid: (UIDevice.current.identifierForVendor?.uuidString).map { .some($0) } ?? .null,
+            deviceAdvertisingUid: advertisingId.isEmpty ? .null : .some(advertisingId),
+            isDeviceAdTrackingEnabled: .some(AdvertisingMonitor.shared.adTrackingEnabled),
             metadata: .some(DashXGql.JSON(metadata))
         )
 
