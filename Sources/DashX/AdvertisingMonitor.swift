@@ -12,7 +12,11 @@ class AdvertisingMonitor: NSObject {
     override init() {
         asIdentifierManager = ASIdentifierManager.shared()
         super.init()
-        syncTrackingAuthorizationState()
+        // `notifyClient: false` is required here — notifying would call back
+        // into `AdvertisingMonitor.shared` while it's still mid-init, and
+        // Swift's static-let dispatch_once deadlocks on the recursive read.
+        // `configure()` runs the post-init wakeup instead.
+        syncTrackingAuthorizationState(notifyClient: false)
     }
 
     var advertisingId: String {
@@ -31,8 +35,19 @@ class AdvertisingMonitor: NSObject {
         return _isAdTrackingEnabled
     }
 
-    /// Reflects current ATT status (authorized users get IDFA without waiting for a new prompt).
-    private func syncTrackingAuthorizationState() {
+    /// `true` once the ATT decision is resolved, or always on pre-iOS-14.
+    /// Subscribe gates `SUBSCRIBED_AD_INFO_VERSION` on this so the marker
+    /// isn't committed against an unresolved IDFA.
+    var hasAdInfoBeenResolved: Bool {
+        if #available(iOS 14, *) {
+            return ATTrackingManager.trackingAuthorizationStatus != .notDetermined
+        }
+        return true
+    }
+
+    /// `notifyClient` MUST be false when called from `init()` — see the
+    /// dispatch_once deadlock note there.
+    private func syncTrackingAuthorizationState(notifyClient: Bool = true) {
         if #available(iOS 14, *) {
             let authorized = ATTrackingManager.trackingAuthorizationStatus == .authorized
             stateLock.lock()
@@ -42,6 +57,12 @@ class AdvertisingMonitor: NSObject {
             stateLock.lock()
             _isAdTrackingEnabled = asIdentifierManager.isAdvertisingTrackingEnabled
             stateLock.unlock()
+        }
+        // Covers the SDK-integrated-into-already-authorized-app case where
+        // the prompt-completion path never fires and a pre-upgrade contact
+        // would otherwise never get its IDFA backfilled.
+        if notifyClient, hasAdInfoBeenResolved {
+            DashXClient.instance.refreshSubscriptionDeviceInfo()
         }
     }
 
@@ -78,6 +99,10 @@ class AdvertisingMonitor: NSObject {
                                 DashXLog.d(tag: #function, "Unknown Ad Tracking Permission")
                                 self.syncTrackingAuthorizationState()
                             }
+                            // Primary wakeup for the common flow: subscribe
+                            // ran before the prompt with an empty IDFA;
+                            // re-send now that ATT has resolved.
+                            DashXClient.instance.refreshSubscriptionDeviceInfo()
                         }
                     }
                 }
