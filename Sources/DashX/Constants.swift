@@ -20,15 +20,9 @@ public struct Constants {
     public static let USER_PREFERENCES_KEY_APNS_TOKEN = "\(PACKAGE_NAME).apns_token"
     public static let USER_PREFERENCES_KEY_FCM_TOKEN = "\(PACKAGE_NAME).fcm_token"
     public static let USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION = "\(PACKAGE_NAME).subscribed_library_version"
-    /// Tracks the SDK version for which the contact's advertising info
-    /// (`deviceAdvertisingUid`, `isDeviceAdTrackingEnabled`) was last synced
-    /// to the backend. Separate from `SUBSCRIBED_LIBRARY_VERSION` so the
-    /// core subscribe cache (FCM token + SDK version) isn't held hostage by
-    /// the ATT prompt: subscribe commits the library marker immediately, and
-    /// `DashXClient.refreshSubscriptionDeviceInfo()` commits this marker
-    /// later — once the ATT decision is settled — by issuing a follow-up
-    /// subscribe that backfills the IDFA / consent state onto the existing
-    /// contact row.
+    /// SDK version for which the contact's advertising info was last synced.
+    /// Separate from `SUBSCRIBED_LIBRARY_VERSION` so the core subscribe cache
+    /// isn't held hostage by the ATT prompt.
     public static let USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION = "\(PACKAGE_NAME).subscribed_ad_info_version"
     public static let USER_PREFERENCES_KEY_BUILD = "\(PACKAGE_NAME).build"
     public static let INTERNAL_EVENT_APP_INSTALLED = "Application Installed"

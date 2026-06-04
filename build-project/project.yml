@@ -30,14 +30,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    # `-package-name DashX` enables the `package` access level (Swift 5.9+)
-    # across the targets generated here — without it, `package` declarations
-    # fail to compile ("requires a package name"). SPM sets this automatically
-    # for sibling targets; Xcode projects have to opt in explicitly.
-    # Inherited by both Debug and Release; library-evolution flags are
-    # driven by `BUILD_LIBRARY_FOR_DISTRIBUTION` below (Xcode auto-adds
-    # `-enable-library-evolution` and `-emit-module-interface` when the
-    # setting is YES), so they don't need to be listed here.
+    # `-package-name DashX` opts into the `package` access level (Swift 5.9+).
+    # SPM sets this for sibling targets automatically; Xcode projects must opt
+    # in explicitly. Library-evolution flags are driven by
+    # `BUILD_LIBRARY_FOR_DISTRIBUTION` below.
     OTHER_SWIFT_FLAGS: "$(inherited) -package-name DashX"
     DEFINES_MODULE: YES
     SKIP_INSTALL: NO
@@ -56,10 +52,9 @@ settings:
     CODE_SIGNING_REQUIRED: NO
     CODE_SIGNING_ALLOWED: NO
   configs:
-    # Library-evolution mode is required for archive → xcframework, so it's
-    # ON in Release. Debug skips it so that `@testable import DashX` sees
-    # internal symbols normally instead of going through the sealed
-    # `.swiftinterface` — DashXTests run against the Debug config.
+    # Library-evolution is required for archive → xcframework so it's ON in
+    # Release. Debug skips it so `@testable import DashX` reaches internals
+    # directly instead of through the sealed `.swiftinterface`.
     Debug:
       ENABLE_TESTABILITY: YES
       BUILD_LIBRARY_FOR_DISTRIBUTION: NO
