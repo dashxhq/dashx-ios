@@ -13,13 +13,17 @@ public struct Constants {
     /// across platforms so dashboard filters work uniformly.
     static let LIBRARY_NAME = "dashx-ios"
 
-    static let PACKAGE_VERSION = "1.5.1"
+    static let PACKAGE_VERSION = "1.5.2"
     public static let USER_PREFERENCES_KEY_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
     public static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID = "\(PACKAGE_NAME).account_anonymous_uid"
     public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"
     public static let USER_PREFERENCES_KEY_APNS_TOKEN = "\(PACKAGE_NAME).apns_token"
     public static let USER_PREFERENCES_KEY_FCM_TOKEN = "\(PACKAGE_NAME).fcm_token"
     public static let USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION = "\(PACKAGE_NAME).subscribed_library_version"
+    /// SDK version for which the contact's advertising info was last synced.
+    /// Separate from `SUBSCRIBED_LIBRARY_VERSION` so the core subscribe cache
+    /// isn't held hostage by the ATT prompt.
+    public static let USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION = "\(PACKAGE_NAME).subscribed_ad_info_version"
     public static let USER_PREFERENCES_KEY_BUILD = "\(PACKAGE_NAME).build"
     public static let INTERNAL_EVENT_APP_INSTALLED = "Application Installed"
     public static let INTERNAL_EVENT_APP_UPDATED = "Application Updated"

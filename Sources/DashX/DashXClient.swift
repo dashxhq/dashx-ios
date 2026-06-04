@@ -146,6 +146,71 @@ public class DashXClient {
         set { stateLock.lock(); defer { stateLock.unlock() }; _isAdTrackingRequested = newValue }
     }
 
+    // Bumped by `unsubscribe()` / `reset()`. Each subscribe mutation captures
+    // the value at start and the response handler skips the local-cache write
+    // on mismatch — a late-arriving subscribe response can't resurrect markers
+    // a concurrent unsubscribe just cleared.
+    private var _subscribeGeneration: Int = 0
+    private var subscribeGeneration: Int {
+        stateLock.lock(); defer { stateLock.unlock() }
+        return _subscribeGeneration
+    }
+    @discardableResult
+    private func bumpSubscribeGeneration() -> Int {
+        stateLock.lock(); defer { stateLock.unlock() }
+        _subscribeGeneration += 1
+        return _subscribeGeneration
+    }
+
+    // Set at unsubscribe entry; checked by `refreshSubscriptionDeviceInfo` so
+    // an ATT-prompt completion landing mid-`reset()` doesn't re-subscribe a
+    // contact under the rotated identity.
+    private var _isUnsubscribeInFlight: Bool = false
+    private var isUnsubscribeInFlight: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _isUnsubscribeInFlight }
+        set { stateLock.lock(); defer { stateLock.unlock() }; _isUnsubscribeInFlight = newValue }
+    }
+
+    // Single-slot guard for ad-info backfill. ATT-state changes can fire
+    // multiple `refreshSubscriptionDeviceInfo` calls per session; the
+    // claim/release pair collapses them down to one in-flight mutation.
+    // Triggers arriving while the slot is occupied set the pending latch
+    // below so the in-flight backfill re-fires on release.
+    private var _isSubscriptionDeviceInfoRefreshInFlight: Bool = false
+    // Latched when `claimSubscriptionDeviceInfoRefreshSlot` fails. Without
+    // it, an ATT-state change landing mid-backfill is lost: the in-flight
+    // mutation writes `SUBSCRIBED_AD_INFO_VERSION = current` with the OLD
+    // state, and the next refresh short-circuits on the version match.
+    private var _subscriptionDeviceInfoRefreshPending: Bool = false
+    private func claimSubscriptionDeviceInfoRefreshSlot() -> Bool {
+        stateLock.lock(); defer { stateLock.unlock() }
+        if _isSubscriptionDeviceInfoRefreshInFlight { return false }
+        _isSubscriptionDeviceInfoRefreshInFlight = true
+        return true
+    }
+    private func releaseSubscriptionDeviceInfoRefreshSlot() {
+        stateLock.lock(); defer { stateLock.unlock() }
+        _isSubscriptionDeviceInfoRefreshInFlight = false
+    }
+    private func setSubscriptionDeviceInfoRefreshPending() {
+        stateLock.lock(); defer { stateLock.unlock() }
+        _subscriptionDeviceInfoRefreshPending = true
+    }
+    /// Atomic read-and-clear. Multiple coalesced pending requests collapse
+    /// into one re-fire.
+    private func consumeSubscriptionDeviceInfoRefreshPending() -> Bool {
+        stateLock.lock(); defer { stateLock.unlock() }
+        if _subscriptionDeviceInfoRefreshPending {
+            _subscriptionDeviceInfoRefreshPending = false
+            return true
+        }
+        return false
+    }
+    private func clearSubscriptionDeviceInfoRefreshPending() {
+        stateLock.lock(); defer { stateLock.unlock() }
+        _subscriptionDeviceInfoRefreshPending = false
+    }
+
     /// `trackMessage` calls that arrived before `configure(withPublicKey:)` set
     /// up the Apollo interceptor. Without the public-key header the backend
     /// returns "Permission denied" and the event is lost — a real problem for
@@ -205,6 +270,13 @@ public class DashXClient {
         if mustSubscribe {
             subscribe()
         }
+
+        // Durable wakeup for the ad-info backfill: `AdvertisingMonitor.init()`
+        // skips notifying the client (dispatch_once deadlock), and when ATT
+        // was resolved in a prior session the prompt-completion path doesn't
+        // fire either — without this call, a stale `SUBSCRIBED_AD_INFO_VERSION`
+        // would linger until the FCM token rotates.
+        refreshSubscriptionDeviceInfo()
     }
 
     /// Drains the pre-configure trackMessage buffer. Called from `configure()`
@@ -340,12 +412,19 @@ public class DashXClient {
     public func reset() {
         unsubscribe()
 
+        // Guard against an in-flight subscribe mutation landing after the
+        // identity rotation below — `unsubscribe()` may have early-returned
+        // when there was no saved FCM token, so its own bump may not have run.
+        self.bumpSubscribeGeneration()
+        self.clearSubscriptionDeviceInfoRefreshPending()
+
         let preferences = UserDefaults.standard
 
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_FCM_TOKEN)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION)
 
         self.accountUid = nil
         self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
@@ -577,12 +656,11 @@ public class DashXClient {
         let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
         let libraryVersionKey = Constants.USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION
 
-        // Cache-hit gate: skip the mutation only when both the FCM token AND
-        // the library version recorded on the contact match what we'd send
-        // now. Without the version check, an SDK upgrade (e.g. from a pre-1.3
-        // release that took the silent-push path on the backend) never
-        // refreshes the contact's `metadata.library`, leaving long-lived users
-        // permanently on the legacy delivery path.
+        // Cache-hit gate. Skip only when both token AND library version match —
+        // otherwise an SDK upgrade never refreshes `metadata.library` and
+        // long-lived users stay on the legacy delivery path. Ad-info version
+        // is gated separately by `refreshSubscriptionDeviceInfo` so a pending
+        // ATT prompt can't block normal subscribe flow.
         if preferences.string(forKey: fcmTokenKey) == self.fcmToken,
            preferences.string(forKey: libraryVersionKey) == Constants.PACKAGE_VERSION
         {
@@ -592,6 +670,68 @@ public class DashXClient {
             }
             return
         }
+
+        runSubscribeMutation(
+            token: fcmToken,
+            anonymousUid: anonymousUid,
+            isAdInfoRefresh: false,
+            completion: completion
+        )
+    }
+
+    /// Backfills `device_advertising_uid` + `is_device_ad_tracking_enabled`
+    /// onto the existing contact row once the ATT decision settles. No-op
+    /// when the SDK isn't configured, unsubscribe is in flight, there's no
+    /// saved FCM token, ATT is unresolved, the version marker is current,
+    /// or another refresh is already running (in which case the pending
+    /// latch re-fires it on release).
+    internal func refreshSubscriptionDeviceInfo() {
+        if isUnsubscribeInFlight { return }
+        guard ConfigInterceptor.shared.publicKey != nil else { return }
+        if !AdvertisingMonitor.shared.hasAdInfoBeenResolved { return }
+        let preferences = UserDefaults.standard
+        guard let savedToken = preferences.string(
+            forKey: Constants.USER_PREFERENCES_KEY_FCM_TOKEN
+        ) else { return }
+        // Skip when the in-memory token has rotated past the persisted one —
+        // a normal `subscribe()` is in flight to re-register, and backfilling
+        // the OLD contact would undo the stale-token cleanup this work
+        // enforces. Nil `fcmToken` (configure-time) is fine to proceed.
+        if let currentToken = self.fcmToken, currentToken != savedToken { return }
+        guard let anonymousUid = self.accountAnonymousUid else { return }
+        let syncedAdInfoVersion = preferences.string(
+            forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION
+        )
+        if syncedAdInfoVersion == Constants.PACKAGE_VERSION { return }
+        if !claimSubscriptionDeviceInfoRefreshSlot() {
+            setSubscriptionDeviceInfoRefreshPending()
+            return
+        }
+
+        DashXLog.d(tag: #function, "Backfilling advertising info for existing subscription.")
+        runSubscribeMutation(
+            token: savedToken,
+            anonymousUid: anonymousUid,
+            isAdInfoRefresh: true,
+            completion: nil
+        )
+    }
+
+    /// Shared mutation runner for `subscribe()` and `refreshSubscriptionDeviceInfo()`.
+    /// Callers handle their own preflight gates; this always issues the mutation
+    /// and commits cache markers only when `subscribeGeneration` still matches.
+    private func runSubscribeMutation(
+        token: String,
+        anonymousUid: String,
+        isAdInfoRefresh: Bool,
+        completion: ((Result<Void, Error>) -> Void)?
+    ) {
+        let gen = self.subscribeGeneration
+
+        let preferences = UserDefaults.standard
+        let fcmTokenKey = Constants.USER_PREFERENCES_KEY_FCM_TOKEN
+        let libraryVersionKey = Constants.USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION
+        let adInfoVersionKey = Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION
 
         var appDict: [String: AnyHashable] = [:]
         if let identifier = Bundle.main.bundleIdentifier {
@@ -611,16 +751,22 @@ public class DashXClient {
             ] as [String: AnyHashable],
         ]
 
+        let userAgent = userAgentString()
+        let advertisingId = AdvertisingMonitor.shared.advertisingId
         let subscribeContactInput = DashXGql.SubscribeContactInput(
             accountUid: self.accountUid.map { .some($0) } ?? .null,
             accountAnonymousUid: .some(anonymousUid),
             name: .some(UIDevice.current.model),
             kind: GraphQLEnum<DashXGql.ContactKind>(.ios),
-            value: fcmToken,
+            value: token,
+            userAgent: userAgent.isEmpty ? .null : .some(userAgent),
             osName: .some(UIDevice.current.systemName),
             osVersion: .some(UIDevice.current.systemVersion),
             deviceModel: .some(self.getDeviceModel()),
             deviceManufacturer: .some("Apple"),
+            deviceUid: (UIDevice.current.identifierForVendor?.uuidString).map { .some($0) } ?? .null,
+            deviceAdvertisingUid: advertisingId.isEmpty ? .null : .some(advertisingId),
+            isDeviceAdTrackingEnabled: .some(AdvertisingMonitor.shared.adTrackingEnabled),
             metadata: .some(DashXGql.JSON(metadata))
         )
 
@@ -629,6 +775,21 @@ public class DashXClient {
         let subscribeContactMutation = DashXGql.SubscribeContactMutation(input: subscribeContactInput)
 
         Network.shared.apollo.perform(mutation: subscribeContactMutation) { result in
+            defer {
+                if isAdInfoRefresh {
+                    self.releaseSubscriptionDeviceInfoRefreshSlot()
+                    // Re-fire if an ATT-state change latched a pending request
+                    // during this round-trip. Invalidate the version marker
+                    // first so the re-run doesn't short-circuit on the
+                    // (now-stale) version the success branch just wrote.
+                    if self.consumeSubscriptionDeviceInfoRefreshPending() {
+                        UserDefaults.standard.removeObject(
+                            forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION
+                        )
+                        self.refreshSubscriptionDeviceInfo()
+                    }
+                }
+            }
             switch result {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
@@ -639,9 +800,26 @@ public class DashXClient {
                     return
                 }
                 if graphQLResult.data != nil {
-                    preferences.set(graphQLResult.data?.subscribeContact.value, forKey: fcmTokenKey)
-                    preferences.set(Constants.PACKAGE_VERSION, forKey: libraryVersionKey)
-                    DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
+                    // Generation guard: only commit the local cache if no
+                    // unsubscribe/reset has bumped the generation while this
+                    // mutation was in flight. Without this, a late-arriving
+                    // subscribe response would resurrect the FCM token /
+                    // library-version markers that unsubscribe just cleared
+                    // — leaving the SDK locally convinced it's subscribed
+                    // while the backend has revoked the contact.
+                    if self.subscribeGeneration == gen {
+                        preferences.set(graphQLResult.data?.subscribeContact.value, forKey: fcmTokenKey)
+                        preferences.set(Constants.PACKAGE_VERSION, forKey: libraryVersionKey)
+                        // Hold off committing the ad-info marker until ATT has
+                        // resolved; otherwise a future post-ATT refresh would
+                        // short-circuit on a version match for empty/placeholder IDFA.
+                        if AdvertisingMonitor.shared.hasAdInfoBeenResolved {
+                            preferences.set(Constants.PACKAGE_VERSION, forKey: adInfoVersionKey)
+                        }
+                        DashXLog.d(tag: #function, "Sent subscribe with \(String(describing: graphQLResult))")
+                    } else {
+                        DashXLog.d(tag: #function, "Subscribe response stale; skipping local cache write.")
+                    }
                     if let completion {
                         DispatchQueue.main.async { completion(.success(())) }
                     }
@@ -702,10 +880,20 @@ public class DashXClient {
         // would fail to match a contact created during an identified session.
         let uidSnapshot = self.accountUid
 
-        // Clear saved token immediately so subscribe() works on re-login
-        // regardless of whether the server call succeeds.
+        // Bump generation + claim the in-flight flag BEFORE clearing local
+        // state. An in-flight subscribe response now sees the mismatch and
+        // skips its cache write; a `refreshSubscriptionDeviceInfo` triggered
+        // by an ATT completion landing in this window short-circuits on the
+        // flag instead of re-subscribing a contact we're tearing down.
+        self.bumpSubscribeGeneration()
+        self.isUnsubscribeInFlight = true
+        self.clearSubscriptionDeviceInfoRefreshPending()
+
+        // Clear local cache eagerly so subscribe() on re-login isn't blocked
+        // by a stale match if the server call fails.
         preferences.removeObject(forKey: fcmTokenKey)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION)
+        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION)
 
         let performUnsubscribe = {
             let unsubscribeContactInput = DashXGql.UnsubscribeContactInput(
@@ -719,6 +907,7 @@ public class DashXClient {
             let unsubscribeContactMutation = DashXGql.UnsubscribeContactMutation(input: unsubscribeContactInput)
 
             Network.shared.apollo.perform(mutation: unsubscribeContactMutation) { result in
+                defer { self.isUnsubscribeInFlight = false }
                 switch result {
                 case .success(let graphQLResult):
                     if let errors = graphQLResult.errors, !errors.isEmpty {
