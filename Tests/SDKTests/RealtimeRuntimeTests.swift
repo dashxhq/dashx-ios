@@ -326,11 +326,11 @@ final class RealtimeRuntimeTests: XCTestCase {
     }
 
     func testUnacknowledgedSubscriptionTimesOutAndAnAckPreventsIt() {
-        let harness = Harness(ackTimeout: 0.15)
+        let harness = Harness(ackTimeout: 1)
         harness.subscribe("c1")
         awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
         harness.open(0)
-        awaitUntil(timeout: 2, what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
         XCTAssertTrue(isSubscriptionFailed(harness.subscribeErrors.value[0]))
 
         // A second conversation whose ack arrives in time never errors.
@@ -339,21 +339,23 @@ final class RealtimeRuntimeTests: XCTestCase {
             harness.socket(0).sent.value.contains { $0.contains("in_app_chat:conversation:c2") }
         }
         harness.ack("in_app_chat:conversation:c2", index: 0)
-        settle(0.4)
+        awaitUntil(what: "ack processed") { harness.established.value.count == 1 }
+        settle(1.5) // past the acked channel's deadline
         XCTAssertEqual(harness.subscribeErrors.value.count, 1, "an acked channel must not time out")
     }
 
     func testSocketLostBeforeAckIsAReconnectNotASubscribeError() {
-        let harness = Harness(ackTimeout: 0.15)
+        let harness = Harness(ackTimeout: 1)
         harness.subscribe("c1")
         awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
         harness.open(0)
         awaitUntil(what: "SUBSCRIBE sent") { harness.socket(0).sent.value.contains { $0.contains("SUBSCRIBE") } }
 
-        // The connection drops before the server can acknowledge. The reconnect backoff (>= 500ms)
-        // outlasts the ack window, so a deadline left pending would fire in the gap.
+        // The connection drops before the server can acknowledge; the reconnect proves the close was
+        // processed, and the deadline left pending must then elapse as a no-op.
         harness.close(0, code: 1006, reason: "network lost")
-        settle(0.4)
+        awaitUntil(what: "reconnect socket") { harness.sockets.value.count == 2 }
+        settle(1.2)
         XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "a socket lost mid-subscribe must not be reported as a rejected channel")
     }
 
