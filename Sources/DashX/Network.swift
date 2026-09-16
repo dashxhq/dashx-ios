@@ -55,6 +55,8 @@ class Network {
 class NetworkInterceptorProvider: DefaultInterceptorProvider {
     override func interceptors<Operation: GraphQLOperation>(for operation: Operation) -> [any ApolloInterceptor] {
         var interceptors = super.interceptors(for: operation)
+        // A retry re-kicks the chain, so the header interceptor re-reads the refreshed token.
+        interceptors.insert(AuthRetryInterceptor(), at: 0)
         interceptors.insert(ConfigInterceptor.shared, at: 0)
         return interceptors
     }
@@ -79,11 +81,8 @@ class ConfigInterceptor: ApolloInterceptor {
         set { configQueue.sync(flags: .barrier) { self._targetEnvironment = newValue } }
     }
 
-    private var _identityToken: String?
-    var identityToken: String? {
-        get { configQueue.sync { _identityToken } }
-        set { configQueue.sync(flags: .barrier) { self._identityToken = newValue } }
-    }
+    /// Read per request, so a retried request picks up a refreshed token.
+    var identityToken: String? { DashXClient.instance.identityToken }
 
     func interceptAsync<Operation: GraphQLOperation>(
         chain: any RequestChain,

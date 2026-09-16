@@ -31,11 +31,20 @@ extension DashXGql {
       switch typename {
       case "Account": return DashXGql.Objects.Account
       case "Asset": return DashXGql.Objects.Asset
+      case "AssignedGroupSummary": return DashXGql.Objects.AssignedGroupSummary
+      case "ChatConversationContext": return DashXGql.Objects.ChatConversationContext
+      case "ChatConversationSummary": return DashXGql.Objects.ChatConversationSummary
+      case "ChatConversationTopic": return DashXGql.Objects.ChatConversationTopic
       case "Contact": return DashXGql.Objects.Contact
       case "FetchStoredPreferencesResponse": return DashXGql.Objects.FetchStoredPreferencesResponse
+      case "MarkInAppChatConversationReadResponse": return DashXGql.Objects.MarkInAppChatConversationReadResponse
+      case "Message": return DashXGql.Objects.Message
       case "Mutation": return DashXGql.Objects.Mutation
       case "Query": return DashXGql.Objects.Query
       case "SaveStoredPreferencesResponse": return DashXGql.Objects.SaveStoredPreferencesResponse
+      case "SummarizeInAppChatConversationsResponse": return DashXGql.Objects.SummarizeInAppChatConversationsResponse
+      case "SummarizeInAppChatMessagesResponse": return DashXGql.Objects.SummarizeInAppChatMessagesResponse
+      case "SummarizeInAppChatUnreadResponse": return DashXGql.Objects.SummarizeInAppChatUnreadResponse
       case "TrackEventResponse": return DashXGql.Objects.TrackEventResponse
       case "TrackMessageResponse": return DashXGql.Objects.TrackMessageResponse
       case "UnsubscribeContactResponse": return DashXGql.Objects.UnsubscribeContactResponse

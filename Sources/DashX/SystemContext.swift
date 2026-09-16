@@ -182,7 +182,7 @@ class SystemContext: NSObject {
         return DashXGql.SystemContextScreenInput(
             width: Int(environment.screen.bounds.width),
             height: Int(environment.screen.bounds.height),
-            density: Int(environment.screen.scale)
+            density: Double(environment.screen.scale)
         )
     }
 }

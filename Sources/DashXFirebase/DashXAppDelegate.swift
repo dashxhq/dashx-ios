@@ -80,7 +80,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         registerDashXNotificationCategoryIfNeeded(from: message)
 
-        let presentationOptions = notificationDeliveredInForeground(message: message)
+        let presentationOptions = DashXPush.shouldDisplay(message)
+            ? notificationDeliveredInForeground(message: message)
+            : []
 
         completionHandler(presentationOptions)
     }
@@ -131,6 +133,13 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
         guard let dashxData = userInfo.dashxNotificationData() else {
             DashXLog.e(tag: #function, "Unable to parse DashX notification data")
             completionHandler(.failed)
+            return
+        }
+
+        // Suppression is a presentation decision; delivery happened either way.
+        guard DashXPush.shouldDisplay(dashxData) else {
+            dashXClient.trackMessage(message: userInfo, event: .delivered)
+            completionHandler(.newData)
             return
         }
 

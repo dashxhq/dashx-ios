@@ -1,0 +1,11 @@
+fragment ChatMessageFragment on Message {
+  id
+  conversationId
+  renderedContent
+  externalUid
+  senderId
+  aiRole
+  turnSeq
+  sentAt
+  createdAt
+}

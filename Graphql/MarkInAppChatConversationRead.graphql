@@ -1,0 +1,15 @@
+mutation MarkInAppChatConversationRead(
+  $identityId: UUID!
+  $conversationId: UUID!
+  $lastMessageId: UUID!
+) {
+  markInAppChatConversationRead(
+    input: {
+      identityId: $identityId
+      conversationId: $conversationId
+      lastMessageId: $lastMessageId
+    }
+  ) {
+    success
+  }
+}

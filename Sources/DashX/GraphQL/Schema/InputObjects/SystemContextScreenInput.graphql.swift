@@ -14,7 +14,7 @@ extension DashXGql {
     init(
       width: Int,
       height: Int,
-      density: Int
+      density: Double
     ) {
       __data = InputDict([
         "width": width,
@@ -33,7 +33,7 @@ extension DashXGql {
       set { __data["height"] = newValue }
     }
 
-    var density: Int {
+    var density: Double {
       get { __data["density"] }
       set { __data["density"] = newValue }
     }

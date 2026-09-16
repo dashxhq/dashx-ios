@@ -13,6 +13,7 @@ extension DashXGql {
 
     init(
       resource: String,
+      project: GraphQLNullable<String> = nil,
       filter: GraphQLNullable<JSON> = nil,
       order: GraphQLNullable<[JSON]> = nil,
       limit: GraphQLNullable<Int> = nil,
@@ -25,6 +26,7 @@ extension DashXGql {
     ) {
       __data = InputDict([
         "resource": resource,
+        "project": project,
         "filter": filter,
         "order": order,
         "limit": limit,
@@ -40,6 +42,11 @@ extension DashXGql {
     var resource: String {
       get { __data["resource"] }
       set { __data["resource"] = newValue }
+    }
+
+    var project: GraphQLNullable<String> {
+      get { __data["project"] }
+      set { __data["project"] = newValue }
     }
 
     var filter: GraphQLNullable<JSON> {

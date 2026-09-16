@@ -29,6 +29,40 @@ public typealias SuccessCallback = (Any?) -> ()
 @available(*, deprecated, message: "Use Result-based or async/await overloads instead")
 public typealias FailureCallback = (Error) -> ()
 
+/// The GraphQL errors of one response. Iterates as the error messages, so
+/// `case .graphQLErrors(let messages)` call sites keep working.
+public struct DashXGraphQLErrors: Equatable, ExpressibleByArrayLiteral, RandomAccessCollection, CustomStringConvertible {
+    public static let unauthorized = "UNAUTHORIZED"
+    public static let forbidden = "FORBIDDEN"
+    public static let notFound = "NOT_FOUND"
+    public static let unprocessableEntity = "UNPROCESSABLE_ENTITY"
+    public static let internalServerError = "INTERNAL_SERVER_ERROR"
+
+    public let messages: [String]
+    /// The response's `extensions.code`; nil when the codes were mixed or absent.
+    public let code: String?
+
+    public init(messages: [String], code: String? = nil) {
+        self.messages = messages
+        self.code = code
+    }
+
+    public init(arrayLiteral elements: String...) {
+        self.init(messages: elements)
+    }
+
+    public var startIndex: Int { messages.startIndex }
+    public var endIndex: Int { messages.endIndex }
+    public subscript(position: Int) -> String { messages[position] }
+    public func index(after i: Int) -> Int { messages.index(after: i) }
+    public func index(before i: Int) -> Int { messages.index(before: i) }
+
+    public var description: String {
+        let joined = messages.joined(separator: "; ")
+        return code.map { "[\($0)] \(joined)" } ?? joined
+    }
+}
+
 public enum DashXClientError: Error, LocalizedError {
     case noArgsInIdentify
     case assetIsNotReady
@@ -36,9 +70,13 @@ public enum DashXClientError: Error, LocalizedError {
     /// The SDK operation requires an identified user but none is set.
     case notIdentified
     /// One or more GraphQL errors were returned by the server.
-    case graphQLErrors([String])
+    case graphQLErrors(DashXGraphQLErrors)
     /// A network-level failure (DNS, TLS, timeout, etc.).
     case networkError(underlying: Error)
+    /// The identity session ended (identity switch or reset) while this operation ran.
+    case sessionEnded
+    /// A realtime channel subscription was never acknowledged — invalid or unauthorized.
+    case subscriptionFailed(String)
     case customError(message: String)
 
     public var errorDescription: String? {
@@ -55,6 +93,10 @@ public enum DashXClientError: Error, LocalizedError {
             return "GraphQL errors: \(messages.joined(separator: "; "))"
         case .networkError(let underlying):
             return "Network error: \(underlying.localizedDescription)"
+        case .sessionEnded:
+            return "The identity session ended before the operation completed."
+        case .subscriptionFailed(let message):
+            return message
         case .customError(let message):
             return message
         }
@@ -74,6 +116,10 @@ public enum DashXClientError: Error, LocalizedError {
             return "Check the error messages for details. This may indicate invalid input or a server-side issue."
         case .networkError:
             return "Check your network connection and try again."
+        case .sessionEnded:
+            return "Reopen the conversation under the current identity."
+        case .subscriptionFailed:
+            return "Check the conversation id and identity token; the subscription retries on reconnect."
         case .customError:
             return nil
         }
@@ -84,6 +130,7 @@ public enum DashXClientError: Error, LocalizedError {
         switch self {
         case .networkError: return true
         case .assetIsNotReady: return true
+        case .subscriptionFailed: return true
         default: return false
         }
     }
@@ -104,22 +151,51 @@ public class DashXClient {
     /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
     private static let assetPollQueue = DispatchQueue(label: "com.dashx.ios.assetPoll")
 
-    // Single lock protecting all mutable identity / token state below.
+    // Single lock protecting all mutable identity / token / realtime state below.
     // Using NSLock (non-recursive) is safe here because no getter or setter
     // calls another guarded property while the lock is held.
-    private let stateLock = NSLock()
+    let stateLock = NSLock()
 
-    private var _accountAnonymousUid: String?
-    private var accountAnonymousUid: String? {
-        get { stateLock.lock(); defer { stateLock.unlock() }; return _accountAnonymousUid }
-        set { stateLock.lock(); defer { stateLock.unlock() }; _accountAnonymousUid = newValue }
+    /// The one source of account state. Read it once per operation so a new uid is never paired
+    /// with an old token.
+    struct AccountSnapshot {
+        var uid: String?
+        var anonymousUid: String?
+        var identityToken: String?
+        var sessionGeneration: Int = 0
+        /// Bumped by every explicit token write; a provider load from an older epoch is stale.
+        var tokenEpoch: Int = 0
     }
 
-    private var _accountUid: String?
-    private var accountUid: String? {
-        get { stateLock.lock(); defer { stateLock.unlock() }; return _accountUid }
-        set { stateLock.lock(); defer { stateLock.unlock() }; _accountUid = newValue }
+    var _account = AccountSnapshot()
+
+    var account: AccountSnapshot {
+        stateLock.lock(); defer { stateLock.unlock() }
+        return _account
     }
+
+    @discardableResult
+    func updateAccount(_ transform: (inout AccountSnapshot) -> Void) -> AccountSnapshot {
+        stateLock.lock(); defer { stateLock.unlock() }
+        transform(&_account)
+        return _account
+    }
+
+    private var accountAnonymousUid: String? { account.anonymousUid }
+    private var accountUid: String? { account.uid }
+
+    // Guarded by `stateLock` unless noted.
+    var _boundProvider: BoundTokenProvider?
+    var _tokenLoadInFlight: TokenLoad?
+    var _realtimeBaseURI: String?
+    var _realtimeRuntime: RealtimeRuntime?
+    var _connectionState: DashXConnectionState = .idle
+    var _connectionStateListeners: [DashXConnectionStateListener] = []
+    var _lifecycleForeground = false
+    /// Main-thread only.
+    var lifecycleObservers: [NSObjectProtocol] = []
+    let pushRuntime = PushRuntimeState()
+    let tokenQueue = DispatchQueue(label: "com.dashx.ios.tokenProvider", qos: .utility)
 
     private var _apnsToken: String?
     private var apnsToken: String? {
@@ -277,6 +353,8 @@ public class DashXClient {
         // fire either — without this call, a stale `SUBSCRIBED_AD_INFO_VERSION`
         // would linger until the FCM token rotates.
         refreshSubscriptionDeviceInfo()
+
+        registerLifecycleObserver()
     }
 
     /// Drains the pre-configure trackMessage buffer. Called from `configure()`
@@ -323,11 +401,14 @@ public class DashXClient {
 
     private func loadIdentity() {
         let preferences = UserDefaults.standard
-
-        self.accountUid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
-        self.accountAnonymousUid = self.generateAnonymousUid()
-
-        ConfigInterceptor.shared.identityToken = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        let uid = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
+        let token = preferences.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
+        let anonymousUid = self.generateAnonymousUid()
+        updateAccount {
+            $0.uid = uid
+            $0.anonymousUid = anonymousUid
+            $0.identityToken = token
+        }
     }
 
     private func generateAnonymousUid(withRegenerate: Bool = false) -> String? {
@@ -344,18 +425,57 @@ public class DashXClient {
         }
     }
 
+    /// - no identity yet: waiting conversations connect
+    /// - same uid and token: no-op
+    /// - same uid, nil token while one is held: no-op (`reset()` clears it)
+    /// - same uid, new token: chat sessions survive, the socket is recycled
+    /// - different uid, including nil: the previous identity's chat work ends
     public func setIdentity(uid: String?, token: String?) {
-        let preferences = UserDefaults.standard
+        let current = account
+        if current.uid == uid && current.identityToken == token { return }
+        if let currentUid = current.uid, currentUid == uid, token == nil, current.identityToken != nil {
+            DashXLog.d(tag: #function, "Keeping the held identity token for the current uid")
+            return
+        }
 
-        self.accountUid = uid
-        if let uid = uid {
+        let isActivation = current.uid == nil && current.identityToken == nil && uid != nil
+        let isRefresh = current.uid != nil && current.uid == uid
+
+        let snapshot: AccountSnapshot
+        if isActivation || isRefresh {
+            // Same identity: the session generation is unchanged so in-flight work survives.
+            stateLock.lock()
+            _account.uid = uid
+            _account.identityToken = token
+            _account.tokenEpoch += 1
+            // Awaiting retries get this token; the in-flight load is stale under the new epoch.
+            let superseded = _tokenLoadInFlight
+            _tokenLoadInFlight = nil
+            snapshot = _account
+            stateLock.unlock()
+            superseded?.complete(token)
+        } else {
+            endIdentitySession()
+            snapshot = updateAccount {
+                $0.uid = uid
+                $0.identityToken = token
+                $0.sessionGeneration += 1
+                $0.tokenEpoch += 1
+            }
+        }
+
+        persistIdentity(snapshot)
+        notifyIdentityChanged()
+    }
+
+    func persistIdentity(_ snapshot: AccountSnapshot) {
+        let preferences = UserDefaults.standard
+        if let uid = snapshot.uid {
             preferences.set(uid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         } else {
             preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         }
-
-        ConfigInterceptor.shared.identityToken = token
-        if let token = token {
+        if let token = snapshot.identityToken {
             preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         } else {
             preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
@@ -392,7 +512,7 @@ public class DashXClient {
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "GraphQL errors during identify(): \(errors)")
                     if let completion {
-                        DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.fromGraphQL(errors))) }
                     }
                     return
                 }
@@ -418,6 +538,9 @@ public class DashXClient {
         self.bumpSubscribeGeneration()
         self.clearSubscriptionDeviceInfoRefreshPending()
 
+        // The unsubscribe above captured the outgoing identity itself.
+        endIdentitySession()
+
         let preferences = UserDefaults.standard
 
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
@@ -426,10 +549,17 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_FCM_TOKEN)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION)
 
-        self.accountUid = nil
-        self.accountAnonymousUid = self.generateAnonymousUid(withRegenerate: true)
+        let anonymousUid = self.generateAnonymousUid(withRegenerate: true)
+        updateAccount {
+            $0.uid = nil
+            $0.identityToken = nil
+            $0.anonymousUid = anonymousUid
+            $0.sessionGeneration += 1
+        }
         self.isAdTrackingRequested = false
-        ConfigInterceptor.shared.identityToken = nil
+
+        realtimeRuntime?.onIdentityChanged()
+        publishDirect(.idle)
     }
 
     // MARK: - Analytics
@@ -458,8 +588,9 @@ public class DashXClient {
         queuedTimestamp: Date?,
         completion: ((Bool) -> Void)?
     ) {
-        let effectiveAccountUid = queuedAccountUid ?? self.accountUid
-        let effectiveAnonymousUid = queuedAccountAnonymousUid ?? self.accountAnonymousUid
+        let snapshot = account
+        let effectiveAccountUid = queuedAccountUid ?? snapshot.uid
+        let effectiveAnonymousUid = queuedAccountAnonymousUid ?? snapshot.anonymousUid
 
         guard case .online = NetworkMonitor.shared.connection else {
             DashXLog.d(tag: #function, "Offline — queueing event '\(event)'")
@@ -603,7 +734,7 @@ public class DashXClient {
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "GraphQL errors during trackMessage(): \(errors)")
                     if let completion {
-                        DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.fromGraphQL(errors))) }
                     }
                 } else {
                     DashXLog.d(tag: #function, "Sent track Message with \(String(describing: graphQLResult.data))")
@@ -795,7 +926,7 @@ public class DashXClient {
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during subscribe(): \(errors)")
                     if let completion {
-                        DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                        DispatchQueue.main.async { completion(.failure(DashXClientError.fromGraphQL(errors))) }
                     }
                     return
                 }
@@ -913,7 +1044,7 @@ public class DashXClient {
                     if let errors = graphQLResult.errors, !errors.isEmpty {
                         DashXLog.e(tag: #function, "Encountered GraphQL errors during unsubscribe(): \(errors)")
                         if let completion {
-                            DispatchQueue.main.async { completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" }))) }
+                            DispatchQueue.main.async { completion(.failure(DashXClientError.fromGraphQL(errors))) }
                         }
                         return
                     }
@@ -966,7 +1097,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during fetchStoredPreferences(): \(errors)")
-                    completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" })))
+                    completion(.failure(DashXClientError.fromGraphQL(errors)))
                     return
                 }
 
@@ -1075,7 +1206,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during fetchRecord(): \(errors)")
-                    completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" })))
+                    completion(.failure(DashXClientError.fromGraphQL(errors)))
                     return
                 }
                 if let data = graphQLResult.data {
@@ -1119,7 +1250,7 @@ public class DashXClient {
             case .success(let graphQLResult):
                 if let errors = graphQLResult.errors, !errors.isEmpty {
                     DashXLog.e(tag: #function, "Encountered GraphQL errors during searchRecords(): \(errors)")
-                    completion(.failure(DashXClientError.graphQLErrors(errors.map { $0.message ?? "" })))
+                    completion(.failure(DashXClientError.fromGraphQL(errors)))
                     return
                 }
                 if let data = graphQLResult.data {

@@ -7,8 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00C444A47673E856FE7DFE3D /* ChatTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F521BAB32990E4425790BDA /* ChatTestSupport.swift */; };
+		00D4F673D624384E048662DE /* DashXClient+Identity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2E1488249CE5F02D0DF2304 /* DashXClient+Identity.swift */; };
 		013796CC03989DA1DF78B282 /* Asset.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 198672558793BBCEF70BF1C1 /* Asset.graphql.swift */; };
 		03569771BED4D84C87CB94CE /* SearchRecordsInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F25C0C0876C7A0EC68CB4D9 /* SearchRecordsInput.graphql.swift */; };
+		03EDC782F35382F63B78200B /* AuthRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDE90B35D89749D0CA19C86 /* AuthRetryPolicyTests.swift */; };
+		04F74A6373B27FFE5DD3E8A1 /* FetchInAppChatMessagesQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC6037E8F06E46FD6D76148 /* FetchInAppChatMessagesQuery.graphql.swift */; };
+		0637C4D2BB08EA5B30698B5A /* ChatOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BA9B95988DCD2B744A85A11 /* ChatOperations.swift */; };
 		07F651C6692D2894F769642F /* DashXNotificationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE1EE084834640BB914A1F2 /* DashXNotificationModels.swift */; };
 		09460548D9762A55346FB409 /* UUID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1505B1118198719A661176D9 /* UUID.swift */; };
 		0A4B4B4DFA2EC6676EBC4AC1 /* TrackMessageMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5A23326AD46A412AFB6353 /* TrackMessageMutation.graphql.swift */; };
@@ -16,42 +21,62 @@
 		126156D66F53568631726A6B /* EventQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 253A411C4E6010A53EBDBD3D /* EventQueueTests.swift */; };
 		12EA69F51B88BAD49A971278 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B16FDB2C8F9591DC0317688 /* Constants.swift */; };
 		13E61894BB9C79152753412F /* FetchStoredPreferencesResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398878A5D955FC46C8E9F36F /* FetchStoredPreferencesResponse.graphql.swift */; };
+		13F639E1548AB93D06996923 /* ChatConversationContext.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = C451572BD1FF81D8E10C815E /* ChatConversationContext.graphql.swift */; };
+		152A32E7D7F730F7073F136B /* RealtimeCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358EB83F7E689E69DB5D7631 /* RealtimeCodecTests.swift */; };
 		160C08F3746EC415BA3ABCDC /* DashXBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E31471304B5E32062770726F /* DashXBrowser.swift */; };
 		162ADB3D5D80FF5495B155B8 /* SystemContextAppInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 097DAE886334C1329E9F5C90 /* SystemContextAppInput.graphql.swift */; };
+		193CD7B4D1159F0332F40052 /* DashXPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B317005B781003C2B915C9F /* DashXPush.swift */; };
+		1CA10946EDFCB8ADBA7342B6 /* DashXChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EF07C904C999CE930852BAC /* DashXChatModels.swift */; };
+		1DE23E8442C6CC67838C27D0 /* DashXRealtimeMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D9FF22C8ED96FFBB3D10D7 /* DashXRealtimeMessage.swift */; };
+		209B25C2C345451ECF9F40A7 /* PushRuntimeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129E1DD8208C6DF24144DEEA /* PushRuntimeState.swift */; };
+		23E86E16AF464776F36D8042 /* AssignedGroupSummary.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190E0491282A5987E213CE69 /* AssignedGroupSummary.graphql.swift */; };
 		25E5ECB5694843AD30E2A7AF /* EventQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CEBCEBEFCEF16059765705E /* EventQueue.swift */; };
 		287A57CFA38ED25F2FFD1141 /* FetchStoredPreferencesQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B61DB55AD04B42081872D28 /* FetchStoredPreferencesQuery.graphql.swift */; };
 		2BF932CA0A1725643D260065 /* SystemContextCampaignInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F28D79EF9208747F8C4F34E /* SystemContextCampaignInput.graphql.swift */; };
 		2D74E70D77C1BB0325113B5F /* ErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37C28258E747A250B410164 /* ErrorTests.swift */; };
+		2E085387652733C7D9AE2381 /* DashXPushTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F094F41067734A8824B41A /* DashXPushTests.swift */; };
 		333560D1DC2EEFBA628B261C /* DashXSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D7489EA7020ABD5A5236DF /* DashXSceneDelegate.swift */; };
 		33B46579509AE9112F719C5F /* FetchRecordInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1251A1DD23E52CA6D8E171F5 /* FetchRecordInput.graphql.swift */; };
 		3569109B954E91180069D820 /* AssetUploadStatus.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159C65CFB8AC4892DBBC44D /* AssetUploadStatus.graphql.swift */; };
 		37393808A1CD0C422AA3BB62 /* Contact.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29763997318D7EDF3BADD1F9 /* Contact.graphql.swift */; };
 		3B3846B691EE3572114C2C65 /* SystemContextNetworkInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B23E780F9C7292213A5100F /* SystemContextNetworkInput.graphql.swift */; };
+		4012E674315C4E62BAC86707 /* FetchInAppChatConversationsQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C8A4FDDE81282CEE8F6D64 /* FetchInAppChatConversationsQuery.graphql.swift */; };
 		4277CF31FE0B56CC85E7EEA0 /* DashX.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 61E1D214DE07D7230206B1C6 /* DashX.framework */; };
+		44FA355C4F341BCCDC7145A0 /* ChatConversationSummary.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7779083E397471E7B8D095AA /* ChatConversationSummary.graphql.swift */; };
 		4523FE1CF831A4CAF92FC834 /* MessageTrackingEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C29723CC258DF1A4D7394A3 /* MessageTrackingEvent.swift */; };
 		47B7B0EE00E2DD14F79C4E99 /* TrackMessageStatus.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA4F0274729BF55DCD2F3A1B /* TrackMessageStatus.graphql.swift */; };
+		4F9BCC48ED2DD20DE22AD7B1 /* ResolveInAppChatConversationMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660A151B10D0E0D6BE877995 /* ResolveInAppChatConversationMutation.graphql.swift */; };
 		4FA02E799169FA91EF1CC8E2 /* SchemaConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB30356EE2C13EE2FEA7EF0 /* SchemaConfiguration.swift */; };
 		4FBB57B8E81D8400DE7B3C90 /* UABuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 205EC90826E33053B66FADFB /* UABuilder.swift */; };
 		532EC2D9BF08BB7BB1A55A3B /* TrackEventMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = A61C2F3A3C628455C709D0DE /* TrackEventMutation.graphql.swift */; };
+		5429538D329B45943163AD11 /* SummarizeInAppChatMessagesResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6EF2FB40EEF016AFFA10CB /* SummarizeInAppChatMessagesResponse.graphql.swift */; };
 		54ECDD2293C6F30B7F5DEC07 /* SearchRecordsQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774808CBBDBDB50693030F64 /* SearchRecordsQuery.graphql.swift */; };
 		56EA16442E6B6AA31098BE5A /* SaveStoredPreferencesResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2063694A9273759F84A0C3ED /* SaveStoredPreferencesResponse.graphql.swift */; };
 		56F8F3BA3C0DD669F890A0E0 /* DashXDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204A2D14249C25871E9BBBBA /* DashXDataTests.swift */; };
+		5CA87646291E857DDB460A3D /* AuthRetryInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2609F6ACA8F03720F20C9 /* AuthRetryInterceptor.swift */; };
+		5DF7C36E1BCAB4A56E191778 /* SendInAppChatMessageMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD75A8A531DEC809767C8171 /* SendInAppChatMessageMutation.graphql.swift */; };
 		67901E0B60E5B04A1396A3D0 /* ContactKind.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01267ED6350A0CC2A9347B25 /* ContactKind.graphql.swift */; };
 		68AAD26EDC5F980F01F5C535 /* SDKTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172694CD65974B612FAEB2B1 /* SDKTests.swift */; };
 		6937B3027B73969FE8AEA3AB /* SaveStoredPreferencesMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD7448B3775046745DC4B56 /* SaveStoredPreferencesMutation.graphql.swift */; };
 		697CC55A4786C3C446EB288B /* AdvertisingMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF37A7FD8F4CEA4820C01CC9 /* AdvertisingMonitor.swift */; };
 		6A7745BC9F77775D04677D2D /* ModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4969845F44F23610A6B667 /* ModelsTests.swift */; };
+		6F5B3FDB88309D92D0A99D3B /* DashXChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB36D82DAE07CFB8FDEF7FD0 /* DashXChat.swift */; };
 		73703E00ED231AB7B30C0C26 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370AED59CAAF59E3D77EE8B /* Utils.swift */; };
 		74CE1BE92360A0D4255E370F /* ApolloAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 7ACD41EDD9EF462B03348AEE /* ApolloAPI */; };
 		7C49674BE1D6C76A587EC165 /* UnsubscribeContactMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = D045C590AEB908C8AC52CC93 /* UnsubscribeContactMutation.graphql.swift */; };
+		7FFF5AE7AC98E57505E9C159 /* DashXNotificationServiceExtension.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 98B176F1249F982A4599D27E /* DashXNotificationServiceExtension.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		800D18B32C821FF8AF5400D2 /* SystemContextInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CE4AD72B3D560A9952B8AC /* SystemContextInput.graphql.swift */; };
+		80AEBB98683AA8426950E683 /* ChatSessionGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C476C862D474E6BAE4C08C2 /* ChatSessionGuardTests.swift */; };
 		85D5303AF9C18C8B3C469B18 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C132373BA08A940D481F5EBA /* Decimal.swift */; };
+		86E4D02D097CE71D310A500D /* ChatConversationSummaryFragment.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 764D643E010C8F750126CE74 /* ChatConversationSummaryFragment.graphql.swift */; };
 		8B06C33C5E4ACF6386A72914 /* UtilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4EA69FF1D7C8C5E39B5438A /* UtilsTests.swift */; };
+		8DF892DF18906798BCEEDDC0 /* SummarizeInAppChatUnreadQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4054E2218F3AB2F10E38E2DF /* SummarizeInAppChatUnreadQuery.graphql.swift */; };
 		9192DB54FEBC69B6FC35F339 /* TrackEventInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417E834859EBBF8F065EA4F8 /* TrackEventInput.graphql.swift */; };
 		94788687C9052694F4888277 /* DashXNotificationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE1EE084834640BB914A1F2 /* DashXNotificationModels.swift */; };
 		973970BC23158B9FE92F48BD /* DashXNotificationServiceExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA1CFC59052FDB460766AB3 /* DashXNotificationServiceExtension.swift */; };
 		98E354E40C5485AA1AAE1923 /* FetchRecordQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEB2923909748CC9E036A0E8 /* FetchRecordQuery.graphql.swift */; };
 		9CF9894F42D9FE07E1294769 /* SystemContextLibraryInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81521A2D53F5399A98A24919 /* SystemContextLibraryInput.graphql.swift */; };
+		9D9599BF373B57D98FD28638 /* SummarizeInAppChatMessagesQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E82903732E324406A65310 /* SummarizeInAppChatMessagesQuery.graphql.swift */; };
 		9FEEB5EBCE9D57887AC6F767 /* PrepareAssetMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6528FEA0EFFDAE5420968C71 /* PrepareAssetMutation.graphql.swift */; };
 		A01DA7FD7C1DA8B6E84C5955 /* SaveStoredPreferencesInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E54A735C35B011A56160C47 /* SaveStoredPreferencesInput.graphql.swift */; };
 		A1CCFED6D06CC415919CFB60 /* SystemContextOsInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = C493552F8F396B4105FD38D2 /* SystemContextOsInput.graphql.swift */; };
@@ -60,6 +85,7 @@
 		A4B10D5B61EE7810D9D710D9 /* TrackMessageResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052C2F0E0C20906696BFBDE1 /* TrackMessageResponse.graphql.swift */; };
 		AD04042C92C6BB79585CD01E /* DashXDateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE36AF47F28934B30640115 /* DashXDateFormatter.swift */; };
 		AD121B1B98F9B291AC5D0477 /* DashXLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B71ED0B46107DDE5BD91326 /* DashXLog.swift */; };
+		AD8DA726D477FEB93B63E098 /* RealtimeRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D027C46049FC95FA2663D00 /* RealtimeRuntimeTests.swift */; };
 		AEB5ED280DCBC5C72BBC5B6C /* SystemContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4610DCAE227CF4FCC18CEB9A /* SystemContext.swift */; };
 		AF2BFABDE7E5E1063E7112B6 /* DashXClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC06EF3F16C15FF6862EA8C6 /* DashXClient.swift */; };
 		AFD4F846005EDA81D5CFD9C2 /* IdentifyAccountMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87537B3BCC7C5CF8872E1FC9 /* IdentifyAccountMutation.graphql.swift */; };
@@ -67,22 +93,37 @@
 		B23842FD8DF2A7425366E531 /* SystemContextLocationInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B11F11D8B276D44417093C /* SystemContextLocationInput.graphql.swift */; };
 		B36D17765A2D76CF4FFFD3CD /* AssetQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599D3A5D17B8BB53147D93E9 /* AssetQuery.graphql.swift */; };
 		B3A16B7E3B2EE340EE39A716 /* SubscribeContactInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 430BA586091221E2B2517536 /* SubscribeContactInput.graphql.swift */; };
+		B57B874A40F11483BDC3EA50 /* MarkInAppChatConversationReadResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B4E5ACC15BF361CD58EE8F /* MarkInAppChatConversationReadResponse.graphql.swift */; };
+		B6B5FCA01A68EEF6E0435EEE /* SummarizeInAppChatConversationsQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1F8D171875B3DF84AA2BE0 /* SummarizeInAppChatConversationsQuery.graphql.swift */; };
 		B805674E304D3CEB70381CAE /* DashXNotificationServiceExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B176F1249F982A4599D27E /* DashXNotificationServiceExtension.framework */; };
+		BA210E7A5D7B119D5635B2BA /* DashXConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 837FE9BBF8D9890564B776FB /* DashXConnectionState.swift */; };
+		BACB009E886EF10755506CF8 /* ChatConversationTopic.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2667DB27A439CE140422AE /* ChatConversationTopic.graphql.swift */; };
 		BC58448E5CA6B2019F84EE85 /* Query.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7713E167B8537B48B2A9C8F0 /* Query.graphql.swift */; };
 		BDB23DC3A8C68A286AB05DA6 /* PrepareAssetInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 775F115A52F66A6799A24550 /* PrepareAssetInput.graphql.swift */; };
 		BE07A28A959251510AB0DAFE /* TrackEventResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAEA05310D159BAA078F6D0 /* TrackEventResponse.graphql.swift */; };
+		BFD4118AE4CACF53916AC8C3 /* MarkInAppChatConversationReadMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC6FBE6FAFFFF6B8C11C98D /* MarkInAppChatConversationReadMutation.graphql.swift */; };
 		C083CDB88AA852037EE05444 /* Account.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BAC3918FADCA31DF4347E9 /* Account.graphql.swift */; };
 		C1813BCCAB4D22EA35A25984 /* DashXGql.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B491F752FDCEA2B81A120A /* DashXGql.graphql.swift */; };
 		C1E7D3F6864AC158C3315BDF /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0985E2C0EC1C8903FE5D4FB /* NetworkMonitor.swift */; };
+		C9C7E34FB94B161E7CC4B8CA /* SummarizeInAppChatUnreadResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = A303AD0E323B83A22DC0CED8 /* SummarizeInAppChatUnreadResponse.graphql.swift */; };
+		CB10C32DEB73CDB68B366279 /* SummarizeInAppChatConversationsResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B71AFF92B3B97C44DC6D06 /* SummarizeInAppChatConversationsResponse.graphql.swift */; };
 		CD0237D85D281AEC0CAA4C58 /* SystemContextDeviceInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = F77F7035A50265F45B507BBB /* SystemContextDeviceInput.graphql.swift */; };
 		D00E318C7E3AF31FE31B4084 /* UnsubscribeContactInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917DBFD0D399EB8A0CCC3ED5 /* UnsubscribeContactInput.graphql.swift */; };
+		D6DBC5DF04BF6F484E613072 /* ChatMessageFragment.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7B5DD2A01F9003B4B3AA4F /* ChatMessageFragment.graphql.swift */; };
+		D8626273658E0CF0302F43A4 /* DashXClient+Realtime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F17217D7B3AC5E37CCB215F /* DashXClient+Realtime.swift */; };
+		DAF3E7E244F2A91CDD25FDEB /* TokenProviderRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F48667A23AAFF65BC1594E4 /* TokenProviderRecoveryTests.swift */; };
 		DB9972D24DD282F6CE874DF0 /* FetchStoredPreferencesInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE80A398F424FA7FC72FDE9 /* FetchStoredPreferencesInput.graphql.swift */; };
+		DF81B66C9CF1344A96FAF1DA /* DashXTokenProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4ED0CDBB4B9896BAED5EB20 /* DashXTokenProvider.swift */; };
 		E425F6FB9129EDC8EC121FDD /* SchemaMetadata.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B1A5362B53EA62EADCEC9F /* SchemaMetadata.graphql.swift */; };
 		E4A7CE997E1509C535D1D218 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69D141910A4723630D4CFA22 /* UserNotifications.framework */; };
 		E77DB210AD02B5BF57A63C66 /* Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AE4C6EF85AB2DDB00FBDCC /* Network.swift */; };
 		E839A57E84524A15F533512B /* UnsubscribeContactResponse.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D29D8274DC0C62C1209EC4 /* UnsubscribeContactResponse.graphql.swift */; };
 		E992F5E6857992C3F9830BF8 /* SubscribeContactMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E1F30600ECE455B68DD53CF /* SubscribeContactMutation.graphql.swift */; };
+		EA800A250D8EC3E42D42C2BC /* FetchInAppChatConversationQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A40013892E54C7F1AF176CC /* FetchInAppChatConversationQuery.graphql.swift */; };
 		EFF621B2F915980234E7A8EA /* DashXNotificationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B940469ABF4501D320C9A20D /* DashXNotificationServiceTests.swift */; };
+		F062502CDE32A9341C7F0E58 /* ConversationSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACE1C9781E686D91B2D8B97 /* ConversationSessionTests.swift */; };
+		F0DD24FED81D369F23DD8CBE /* RealtimeRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688E207BCA94052B17365278 /* RealtimeRuntime.swift */; };
+		F18BF44BC6AE0CDC1EB1A301 /* Message.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31798431E6BDF7ACA74936B /* Message.graphql.swift */; };
 		F1AB50478B9A7E6ED2546D52 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = B851EC0FB4D0DA772ED73817 /* JSON.swift */; };
 		F4975B518434428BA4CA4E8A /* Timestamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B19D7E30F18B449E78A45D9 /* Timestamp.swift */; };
 		F4A0E185E8AFC321903D50B3 /* Apollo in Frameworks */ = {isa = PBXBuildFile; productRef = 16F6E7A6BFFBD60188DE0EEB /* Apollo */; };
@@ -111,6 +152,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		C4B205E759B9D9DE56B53AB8 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				7FFF5AE7AC98E57505E9C159 /* DashXNotificationServiceExtension.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C687662E4F21F5A89882B67B /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -130,33 +182,47 @@
 		097DAE886334C1329E9F5C90 /* SystemContextAppInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextAppInput.graphql.swift; sourceTree = "<group>"; };
 		09BAC3918FADCA31DF4347E9 /* Account.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.graphql.swift; sourceTree = "<group>"; };
 		0A4969845F44F23610A6B667 /* ModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelsTests.swift; sourceTree = "<group>"; };
+		0ACE1C9781E686D91B2D8B97 /* ConversationSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationSessionTests.swift; sourceTree = "<group>"; };
+		0E2667DB27A439CE140422AE /* ChatConversationTopic.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatConversationTopic.graphql.swift; sourceTree = "<group>"; };
 		1251A1DD23E52CA6D8E171F5 /* FetchRecordInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchRecordInput.graphql.swift; sourceTree = "<group>"; };
+		129E1DD8208C6DF24144DEEA /* PushRuntimeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRuntimeState.swift; sourceTree = "<group>"; };
+		14B4E5ACC15BF361CD58EE8F /* MarkInAppChatConversationReadResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkInAppChatConversationReadResponse.graphql.swift; sourceTree = "<group>"; };
 		14D7489EA7020ABD5A5236DF /* DashXSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXSceneDelegate.swift; sourceTree = "<group>"; };
 		1505B1118198719A661176D9 /* UUID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UUID.swift; sourceTree = "<group>"; };
 		172694CD65974B612FAEB2B1 /* SDKTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDKTests.swift; sourceTree = "<group>"; };
+		190E0491282A5987E213CE69 /* AssignedGroupSummary.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssignedGroupSummary.graphql.swift; sourceTree = "<group>"; };
 		198672558793BBCEF70BF1C1 /* Asset.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Asset.graphql.swift; sourceTree = "<group>"; };
+		1B6EF2FB40EEF016AFFA10CB /* SummarizeInAppChatMessagesResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeInAppChatMessagesResponse.graphql.swift; sourceTree = "<group>"; };
 		1BE80A398F424FA7FC72FDE9 /* FetchStoredPreferencesInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchStoredPreferencesInput.graphql.swift; sourceTree = "<group>"; };
+		1F48667A23AAFF65BC1594E4 /* TokenProviderRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenProviderRecoveryTests.swift; sourceTree = "<group>"; };
 		201875DED5AA8BAAE1B54E7C /* Mutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mutation.graphql.swift; sourceTree = "<group>"; };
 		204A2D14249C25871E9BBBBA /* DashXDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXDataTests.swift; sourceTree = "<group>"; };
 		205EC90826E33053B66FADFB /* UABuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UABuilder.swift; sourceTree = "<group>"; };
 		2063694A9273759F84A0C3ED /* SaveStoredPreferencesResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStoredPreferencesResponse.graphql.swift; sourceTree = "<group>"; };
 		253A411C4E6010A53EBDBD3D /* EventQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventQueueTests.swift; sourceTree = "<group>"; };
+		26B71AFF92B3B97C44DC6D06 /* SummarizeInAppChatConversationsResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeInAppChatConversationsResponse.graphql.swift; sourceTree = "<group>"; };
 		29763997318D7EDF3BADD1F9 /* Contact.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Contact.graphql.swift; sourceTree = "<group>"; };
 		2B16FDB2C8F9591DC0317688 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		2B19D7E30F18B449E78A45D9 /* Timestamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timestamp.swift; sourceTree = "<group>"; };
 		2D74B7C3FF07E7A8713C0933 /* DashXApplicationLifecycleCallbacks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXApplicationLifecycleCallbacks.swift; sourceTree = "<group>"; };
 		2E1F30600ECE455B68DD53CF /* SubscribeContactMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribeContactMutation.graphql.swift; sourceTree = "<group>"; };
+		32D9FF22C8ED96FFBB3D10D7 /* DashXRealtimeMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXRealtimeMessage.swift; sourceTree = "<group>"; };
 		3370AED59CAAF59E3D77EE8B /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		35093877B20A87072BAA67A2 /* DashXTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DashXTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		358EB83F7E689E69DB5D7631 /* RealtimeCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeCodecTests.swift; sourceTree = "<group>"; };
 		360CDECD8F13B0C644CB699A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		36CE4AD72B3D560A9952B8AC /* SystemContextInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextInput.graphql.swift; sourceTree = "<group>"; };
 		37B491F752FDCEA2B81A120A /* DashXGql.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXGql.graphql.swift; sourceTree = "<group>"; };
 		398878A5D955FC46C8E9F36F /* FetchStoredPreferencesResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchStoredPreferencesResponse.graphql.swift; sourceTree = "<group>"; };
+		3B317005B781003C2B915C9F /* DashXPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXPush.swift; sourceTree = "<group>"; };
 		3B71ED0B46107DDE5BD91326 /* DashXLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXLog.swift; sourceTree = "<group>"; };
+		3BC6037E8F06E46FD6D76148 /* FetchInAppChatMessagesQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchInAppChatMessagesQuery.graphql.swift; sourceTree = "<group>"; };
 		3FDADDB4626EE073147F4E28 /* DashXUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXUIViewController.swift; sourceTree = "<group>"; };
+		4054E2218F3AB2F10E38E2DF /* SummarizeInAppChatUnreadQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeInAppChatUnreadQuery.graphql.swift; sourceTree = "<group>"; };
 		417E834859EBBF8F065EA4F8 /* TrackEventInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackEventInput.graphql.swift; sourceTree = "<group>"; };
 		430BA586091221E2B2517536 /* SubscribeContactInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribeContactInput.graphql.swift; sourceTree = "<group>"; };
 		4610DCAE227CF4FCC18CEB9A /* SystemContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContext.swift; sourceTree = "<group>"; };
+		4A40013892E54C7F1AF176CC /* FetchInAppChatConversationQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchInAppChatConversationQuery.graphql.swift; sourceTree = "<group>"; };
 		4B61DB55AD04B42081872D28 /* FetchStoredPreferencesQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchStoredPreferencesQuery.graphql.swift; sourceTree = "<group>"; };
 		4BE36AF47F28934B30640115 /* DashXDateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXDateFormatter.swift; sourceTree = "<group>"; };
 		4C29723CC258DF1A4D7394A3 /* MessageTrackingEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageTrackingEvent.swift; sourceTree = "<group>"; };
@@ -165,41 +231,67 @@
 		57068999E218B8C123B47AE5 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		599D3A5D17B8BB53147D93E9 /* AssetQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetQuery.graphql.swift; sourceTree = "<group>"; };
 		5AB30356EE2C13EE2FEA7EF0 /* SchemaConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaConfiguration.swift; sourceTree = "<group>"; };
+		5D027C46049FC95FA2663D00 /* RealtimeRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeRuntimeTests.swift; sourceTree = "<group>"; };
+		5F17217D7B3AC5E37CCB215F /* DashXClient+Realtime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashXClient+Realtime.swift"; sourceTree = "<group>"; };
 		5F28D79EF9208747F8C4F34E /* SystemContextCampaignInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextCampaignInput.graphql.swift; sourceTree = "<group>"; };
+		5F521BAB32990E4425790BDA /* ChatTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTestSupport.swift; sourceTree = "<group>"; };
 		6160B03B879C8D64C064C5D9 /* IdentifyAccountInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifyAccountInput.graphql.swift; sourceTree = "<group>"; };
 		61E1D214DE07D7230206B1C6 /* DashX.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DashX.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		64FFF31D482E649C49255D77 /* TrackMessageInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMessageInput.graphql.swift; sourceTree = "<group>"; };
 		6528FEA0EFFDAE5420968C71 /* PrepareAssetMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareAssetMutation.graphql.swift; sourceTree = "<group>"; };
+		660A151B10D0E0D6BE877995 /* ResolveInAppChatConversationMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResolveInAppChatConversationMutation.graphql.swift; sourceTree = "<group>"; };
 		67B1A5362B53EA62EADCEC9F /* SchemaMetadata.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaMetadata.graphql.swift; sourceTree = "<group>"; };
+		688E207BCA94052B17365278 /* RealtimeRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeRuntime.swift; sourceTree = "<group>"; };
 		69D141910A4723630D4CFA22 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		764D643E010C8F750126CE74 /* ChatConversationSummaryFragment.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatConversationSummaryFragment.graphql.swift; sourceTree = "<group>"; };
 		7713E167B8537B48B2A9C8F0 /* Query.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.graphql.swift; sourceTree = "<group>"; };
 		774808CBBDBDB50693030F64 /* SearchRecordsQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchRecordsQuery.graphql.swift; sourceTree = "<group>"; };
 		775F115A52F66A6799A24550 /* PrepareAssetInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareAssetInput.graphql.swift; sourceTree = "<group>"; };
+		7779083E397471E7B8D095AA /* ChatConversationSummary.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatConversationSummary.graphql.swift; sourceTree = "<group>"; };
 		7B23E780F9C7292213A5100F /* SystemContextNetworkInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextNetworkInput.graphql.swift; sourceTree = "<group>"; };
+		7BA9B95988DCD2B744A85A11 /* ChatOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatOperations.swift; sourceTree = "<group>"; };
+		7C476C862D474E6BAE4C08C2 /* ChatSessionGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSessionGuardTests.swift; sourceTree = "<group>"; };
 		7CEBCEBEFCEF16059765705E /* EventQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventQueue.swift; sourceTree = "<group>"; };
 		81521A2D53F5399A98A24919 /* SystemContextLibraryInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextLibraryInput.graphql.swift; sourceTree = "<group>"; };
+		837FE9BBF8D9890564B776FB /* DashXConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXConnectionState.swift; sourceTree = "<group>"; };
 		86D29D8274DC0C62C1209EC4 /* UnsubscribeContactResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeContactResponse.graphql.swift; sourceTree = "<group>"; };
 		87537B3BCC7C5CF8872E1FC9 /* IdentifyAccountMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifyAccountMutation.graphql.swift; sourceTree = "<group>"; };
+		8A7B5DD2A01F9003B4B3AA4F /* ChatMessageFragment.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageFragment.graphql.swift; sourceTree = "<group>"; };
 		8DAEA05310D159BAA078F6D0 /* TrackEventResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackEventResponse.graphql.swift; sourceTree = "<group>"; };
+		8DDE90B35D89749D0CA19C86 /* AuthRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRetryPolicyTests.swift; sourceTree = "<group>"; };
+		8EF07C904C999CE930852BAC /* DashXChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXChatModels.swift; sourceTree = "<group>"; };
 		917DBFD0D399EB8A0CCC3ED5 /* UnsubscribeContactInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeContactInput.graphql.swift; sourceTree = "<group>"; };
 		98B176F1249F982A4599D27E /* DashXNotificationServiceExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DashXNotificationServiceExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		98C8A4FDDE81282CEE8F6D64 /* FetchInAppChatConversationsQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchInAppChatConversationsQuery.graphql.swift; sourceTree = "<group>"; };
 		9AD7448B3775046745DC4B56 /* SaveStoredPreferencesMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStoredPreferencesMutation.graphql.swift; sourceTree = "<group>"; };
 		9D01879BAE4D6D2A4E6B98D2 /* DashXNotificationServiceExtensionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DashXNotificationServiceExtensionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E54A735C35B011A56160C47 /* SaveStoredPreferencesInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStoredPreferencesInput.graphql.swift; sourceTree = "<group>"; };
+		9EC6FBE6FAFFFF6B8C11C98D /* MarkInAppChatConversationReadMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkInAppChatConversationReadMutation.graphql.swift; sourceTree = "<group>"; };
 		A0985E2C0EC1C8903FE5D4FB /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		A159C65CFB8AC4892DBBC44D /* AssetUploadStatus.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetUploadStatus.graphql.swift; sourceTree = "<group>"; };
+		A303AD0E323B83A22DC0CED8 /* SummarizeInAppChatUnreadResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeInAppChatUnreadResponse.graphql.swift; sourceTree = "<group>"; };
 		A61C2F3A3C628455C709D0DE /* TrackEventMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackEventMutation.graphql.swift; sourceTree = "<group>"; };
 		A7AE4C6EF85AB2DDB00FBDCC /* Network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Network.swift; sourceTree = "<group>"; };
 		ABA1CFC59052FDB460766AB3 /* DashXNotificationServiceExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXNotificationServiceExtension.swift; sourceTree = "<group>"; };
 		AE5A23326AD46A412AFB6353 /* TrackMessageMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMessageMutation.graphql.swift; sourceTree = "<group>"; };
 		AEB2923909748CC9E036A0E8 /* FetchRecordQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchRecordQuery.graphql.swift; sourceTree = "<group>"; };
+		B2E1488249CE5F02D0DF2304 /* DashXClient+Identity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashXClient+Identity.swift"; sourceTree = "<group>"; };
+		B4ED0CDBB4B9896BAED5EB20 /* DashXTokenProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXTokenProvider.swift; sourceTree = "<group>"; };
 		B851EC0FB4D0DA772ED73817 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		B940469ABF4501D320C9A20D /* DashXNotificationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXNotificationServiceTests.swift; sourceTree = "<group>"; };
+		BB1F8D171875B3DF84AA2BE0 /* SummarizeInAppChatConversationsQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeInAppChatConversationsQuery.graphql.swift; sourceTree = "<group>"; };
+		C0F094F41067734A8824B41A /* DashXPushTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXPushTests.swift; sourceTree = "<group>"; };
 		C132373BA08A940D481F5EBA /* Decimal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decimal.swift; sourceTree = "<group>"; };
+		C1D2609F6ACA8F03720F20C9 /* AuthRetryInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRetryInterceptor.swift; sourceTree = "<group>"; };
+		C2E82903732E324406A65310 /* SummarizeInAppChatMessagesQuery.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizeInAppChatMessagesQuery.graphql.swift; sourceTree = "<group>"; };
+		C31798431E6BDF7ACA74936B /* Message.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.graphql.swift; sourceTree = "<group>"; };
+		C451572BD1FF81D8E10C815E /* ChatConversationContext.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatConversationContext.graphql.swift; sourceTree = "<group>"; };
 		C493552F8F396B4105FD38D2 /* SystemContextOsInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextOsInput.graphql.swift; sourceTree = "<group>"; };
+		CD75A8A531DEC809767C8171 /* SendInAppChatMessageMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendInAppChatMessageMutation.graphql.swift; sourceTree = "<group>"; };
 		D045C590AEB908C8AC52CC93 /* UnsubscribeContactMutation.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeContactMutation.graphql.swift; sourceTree = "<group>"; };
 		D4EA69FF1D7C8C5E39B5438A /* UtilsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UtilsTests.swift; sourceTree = "<group>"; };
 		D6B11F11D8B276D44417093C /* SystemContextLocationInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextLocationInput.graphql.swift; sourceTree = "<group>"; };
+		DB36D82DAE07CFB8FDEF7FD0 /* DashXChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXChat.swift; sourceTree = "<group>"; };
 		DC06EF3F16C15FF6862EA8C6 /* DashXClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXClient.swift; sourceTree = "<group>"; };
 		E31471304B5E32062770726F /* DashXBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashXBrowser.swift; sourceTree = "<group>"; };
 		ED707184539A7B20614CFD40 /* SystemContextScreenInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextScreenInput.graphql.swift; sourceTree = "<group>"; };
@@ -254,16 +346,34 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		12B7BF6F6CAB698B8D5F5506 /* Push */ = {
+			isa = PBXGroup;
+			children = (
+				3B317005B781003C2B915C9F /* DashXPush.swift */,
+				129E1DD8208C6DF24144DEEA /* PushRuntimeState.swift */,
+			);
+			path = Push;
+			sourceTree = "<group>";
+		};
 		2C2D70F421191664F3713A07 /* Objects */ = {
 			isa = PBXGroup;
 			children = (
 				09BAC3918FADCA31DF4347E9 /* Account.graphql.swift */,
 				198672558793BBCEF70BF1C1 /* Asset.graphql.swift */,
+				190E0491282A5987E213CE69 /* AssignedGroupSummary.graphql.swift */,
+				C451572BD1FF81D8E10C815E /* ChatConversationContext.graphql.swift */,
+				7779083E397471E7B8D095AA /* ChatConversationSummary.graphql.swift */,
+				0E2667DB27A439CE140422AE /* ChatConversationTopic.graphql.swift */,
 				29763997318D7EDF3BADD1F9 /* Contact.graphql.swift */,
 				398878A5D955FC46C8E9F36F /* FetchStoredPreferencesResponse.graphql.swift */,
+				14B4E5ACC15BF361CD58EE8F /* MarkInAppChatConversationReadResponse.graphql.swift */,
+				C31798431E6BDF7ACA74936B /* Message.graphql.swift */,
 				201875DED5AA8BAAE1B54E7C /* Mutation.graphql.swift */,
 				7713E167B8537B48B2A9C8F0 /* Query.graphql.swift */,
 				2063694A9273759F84A0C3ED /* SaveStoredPreferencesResponse.graphql.swift */,
+				26B71AFF92B3B97C44DC6D06 /* SummarizeInAppChatConversationsResponse.graphql.swift */,
+				1B6EF2FB40EEF016AFFA10CB /* SummarizeInAppChatMessagesResponse.graphql.swift */,
+				A303AD0E323B83A22DC0CED8 /* SummarizeInAppChatUnreadResponse.graphql.swift */,
 				8DAEA05310D159BAA078F6D0 /* TrackEventResponse.graphql.swift */,
 				052C2F0E0C20906696BFBDE1 /* TrackMessageResponse.graphql.swift */,
 				86D29D8274DC0C62C1209EC4 /* UnsubscribeContactResponse.graphql.swift */,
@@ -274,12 +384,20 @@
 		2C43685924536A2FD21099DF /* SDKTests */ = {
 			isa = PBXGroup;
 			children = (
+				8DDE90B35D89749D0CA19C86 /* AuthRetryPolicyTests.swift */,
+				7C476C862D474E6BAE4C08C2 /* ChatSessionGuardTests.swift */,
+				5F521BAB32990E4425790BDA /* ChatTestSupport.swift */,
+				0ACE1C9781E686D91B2D8B97 /* ConversationSessionTests.swift */,
 				204A2D14249C25871E9BBBBA /* DashXDataTests.swift */,
 				B940469ABF4501D320C9A20D /* DashXNotificationServiceTests.swift */,
+				C0F094F41067734A8824B41A /* DashXPushTests.swift */,
 				F37C28258E747A250B410164 /* ErrorTests.swift */,
 				253A411C4E6010A53EBDBD3D /* EventQueueTests.swift */,
 				0A4969845F44F23610A6B667 /* ModelsTests.swift */,
+				358EB83F7E689E69DB5D7631 /* RealtimeCodecTests.swift */,
+				5D027C46049FC95FA2663D00 /* RealtimeRuntimeTests.swift */,
 				172694CD65974B612FAEB2B1 /* SDKTests.swift */,
+				1F48667A23AAFF65BC1594E4 /* TokenProviderRecoveryTests.swift */,
 				D4EA69FF1D7C8C5E39B5438A /* UtilsTests.swift */,
 			);
 			path = SDKTests;
@@ -330,6 +448,7 @@
 		663464E73871FC835B3EED80 /* GraphQL */ = {
 			isa = PBXGroup;
 			children = (
+				70AC10D4BE7B169899C59DF9 /* Fragments */,
 				C0305080B858B49101228029 /* Operations */,
 				DD53BB715D60DAE4BAD70211 /* Schema */,
 				37B491F752FDCEA2B81A120A /* DashXGql.graphql.swift */,
@@ -346,6 +465,15 @@
 				35093877B20A87072BAA67A2 /* DashXTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		70AC10D4BE7B169899C59DF9 /* Fragments */ = {
+			isa = PBXGroup;
+			children = (
+				764D643E010C8F750126CE74 /* ChatConversationSummaryFragment.graphql.swift */,
+				8A7B5DD2A01F9003B4B3AA4F /* ChatMessageFragment.graphql.swift */,
+			);
+			path = Fragments;
 			sourceTree = "<group>";
 		};
 		7738EA0A59CCAB617F094B7C /* Enums */ = {
@@ -369,16 +497,23 @@
 		81A2EBEC624F64A224497BFF /* DashX */ = {
 			isa = PBXGroup;
 			children = (
+				F5BF6812932196261888DE64 /* Chat */,
 				663464E73871FC835B3EED80 /* GraphQL */,
+				12B7BF6F6CAB698B8D5F5506 /* Push */,
+				CA5446582E43C412A66321F0 /* Realtime */,
 				390729E6BB75C83067C34FA5 /* Resources */,
 				EF37A7FD8F4CEA4820C01CC9 /* AdvertisingMonitor.swift */,
+				C1D2609F6ACA8F03720F20C9 /* AuthRetryInterceptor.swift */,
 				2B16FDB2C8F9591DC0317688 /* Constants.swift */,
 				2D74B7C3FF07E7A8713C0933 /* DashXApplicationLifecycleCallbacks.swift */,
 				E31471304B5E32062770726F /* DashXBrowser.swift */,
 				DC06EF3F16C15FF6862EA8C6 /* DashXClient.swift */,
+				B2E1488249CE5F02D0DF2304 /* DashXClient+Identity.swift */,
+				5F17217D7B3AC5E37CCB215F /* DashXClient+Realtime.swift */,
 				4BE36AF47F28934B30640115 /* DashXDateFormatter.swift */,
 				3B71ED0B46107DDE5BD91326 /* DashXLog.swift */,
 				14D7489EA7020ABD5A5236DF /* DashXSceneDelegate.swift */,
+				B4ED0CDBB4B9896BAED5EB20 /* DashXTokenProvider.swift */,
 				3FDADDB4626EE073147F4E28 /* DashXUIViewController.swift */,
 				7CEBCEBEFCEF16059765705E /* EventQueue.swift */,
 				4C29723CC258DF1A4D7394A3 /* MessageTrackingEvent.swift */,
@@ -415,9 +550,15 @@
 			isa = PBXGroup;
 			children = (
 				599D3A5D17B8BB53147D93E9 /* AssetQuery.graphql.swift */,
+				4A40013892E54C7F1AF176CC /* FetchInAppChatConversationQuery.graphql.swift */,
+				98C8A4FDDE81282CEE8F6D64 /* FetchInAppChatConversationsQuery.graphql.swift */,
+				3BC6037E8F06E46FD6D76148 /* FetchInAppChatMessagesQuery.graphql.swift */,
 				AEB2923909748CC9E036A0E8 /* FetchRecordQuery.graphql.swift */,
 				4B61DB55AD04B42081872D28 /* FetchStoredPreferencesQuery.graphql.swift */,
 				774808CBBDBDB50693030F64 /* SearchRecordsQuery.graphql.swift */,
+				BB1F8D171875B3DF84AA2BE0 /* SummarizeInAppChatConversationsQuery.graphql.swift */,
+				C2E82903732E324406A65310 /* SummarizeInAppChatMessagesQuery.graphql.swift */,
+				4054E2218F3AB2F10E38E2DF /* SummarizeInAppChatUnreadQuery.graphql.swift */,
 			);
 			path = Queries;
 			sourceTree = "<group>";
@@ -449,6 +590,16 @@
 			path = Operations;
 			sourceTree = "<group>";
 		};
+		CA5446582E43C412A66321F0 /* Realtime */ = {
+			isa = PBXGroup;
+			children = (
+				837FE9BBF8D9890564B776FB /* DashXConnectionState.swift */,
+				32D9FF22C8ED96FFBB3D10D7 /* DashXRealtimeMessage.swift */,
+				688E207BCA94052B17365278 /* RealtimeRuntime.swift */,
+			);
+			path = Realtime;
+			sourceTree = "<group>";
+		};
 		DD53BB715D60DAE4BAD70211 /* Schema */ = {
 			isa = PBXGroup;
 			children = (
@@ -466,14 +617,27 @@
 			isa = PBXGroup;
 			children = (
 				87537B3BCC7C5CF8872E1FC9 /* IdentifyAccountMutation.graphql.swift */,
+				9EC6FBE6FAFFFF6B8C11C98D /* MarkInAppChatConversationReadMutation.graphql.swift */,
 				6528FEA0EFFDAE5420968C71 /* PrepareAssetMutation.graphql.swift */,
+				660A151B10D0E0D6BE877995 /* ResolveInAppChatConversationMutation.graphql.swift */,
 				9AD7448B3775046745DC4B56 /* SaveStoredPreferencesMutation.graphql.swift */,
+				CD75A8A531DEC809767C8171 /* SendInAppChatMessageMutation.graphql.swift */,
 				2E1F30600ECE455B68DD53CF /* SubscribeContactMutation.graphql.swift */,
 				A61C2F3A3C628455C709D0DE /* TrackEventMutation.graphql.swift */,
 				AE5A23326AD46A412AFB6353 /* TrackMessageMutation.graphql.swift */,
 				D045C590AEB908C8AC52CC93 /* UnsubscribeContactMutation.graphql.swift */,
 			);
 			path = Mutations;
+			sourceTree = "<group>";
+		};
+		F5BF6812932196261888DE64 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				7BA9B95988DCD2B744A85A11 /* ChatOperations.swift */,
+				DB36D82DAE07CFB8FDEF7FD0 /* DashXChat.swift */,
+				8EF07C904C999CE930852BAC /* DashXChatModels.swift */,
+			);
+			path = Chat;
 			sourceTree = "<group>";
 		};
 		F810B9E8C22495EB90815A80 /* CustomScalars */ = {
@@ -534,6 +698,7 @@
 			buildPhases = (
 				323260FFCCC0BE2803226511 /* Sources */,
 				4BE5249E61A7DAC8B99EF6A5 /* Frameworks */,
+				C4B205E759B9D9DE56B53AB8 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -610,8 +775,8 @@
 			targets = (
 				E79B208C33D8BBD25CDD1916 /* DashX */,
 				8739E168D43E6EDFF7A93E76 /* DashXNotificationServiceExtension */,
-				9A6C1E2ADF2980FF7A104A5B /* DashXNotificationServiceExtensionTests */,
 				27266A8ACC894C9536E2D6FD /* DashXTests */,
+				9A6C1E2ADF2980FF7A104A5B /* DashXNotificationServiceExtensionTests */,
 			);
 		};
 /* End PBXProject section */
@@ -637,20 +802,39 @@
 				013796CC03989DA1DF78B282 /* Asset.graphql.swift in Sources */,
 				B36D17765A2D76CF4FFFD3CD /* AssetQuery.graphql.swift in Sources */,
 				3569109B954E91180069D820 /* AssetUploadStatus.graphql.swift in Sources */,
+				23E86E16AF464776F36D8042 /* AssignedGroupSummary.graphql.swift in Sources */,
+				5CA87646291E857DDB460A3D /* AuthRetryInterceptor.swift in Sources */,
+				13F639E1548AB93D06996923 /* ChatConversationContext.graphql.swift in Sources */,
+				44FA355C4F341BCCDC7145A0 /* ChatConversationSummary.graphql.swift in Sources */,
+				86E4D02D097CE71D310A500D /* ChatConversationSummaryFragment.graphql.swift in Sources */,
+				BACB009E886EF10755506CF8 /* ChatConversationTopic.graphql.swift in Sources */,
+				D6DBC5DF04BF6F484E613072 /* ChatMessageFragment.graphql.swift in Sources */,
+				0637C4D2BB08EA5B30698B5A /* ChatOperations.swift in Sources */,
 				12EA69F51B88BAD49A971278 /* Constants.swift in Sources */,
 				37393808A1CD0C422AA3BB62 /* Contact.graphql.swift in Sources */,
 				67901E0B60E5B04A1396A3D0 /* ContactKind.graphql.swift in Sources */,
 				F5AF2AA9E04C383FB2A2C7BD /* DashXApplicationLifecycleCallbacks.swift in Sources */,
 				160C08F3746EC415BA3ABCDC /* DashXBrowser.swift in Sources */,
+				6F5B3FDB88309D92D0A99D3B /* DashXChat.swift in Sources */,
+				1CA10946EDFCB8ADBA7342B6 /* DashXChatModels.swift in Sources */,
+				00D4F673D624384E048662DE /* DashXClient+Identity.swift in Sources */,
+				D8626273658E0CF0302F43A4 /* DashXClient+Realtime.swift in Sources */,
 				AF2BFABDE7E5E1063E7112B6 /* DashXClient.swift in Sources */,
+				BA210E7A5D7B119D5635B2BA /* DashXConnectionState.swift in Sources */,
 				AD04042C92C6BB79585CD01E /* DashXDateFormatter.swift in Sources */,
 				C1813BCCAB4D22EA35A25984 /* DashXGql.graphql.swift in Sources */,
 				AD121B1B98F9B291AC5D0477 /* DashXLog.swift in Sources */,
 				94788687C9052694F4888277 /* DashXNotificationModels.swift in Sources */,
+				193CD7B4D1159F0332F40052 /* DashXPush.swift in Sources */,
+				1DE23E8442C6CC67838C27D0 /* DashXRealtimeMessage.swift in Sources */,
 				333560D1DC2EEFBA628B261C /* DashXSceneDelegate.swift in Sources */,
+				DF81B66C9CF1344A96FAF1DA /* DashXTokenProvider.swift in Sources */,
 				FBAA1A01087DC445E77A7DFF /* DashXUIViewController.swift in Sources */,
 				85D5303AF9C18C8B3C469B18 /* Decimal.swift in Sources */,
 				25E5ECB5694843AD30E2A7AF /* EventQueue.swift in Sources */,
+				EA800A250D8EC3E42D42C2BC /* FetchInAppChatConversationQuery.graphql.swift in Sources */,
+				4012E674315C4E62BAC86707 /* FetchInAppChatConversationsQuery.graphql.swift in Sources */,
+				04F74A6373B27FFE5DD3E8A1 /* FetchInAppChatMessagesQuery.graphql.swift in Sources */,
 				33B46579509AE9112F719C5F /* FetchRecordInput.graphql.swift in Sources */,
 				98E354E40C5485AA1AAE1923 /* FetchRecordQuery.graphql.swift in Sources */,
 				DB9972D24DD282F6CE874DF0 /* FetchStoredPreferencesInput.graphql.swift in Sources */,
@@ -659,6 +843,9 @@
 				FC632BF1F67D92DE8A8206F9 /* IdentifyAccountInput.graphql.swift in Sources */,
 				AFD4F846005EDA81D5CFD9C2 /* IdentifyAccountMutation.graphql.swift in Sources */,
 				F1AB50478B9A7E6ED2546D52 /* JSON.swift in Sources */,
+				BFD4118AE4CACF53916AC8C3 /* MarkInAppChatConversationReadMutation.graphql.swift in Sources */,
+				B57B874A40F11483BDC3EA50 /* MarkInAppChatConversationReadResponse.graphql.swift in Sources */,
+				F18BF44BC6AE0CDC1EB1A301 /* Message.graphql.swift in Sources */,
 				4523FE1CF831A4CAF92FC834 /* MessageTrackingEvent.swift in Sources */,
 				F93F0E9E0036587BEB9A886D /* Models.swift in Sources */,
 				A280F089AA8EBD338B606923 /* Mutation.graphql.swift in Sources */,
@@ -666,7 +853,10 @@
 				C1E7D3F6864AC158C3315BDF /* NetworkMonitor.swift in Sources */,
 				BDB23DC3A8C68A286AB05DA6 /* PrepareAssetInput.graphql.swift in Sources */,
 				9FEEB5EBCE9D57887AC6F767 /* PrepareAssetMutation.graphql.swift in Sources */,
+				209B25C2C345451ECF9F40A7 /* PushRuntimeState.swift in Sources */,
 				BC58448E5CA6B2019F84EE85 /* Query.graphql.swift in Sources */,
+				F0DD24FED81D369F23DD8CBE /* RealtimeRuntime.swift in Sources */,
+				4F9BCC48ED2DD20DE22AD7B1 /* ResolveInAppChatConversationMutation.graphql.swift in Sources */,
 				A01DA7FD7C1DA8B6E84C5955 /* SaveStoredPreferencesInput.graphql.swift in Sources */,
 				6937B3027B73969FE8AEA3AB /* SaveStoredPreferencesMutation.graphql.swift in Sources */,
 				56EA16442E6B6AA31098BE5A /* SaveStoredPreferencesResponse.graphql.swift in Sources */,
@@ -674,8 +864,15 @@
 				E425F6FB9129EDC8EC121FDD /* SchemaMetadata.graphql.swift in Sources */,
 				03569771BED4D84C87CB94CE /* SearchRecordsInput.graphql.swift in Sources */,
 				54ECDD2293C6F30B7F5DEC07 /* SearchRecordsQuery.graphql.swift in Sources */,
+				5DF7C36E1BCAB4A56E191778 /* SendInAppChatMessageMutation.graphql.swift in Sources */,
 				B3A16B7E3B2EE340EE39A716 /* SubscribeContactInput.graphql.swift in Sources */,
 				E992F5E6857992C3F9830BF8 /* SubscribeContactMutation.graphql.swift in Sources */,
+				B6B5FCA01A68EEF6E0435EEE /* SummarizeInAppChatConversationsQuery.graphql.swift in Sources */,
+				CB10C32DEB73CDB68B366279 /* SummarizeInAppChatConversationsResponse.graphql.swift in Sources */,
+				9D9599BF373B57D98FD28638 /* SummarizeInAppChatMessagesQuery.graphql.swift in Sources */,
+				5429538D329B45943163AD11 /* SummarizeInAppChatMessagesResponse.graphql.swift in Sources */,
+				8DF892DF18906798BCEEDDC0 /* SummarizeInAppChatUnreadQuery.graphql.swift in Sources */,
+				C9C7E34FB94B161E7CC4B8CA /* SummarizeInAppChatUnreadResponse.graphql.swift in Sources */,
 				AEB5ED280DCBC5C72BBC5B6C /* SystemContext.swift in Sources */,
 				162ADB3D5D80FF5495B155B8 /* SystemContextAppInput.graphql.swift in Sources */,
 				2BF932CA0A1725643D260065 /* SystemContextCampaignInput.graphql.swift in Sources */,
@@ -724,11 +921,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				03EDC782F35382F63B78200B /* AuthRetryPolicyTests.swift in Sources */,
+				80AEBB98683AA8426950E683 /* ChatSessionGuardTests.swift in Sources */,
+				00C444A47673E856FE7DFE3D /* ChatTestSupport.swift in Sources */,
+				F062502CDE32A9341C7F0E58 /* ConversationSessionTests.swift in Sources */,
 				56F8F3BA3C0DD669F890A0E0 /* DashXDataTests.swift in Sources */,
+				2E085387652733C7D9AE2381 /* DashXPushTests.swift in Sources */,
 				2D74E70D77C1BB0325113B5F /* ErrorTests.swift in Sources */,
 				126156D66F53568631726A6B /* EventQueueTests.swift in Sources */,
 				6A7745BC9F77775D04677D2D /* ModelsTests.swift in Sources */,
+				152A32E7D7F730F7073F136B /* RealtimeCodecTests.swift in Sources */,
+				AD8DA726D477FEB93B63E098 /* RealtimeRuntimeTests.swift in Sources */,
 				68AAD26EDC5F980F01F5C535 /* SDKTests.swift in Sources */,
+				DAF3E7E244F2A91CDD25FDEB /* TokenProviderRecoveryTests.swift in Sources */,
 				8B06C33C5E4ACF6386A72914 /* UtilsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -828,13 +1033,13 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.2;
+				MARKETING_VERSION = 1.6.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -package-name DashX";
@@ -1023,13 +1228,13 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.2;
+				MARKETING_VERSION = 1.6.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
