@@ -4,6 +4,11 @@ All notable changes to `dashx-ios` are documented in this file. Format loosely f
 
 ## [1.6.0] — 2026-09-16
 
+### Breaking
+
+- **Minimum deployment target is now iOS 15.0** (was 13.0) for `Package.swift`, the podspec and
+  the shipped xcframeworks. Xcode 27 no longer builds for earlier versions.
+
 In-app chat. The SDK now manages a realtime WebSocket connection and exposes a conversation API
 on top of it. Conversation creation is
 server-only: the host's backend creates the conversation and returns the

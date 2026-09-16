@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   s.license      = { :type => "MIT" }
   s.authors      = { "DashX" => "support@dashx.com" }
 
-  s.platforms    = { :ios => "13.0" }
+  s.platforms    = { :ios => "15.0" }
   s.source       = { :git => "https://github.com/dashxhq/dashx-ios.git", :tag => s.version }
   s.swift_version = "5.9"
 
