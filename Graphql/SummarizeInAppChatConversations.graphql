@@ -1,0 +1,11 @@
+query SummarizeInAppChatConversations(
+  $identityId: UUID!
+  $statuses: [String!]
+  $properties: JSON
+) {
+  summarizeInAppChatConversations(
+    input: { identityId: $identityId, statuses: $statuses, properties: $properties }
+  ) {
+    count
+  }
+}

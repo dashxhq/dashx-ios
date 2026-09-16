@@ -1,0 +1,7 @@
+mutation ResolveInAppChatConversation($identityId: UUID!, $conversationId: UUID!) {
+  resolveInAppChatConversation(
+    input: { identityId: $identityId, conversationId: $conversationId }
+  ) {
+    ...ChatConversationSummaryFragment
+  }
+}

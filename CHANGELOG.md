@@ -2,6 +2,58 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.0] — 2026-09-16
+
+In-app chat. The SDK now manages a realtime WebSocket connection and exposes a conversation API
+on top of it. Conversation creation is
+server-only: the host's backend creates the conversation and returns the
+`(conversationId, chatIdentityId)` pair the SDK consumes.
+
+### Added
+
+- **`DashX.chat(chatIdentityId:)`** — `openConversation(_:)` returns a `DashXConversationLease`
+  with `state` (`.loading` / `.ready(messages:hasOlderMessages:)` / `.error`),
+  `addStateListener(_:)` (replays the current state on add), `sendMessage(content:completion:)`
+  (returns the client message id synchronously — the idempotency key a retry must reuse),
+  `loadPreviousPage`, `setVisible(_:)` (drives read-marking and push suppression) and `close()`.
+  Missed messages are reconciled after a reconnect; `hasOlderMessages` tells a host when to offer
+  "load older". Also `fetchConversations`, `fetchConversation`, `summarizeConversations`,
+  `summarizeUnread` and `resolveConversation`, plus the same operations as raw `DashXClient`
+  methods (`fetchInAppChatMessages`, `sendInAppChatMessage`, `markInAppChatConversationRead`, …),
+  each with a completion and an `async` overload. Results are SDK models (`DashXChatMessage`,
+  `DashXChatConversationSummary`); no Apollo type is exposed.
+- **Managed realtime connection** — connects only while a conversation is open, the app is
+  foregrounded and an identity token exists; reconnects with backoff. Observe it via
+  `DashX.connectionState` / `addConnectionStateListener(_:)` (`DashXConnectionState`); override
+  the endpoint with `DashX.setRealtimeBaseURI(_:)`.
+- **`DashX.setIdentityTokenProvider(uid:provider:)`** — on-demand identity token loading through
+  `DashXTokenProvider` (adapters: `DashXClosureTokenProvider`, `DashXAsyncTokenProvider`), called
+  with `forceRefresh: true` after a rejection. Register it at launch.
+- **Composable push** — `DashXPush.isDashXMessage(_:)` / `shouldDisplay(_:)` for hosts with their
+  own `UNUserNotificationCenterDelegate`. A chat push for the conversation on screen is not
+  presented in the foreground (`DashXAppDelegate` applies this before
+  `notificationDeliveredInForeground(message:)`; delivery is still tracked), and opening a
+  conversation clears its delivered notifications. `DashX.setNotificationDisplayDecider(_:)`
+  lets a host veto any foreground notification.
+- `DashXClientError.sessionEnded`, `DashXClientError.subscriptionFailed`,
+  `DashXGraphQLErrors.code` (the response's `extensions.code`) and `DashX.hasIdentityToken`.
+
+### Changed
+
+- **`DashXClientError.graphQLErrors` now carries `DashXGraphQLErrors`** instead of `[String]`.
+  It iterates as the messages and is array-literal-expressible, so
+  `case .graphQLErrors(let messages)`, `messages.count` and `messages.joined(...)` compile
+  unchanged; code that handed the payload to a `[String]` parameter should use `.messages`.
+- The identity token is attached to every GraphQL request at send time, and a request rejected as
+  `UNAUTHORIZED` before execution is retried once after a token refresh. When no provider can
+  refresh an expired token, the SDK drops it and continues on the public key alone, so
+  `identify` / `track` / `subscribe` keep working as in 1.5.x.
+- `setIdentity(uid:token:)` with a nil token for the current uid keeps the held token; `reset()`
+  clears it. Switching uid and `reset()` end open chat sessions (leases receive
+  `.error(.sessionEnded)`) and recycle the realtime connection.
+- GraphQL code regenerated: `SystemContextScreenInput.density` is now `Double` (was `Int`), and
+  `SearchRecordsInput` gained an optional `project` field.
+
 ## [1.5.1] — 2026-05-06
 
 ### Fixed
