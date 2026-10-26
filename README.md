@@ -38,18 +38,18 @@ Full setup, configuration, push notifications (including Notification Service Ex
 
 ## Automatic events
 
-The SDK can send these events on your behalf. SDK-generated event names start with `$`, and are the same on iOS, Android and React Native.
+The SDK can send these events on your behalf:
 
 | Event | When | Data |
 |---|---|---|
-| `$app_installed` | First launch after install | `version`, `build` |
-| `$app_updated` | First launch after an upgrade | `version`, `build`, `previousBuild` |
-| `$app_opened` | Every other cold start, and every return from the background | `version`, `build`, `fromBackground` |
-| `$app_backgrounded` | App enters the background | `durationMs` (time in the foreground since the matching open) |
-| `$app_crashed` | Uncaught Objective-C exception | `exception` |
-| `$screen` | A view controller appears, or you call `DashX.screen(_:withData:)` | `name` plus any data you pass |
-| `$deep_link_opened` | A deep link is processed | `url`, `source`, `timestamp` |
-| `$notification_navigated` | A DashX notification is tapped | `notificationId`, `type`, `url` / `screenName` / `screenData` / `clickAction`, `timestamp` |
+| `Application Installed` | First launch after install | `version`, `build` |
+| `Application Updated` | First launch after an upgrade | `version`, `build`, `previous_build` |
+| `Application Opened` | Every other cold start, and every return from the background | `version`, `build`; `from_background: true` when returning from the background |
+| `Application Backgrounded` | App enters the background | `session_length` (seconds in the foreground since the matching open) |
+| `Application Crashed` | Uncaught Objective-C exception | `exception` |
+| `Screen Viewed` | A view controller appears, or you call `DashX.screen(_:withData:)` | `name` plus any data you pass |
+| `dx_deep_link_opened` | A deep link is processed | `url`, `source`, `timestamp` |
+| `dx_notification_navigated` | A DashX notification is tapped | `notification_id`, `type`, `url` / `screen_name` / `screen_data` / `click_action`, `timestamp` |
 
 Lifecycle and automatic screen events are opt-in. Call these once, after `configure()`, typically in `application(_:didFinishLaunchingWithOptions:)`; repeat calls are no-ops:
 

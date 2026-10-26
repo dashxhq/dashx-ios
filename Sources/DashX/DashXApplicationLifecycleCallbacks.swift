@@ -69,15 +69,6 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         }
     }
 
-    /// Matches Android, which reports its integer version code.
-    static func buildValue(_ build: String) -> Any {
-        Int(build) ?? build
-    }
-
-    static func durationMs(from start: TimeInterval, to end: TimeInterval) -> Int {
-        max(0, Int(((end - start) * 1000).rounded()))
-    }
-
     func enable() {
         lock.lock()
         let alreadyEnabled = isEnabled
@@ -105,8 +96,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         markForegroundStart()
 
         let info = buildInfo()
-        let data: [String: Any] = ["version": info.version, "build": Self.buildValue(info.build)]
-        let opened = data.merging(["fromBackground": false]) { current, _ in current }
+        let data: [String: Any] = ["version": info.version, "build": info.build]
         let previousBuild = defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD)
         let kind = Self.launchKind(previousBuild: previousBuild, currentBuild: info.build)
 
@@ -121,9 +111,9 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         case .installed:
             track(Constants.INTERNAL_EVENT_APP_INSTALLED, data)
         case let .updated(previousBuild):
-            track(Constants.INTERNAL_EVENT_APP_UPDATED, data.merging(["previousBuild": Self.buildValue(previousBuild)]) { current, _ in current })
+            track(Constants.INTERNAL_EVENT_APP_UPDATED, data.merging(["previous_build": previousBuild]) { current, _ in current })
         case .downgraded, .opened:
-            track(Constants.INTERNAL_EVENT_APP_OPENED, opened)
+            track(Constants.INTERNAL_EVENT_APP_OPENED, data)
         }
         if kind != .opened {
             defaults.set(info.build, forKey: Constants.USER_PREFERENCES_KEY_BUILD)
@@ -134,7 +124,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
     func appForegrounded() {
         markForegroundStart()
         let info = buildInfo()
-        track(Constants.INTERNAL_EVENT_APP_OPENED, ["version": info.version, "build": Self.buildValue(info.build), "fromBackground": true])
+        track(Constants.INTERNAL_EVENT_APP_OPENED, ["version": info.version, "build": info.build, "from_background": true])
     }
 
     @objc
@@ -149,6 +139,6 @@ class DashXApplicationLifecycleCallbacks: NSObject {
             return
         }
 
-        track(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, ["durationMs": Self.durationMs(from: startedAt, to: now())])
+        track(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, ["session_length": max(0, now() - startedAt)])
     }
 }

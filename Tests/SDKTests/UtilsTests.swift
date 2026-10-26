@@ -67,16 +67,16 @@ final class UtilsTests: XCTestCase {
         XCTAssertTrue(Constants.USER_PREFERENCES_KEY_BUILD.hasPrefix("com.dashx.ios"))
     }
 
-    // Wire contract shared with the Android and React Native SDKs.
+    // Wire contract: customers' dashboards and the public docs depend on these names.
     func testInternalEventNames() {
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_INSTALLED, "$app_installed")
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_UPDATED, "$app_updated")
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_OPENED, "$app_opened")
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, "$app_backgrounded")
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_CRASHED, "$app_crashed")
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, "$screen")
-        XCTAssertEqual(Constants.EVENT_DEEP_LINK_OPENED, "$deep_link_opened")
-        XCTAssertEqual(Constants.EVENT_NOTIFICATION_NAVIGATED, "$notification_navigated")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_INSTALLED, "Application Installed")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_UPDATED, "Application Updated")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_OPENED, "Application Opened")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, "Application Backgrounded")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_CRASHED, "Application Crashed")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, "Screen Viewed")
+        XCTAssertEqual(Constants.EVENT_DEEP_LINK_OPENED, "dx_deep_link_opened")
+        XCTAssertEqual(Constants.EVENT_NOTIFICATION_NAVIGATED, "dx_notification_navigated")
     }
 
     func testUserAttributes() {

@@ -174,18 +174,13 @@ final class LifecycleTrackingTests: XCTestCase {
         XCTAssertEqual(DashXApplicationLifecycleCallbacks.launchKind(previousBuild: "10", currentBuild: "9"), .downgraded)
     }
 
-    func testBuildIsSentAsIntegerWhenNumeric() {
-        XCTAssertEqual(DashXApplicationLifecycleCallbacks.buildValue("42") as? Int, 42)
-        XCTAssertEqual(DashXApplicationLifecycleCallbacks.buildValue("1.2.3") as? String, "1.2.3")
-    }
-
     func testFirstLaunchSendsInstalledAndStoresBuild() {
         makeCallbacks().enable()
 
-        XCTAssertEqual(events.map(\.name), ["$app_installed"])
+        XCTAssertEqual(events.map(\.name), ["Application Installed"])
         XCTAssertEqual(events[0].data["version"] as? String, "1.2.0")
-        XCTAssertEqual(events[0].data["build"] as? Int, 42)
-        XCTAssertNil(events[0].data["fromBackground"])
+        XCTAssertEqual(events[0].data["build"] as? String, "42")
+        XCTAssertNil(events[0].data["from_background"])
         XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
     }
 
@@ -194,9 +189,9 @@ final class LifecycleTrackingTests: XCTestCase {
 
         makeCallbacks().enable()
 
-        XCTAssertEqual(events.map(\.name), ["$app_updated"])
-        XCTAssertEqual(events[0].data["previousBuild"] as? Int, 41)
-        XCTAssertEqual(events[0].data["build"] as? Int, 42)
+        XCTAssertEqual(events.map(\.name), ["Application Updated"])
+        XCTAssertEqual(events[0].data["previous_build"] as? String, "41")
+        XCTAssertEqual(events[0].data["build"] as? String, "42")
         XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
     }
 
@@ -205,8 +200,8 @@ final class LifecycleTrackingTests: XCTestCase {
 
         makeCallbacks().enable()
 
-        XCTAssertEqual(events.map(\.name), ["$app_opened"])
-        XCTAssertEqual(events[0].data["fromBackground"] as? Bool, false)
+        XCTAssertEqual(events.map(\.name), ["Application Opened"])
+        XCTAssertNil(events[0].data["from_background"])
         XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
     }
 
@@ -218,7 +213,7 @@ final class LifecycleTrackingTests: XCTestCase {
 
         events = []
         makeCallbacks(configured: true).enable()
-        XCTAssertEqual(events.map(\.name), ["$app_installed"])
+        XCTAssertEqual(events.map(\.name), ["Application Installed"])
     }
 
     func testUpdateBeforeConfigureIsDeferredToNextLaunch() {
@@ -235,8 +230,9 @@ final class LifecycleTrackingTests: XCTestCase {
 
         makeCallbacks().enable()
 
-        XCTAssertEqual(events.map(\.name), ["$app_opened"])
-        XCTAssertEqual(events[0].data["fromBackground"] as? Bool, false)
+        XCTAssertEqual(events.map(\.name), ["Application Opened"])
+        XCTAssertEqual(events[0].data["build"] as? String, "42")
+        XCTAssertNil(events[0].data["from_background"])
     }
 
     func testEnableIsIdempotent() {
@@ -246,7 +242,7 @@ final class LifecycleTrackingTests: XCTestCase {
         XCTAssertEqual(events.count, 1)
 
         center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        XCTAssertEqual(events.map(\.name), ["$app_installed", "$app_backgrounded"])
+        XCTAssertEqual(events.map(\.name), ["Application Installed", "Application Backgrounded"])
     }
 
     func testBackgroundAndForegroundTransitions() {
@@ -258,20 +254,20 @@ final class LifecycleTrackingTests: XCTestCase {
 
         clock += 1.5
         center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        XCTAssertEqual(events.last?.name, "$app_backgrounded")
-        XCTAssertEqual(events.last?.data["durationMs"] as? Int, 1500)
+        XCTAssertEqual(events.last?.name, "Application Backgrounded")
+        XCTAssertEqual(events.last?.data["session_length"] as? Double, 1.5)
 
         center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
         XCTAssertEqual(events.count, 2, "no second backgrounded event without a matching open")
 
         center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
-        XCTAssertEqual(events.last?.name, "$app_opened")
-        XCTAssertEqual(events.last?.data["fromBackground"] as? Bool, true)
-        XCTAssertEqual(events.last?.data["build"] as? Int, 42)
+        XCTAssertEqual(events.last?.name, "Application Opened")
+        XCTAssertEqual(events.last?.data["from_background"] as? Bool, true)
+        XCTAssertEqual(events.last?.data["build"] as? String, "42")
 
         clock += 0.25
         center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        XCTAssertEqual(events.last?.data["durationMs"] as? Int, 250)
+        XCTAssertEqual(events.last?.data["session_length"] as? Double, 0.25)
         withExtendedLifetime(callbacks) {}
     }
 }
