@@ -36,6 +36,30 @@ Full setup, configuration, push notifications (including Notification Service Ex
 - [Messaging → Receive Push Notifications](https://docs.dashx.com/apps/messaging/receive-push-notifications)
 - [Deep Linking & Push Navigation](https://docs.dashx.com/apps/messaging/deep-linking)
 
+## Automatic events
+
+The SDK can send these events on your behalf. SDK-generated event names start with `$`, and are the same on iOS, Android and React Native.
+
+| Event | When | Data |
+|---|---|---|
+| `$app_installed` | First launch after install | `version`, `build` |
+| `$app_updated` | First launch after an upgrade | `version`, `build`, `previousBuild` |
+| `$app_opened` | Every other cold start, and every return from the background | `version`, `build`, `fromBackground` |
+| `$app_backgrounded` | App enters the background | `durationMs` (time in the foreground since the matching open) |
+| `$app_crashed` | Uncaught Objective-C exception | `exception` |
+| `$screen` | A view controller appears, or you call `DashX.screen(_:withData:)` | `name` plus any data you pass |
+| `$deep_link_opened` | A deep link is processed | `url`, `source`, `timestamp` |
+| `$notification_navigated` | A DashX notification is tapped | `notificationId`, `type`, `url` / `screenName` / `screenData` / `clickAction`, `timestamp` |
+
+Lifecycle and automatic screen events are opt-in. Call these once, after `configure()`, typically in `application(_:didFinishLaunchingWithOptions:)`; repeat calls are no-ops:
+
+```swift
+DashX.enableLifecycleTracking()
+DashX.enableScreenTracking()
+```
+
+`enableScreenTracking()` names each screen by the view controller's `title`, then `navigationItem.title`, then its class name. Container controllers (navigation, tab bar, split, page), alerts and system controllers are skipped, and SwiftUI hosting controllers are only reported when they have a title. To name screens yourself, call `DashX.screen("Checkout")` instead.
+
 ## Install (CocoaPods)
 
 CocoaPods consumers pull a prebuilt XCFramework — source compilation (and any downstream Apollo module surprises) happens on our Mac at release time, not on consumers' machines. The pod is **not** published to the CocoaPods trunk; reference it from git by tag:

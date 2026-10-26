@@ -304,8 +304,15 @@ public class DashXClient {
         }
     }
 
+    /// Sends `$app_installed` / `$app_updated` / `$app_opened` now, then `$app_opened` and
+    /// `$app_backgrounded` on every foreground / background transition. Idempotent.
     public func enableLifecycleTracking() {
-        DashXApplicationLifecycleCallbacks().enable()
+        DashXApplicationLifecycleCallbacks.instance.enable()
+    }
+
+    /// Sends `$screen` each time a view controller appears. Idempotent.
+    public func enableScreenTracking() {
+        DashXScreenTracking.enable()
     }
 
     // MARK: - Ad Tracking
@@ -1423,7 +1430,7 @@ public class DashXClient {
 
     public var linkHandler: ((URL) -> Void)?
 
-    /// Records a `dx_deep_link_opened` analytics event and optionally forwards the URL to ``linkHandler``.
+    /// Records a `$deep_link_opened` analytics event and optionally forwards the URL to ``linkHandler``.
     /// - Parameters:
     ///   - url: The opened deep link.
     ///   - source: Optional attribution (e.g. `universal_link`, `scene_url`, `notification`).
@@ -1442,13 +1449,13 @@ public class DashXClient {
         }
     }
 
-    /// Records a `dx_notification_navigated` event for every notification tap, regardless of navigation type.
+    /// Records a `$notification_navigated` event for every notification tap, regardless of navigation type.
     public func trackNotificationNavigation(_ action: NavigationAction?, notificationId: String?) {
         var data: [String: Any] = [
             "timestamp": ISO8601DateFormatter().string(from: Date())
         ]
         if let notificationId {
-            data["notification_id"] = notificationId
+            data["notificationId"] = notificationId
         }
         switch action {
         case let .deepLink(url):
@@ -1456,16 +1463,16 @@ public class DashXClient {
             data["url"] = url.absoluteString
         case let .screen(name, screenData):
             data["type"] = "screen"
-            data["screen_name"] = name
+            data["screenName"] = name
             if let screenData {
-                data["screen_data"] = screenData
+                data["screenData"] = screenData
             }
         case let .richLanding(url):
             data["type"] = "rich_landing"
             data["url"] = url.absoluteString
         case let .clickAction(action):
             data["type"] = "click_action"
-            data["click_action"] = action
+            data["clickAction"] = action
         case nil:
             data["type"] = "default"
         }

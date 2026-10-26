@@ -2,6 +2,37 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## Unreleased
+
+### Breaking
+
+- **Automatically generated events are renamed to the DashX `$` convention, and their data keys are camelCase.** The `$` prefix marks SDK-generated events, matching the browser SDK (`$pageview`, `$pageleave`, `$autocapture`); iOS, Android and React Native now send identical names and payloads. Update any dashboards, segments or automations that filter on the old names.
+
+  | Old name | New name | Data |
+  |---|---|---|
+  | `Screen Viewed` | `$screen` | `name` (string) plus any caller-supplied data |
+  | `Application Installed` | `$app_installed` | `version`, `build` |
+  | `Application Updated` | `$app_updated` | `version`, `build`, `previousBuild` (new) |
+  | `Application Opened` | `$app_opened` | `version`, `build`, `fromBackground` (boolean, was `from_background`, now also sent as `false` on a cold start) |
+  | `Application Backgrounded` | `$app_backgrounded` | `durationMs` (integer milliseconds in the foreground, was `session_length` in seconds) |
+  | `Application Crashed` | `$app_crashed` | `exception` |
+  | `dx_deep_link_opened` | `$deep_link_opened` | `url`, `source`, `timestamp` (unchanged) |
+  | `dx_notification_navigated` | `$notification_navigated` | `notificationId`, `type`, `url`, `screenName`, `screenData`, `clickAction`, `timestamp` (were `notification_id`, `screen_name`, `screen_data`, `click_action`; `type` values such as `deep_link` are unchanged) |
+
+  `build` and `previousBuild` are sent as integers when `CFBundleVersion` is a plain integer (matching Android's version code), otherwise as strings. The `Constants.INTERNAL_EVENT_*`, `EVENT_DEEP_LINK_OPENED` and `EVENT_NOTIFICATION_NAVIGATED` constant names are unchanged; only their values changed.
+
+### Fixed
+
+- **`$app_backgrounded` fires only when the app actually enters the background.** It was sent on `willResignActive`, which also fires for Control Center, Notification Center, incoming calls and the app switcher. It now uses `didEnterBackground`, and returning uses `willEnterForeground` -> `$app_opened` with `fromBackground: true`.
+- **`enableLifecycleTracking()` is idempotent.** Each call registered a new set of observers, so calling it twice doubled every lifecycle event. Repeat calls are now no-ops: no second cold-start event and no second crash handler.
+- **A cold start sends exactly one event**: `$app_installed` (first launch), `$app_updated` (stored build is lower than the current one) or `$app_opened` with `fromBackground: false`. A downgrade sends `$app_opened` and stores the current build, so a later upgrade reports `$app_updated`.
+- **An install or update seen before `configure()` is deferred.** When lifecycle tracking is enabled before `configure()`, no launch event is sent and the stored build is left untouched, so the install or update is reported on the next launch after `configure()`. Android behaves the same.
+- **The crash handler chains to any previously installed `NSUncaughtExceptionHandler`** instead of replacing it (e.g. a crash reporter installed earlier).
+
+### Added
+
+- **`enableScreenTracking()`** - opt-in automatic `$screen` events. Sent on every `viewDidAppear(_:)` with `name` set to the controller's `title`, else `navigationItem.title`, else its class name. Container and system controllers (`UINavigationController`, `UITabBarController`, `UISplitViewController`, `UIPageViewController`, `UIAlertController`, keyboard and other private UIKit controllers) are skipped, as are SwiftUI `UIHostingController`s and other system controllers without a title. The previous automatic screen tracking hooked `viewDidLoad`, sent no screen name, and was never actually enabled.
+
 ## [1.5.1] — 2026-05-06
 
 ### Fixed

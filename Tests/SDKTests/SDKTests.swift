@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 import XCTest
 @testable import DashX
@@ -129,5 +130,236 @@ final class SystemContextTests: XCTestCase {
         XCTAssertGreaterThan(screen.width, 0)
         XCTAssertGreaterThan(screen.height, 0)
         XCTAssertGreaterThan(screen.density, 0)
+    }
+}
+
+final class LifecycleTrackingTests: XCTestCase {
+    private var defaults: UserDefaults!
+    private var center: NotificationCenter!
+    private var events: [(name: String, data: [String: Any])] = []
+    private var clock: TimeInterval = 100
+    private let suiteName = "com.dashx.ios.tests.lifecycle"
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: suiteName)
+        defaults.removePersistentDomain(forName: suiteName)
+        center = NotificationCenter()
+        events = []
+        clock = 100
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suiteName)
+        super.tearDown()
+    }
+
+    private func makeCallbacks(build: String = "42", configured: Bool = true) -> DashXApplicationLifecycleCallbacks {
+        DashXApplicationLifecycleCallbacks(
+            track: { [unowned self] name, data in self.events.append((name, data)) },
+            defaults: defaults,
+            notificationCenter: center,
+            installsCrashHandler: false,
+            isConfigured: { configured },
+            buildInfo: { ("1.2.0", build) },
+            now: { [unowned self] in self.clock }
+        )
+    }
+
+    func testLaunchKindDecision() {
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.launchKind(previousBuild: nil, currentBuild: "2"), .installed)
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.launchKind(previousBuild: "2", currentBuild: "2"), .opened)
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.launchKind(previousBuild: "9", currentBuild: "10"), .updated(previousBuild: "9"))
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.launchKind(previousBuild: "1.9", currentBuild: "1.10"), .updated(previousBuild: "1.9"))
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.launchKind(previousBuild: "10", currentBuild: "9"), .downgraded)
+    }
+
+    func testBuildIsSentAsIntegerWhenNumeric() {
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.buildValue("42") as? Int, 42)
+        XCTAssertEqual(DashXApplicationLifecycleCallbacks.buildValue("1.2.3") as? String, "1.2.3")
+    }
+
+    func testFirstLaunchSendsInstalledAndStoresBuild() {
+        makeCallbacks().enable()
+
+        XCTAssertEqual(events.map(\.name), ["$app_installed"])
+        XCTAssertEqual(events[0].data["version"] as? String, "1.2.0")
+        XCTAssertEqual(events[0].data["build"] as? Int, 42)
+        XCTAssertNil(events[0].data["fromBackground"])
+        XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
+    }
+
+    func testNewBuildSendsUpdatedWithPreviousBuild() {
+        defaults.set("41", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+
+        makeCallbacks().enable()
+
+        XCTAssertEqual(events.map(\.name), ["$app_updated"])
+        XCTAssertEqual(events[0].data["previousBuild"] as? Int, 41)
+        XCTAssertEqual(events[0].data["build"] as? Int, 42)
+        XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
+    }
+
+    func testDowngradeSendsOpenedAndStoresCurrentBuild() {
+        defaults.set("43", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+
+        makeCallbacks().enable()
+
+        XCTAssertEqual(events.map(\.name), ["$app_opened"])
+        XCTAssertEqual(events[0].data["fromBackground"] as? Bool, false)
+        XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
+    }
+
+    func testInstallBeforeConfigureIsDeferredToNextLaunch() {
+        makeCallbacks(configured: false).enable()
+
+        XCTAssertEqual(events.map(\.name), [])
+        XCTAssertNil(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD))
+
+        events = []
+        makeCallbacks(configured: true).enable()
+        XCTAssertEqual(events.map(\.name), ["$app_installed"])
+    }
+
+    func testUpdateBeforeConfigureIsDeferredToNextLaunch() {
+        defaults.set("41", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+
+        makeCallbacks(configured: false).enable()
+
+        XCTAssertEqual(events.map(\.name), [])
+        XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "41")
+    }
+
+    func testSameBuildSendsColdOpen() {
+        defaults.set("42", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+
+        makeCallbacks().enable()
+
+        XCTAssertEqual(events.map(\.name), ["$app_opened"])
+        XCTAssertEqual(events[0].data["fromBackground"] as? Bool, false)
+    }
+
+    func testEnableIsIdempotent() {
+        let callbacks = makeCallbacks()
+        callbacks.enable()
+        callbacks.enable()
+        XCTAssertEqual(events.count, 1)
+
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(events.map(\.name), ["$app_installed", "$app_backgrounded"])
+    }
+
+    func testBackgroundAndForegroundTransitions() {
+        let callbacks = makeCallbacks()
+        callbacks.enable()
+
+        center.post(name: UIApplication.willResignActiveNotification, object: nil)
+        XCTAssertEqual(events.count, 1, "resigning active (Control Center, calls) is not backgrounding")
+
+        clock += 1.5
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(events.last?.name, "$app_backgrounded")
+        XCTAssertEqual(events.last?.data["durationMs"] as? Int, 1500)
+
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(events.count, 2, "no second backgrounded event without a matching open")
+
+        center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        XCTAssertEqual(events.last?.name, "$app_opened")
+        XCTAssertEqual(events.last?.data["fromBackground"] as? Bool, true)
+        XCTAssertEqual(events.last?.data["build"] as? Int, 42)
+
+        clock += 0.25
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(events.last?.data["durationMs"] as? Int, 250)
+        withExtendedLifetime(callbacks) {}
+    }
+}
+
+final class ScreenTrackingTests: XCTestCase {
+    private final class CheckoutViewController: UIViewController {}
+    private final class AppNavigationController: UINavigationController {}
+
+    private func name(
+        _ className: String,
+        title: String? = nil,
+        navigationTitle: String? = nil,
+        hosting: Bool = false,
+        system: Bool = false
+    ) -> String? {
+        DashXScreenTracking.screenName(
+            className: className,
+            title: title,
+            navigationTitle: navigationTitle,
+            isHostingController: hosting,
+            isSystemClass: system
+        )
+    }
+
+    func testNameResolutionOrder() {
+        XCTAssertEqual(name("HomeViewController", title: "Home", navigationTitle: "Nav"), "Home")
+        XCTAssertEqual(name("HomeViewController", navigationTitle: "Nav"), "Nav")
+        XCTAssertEqual(name("HomeViewController", title: "  ", navigationTitle: "Nav"), "Nav")
+        XCTAssertEqual(name("HomeViewController"), "HomeViewController")
+        XCTAssertEqual(name("MyApp.HomeViewController"), "HomeViewController")
+    }
+
+    func testSkipsContainersAndPrivateControllers() {
+        for container in ["UINavigationController", "UITabBarController", "UISplitViewController", "UIPageViewController", "UIAlertController"] {
+            XCTAssertNil(name(container, title: "Titled"), container)
+        }
+        XCTAssertNil(name("UIInputWindowController"))
+        XCTAssertNil(name("_UIPrivateViewController", title: "Titled"))
+    }
+
+    func testHostingAndSystemControllersNeedTitle() {
+        XCTAssertNil(name("UIHostingController<AnyView>", hosting: true))
+        XCTAssertNil(name("UIHostingController<ModifiedContent<MyApp.Root, _EnvironmentKeyWritingModifier<Bool>>>", hosting: true))
+        XCTAssertEqual(name("UIHostingController<AnyView>", title: "Settings", hosting: true), "Settings")
+        XCTAssertNil(name("UIViewController", system: true))
+        XCTAssertEqual(name("UIViewController", title: "Profile", system: true), "Profile")
+    }
+
+    func testResolvesRealControllers() {
+        XCTAssertEqual(DashXScreenTracking.screenName(for: CheckoutViewController()), "CheckoutViewController")
+
+        let titled = CheckoutViewController()
+        titled.title = "Checkout"
+        XCTAssertEqual(DashXScreenTracking.screenName(for: titled), "Checkout")
+
+        XCTAssertNil(DashXScreenTracking.screenName(for: UIViewController()))
+        XCTAssertNil(DashXScreenTracking.screenName(for: UINavigationController()))
+        XCTAssertNil(DashXScreenTracking.screenName(for: AppNavigationController()))
+        XCTAssertNil(DashXScreenTracking.screenName(for: UIAlertController(title: "Oops", message: nil, preferredStyle: .alert)))
+
+        XCTAssertTrue(DashXScreenTracking.isSystemClass(UIViewController.self))
+        XCTAssertFalse(DashXScreenTracking.isSystemClass(CheckoutViewController.self))
+    }
+
+    func testHostingControllers() {
+        let untitled = UIHostingController(rootView: Text("Hi"))
+        XCTAssertNil(DashXScreenTracking.screenName(for: untitled))
+
+        let titled = UIHostingController(rootView: Text("Hi"))
+        titled.title = "Greeting"
+        XCTAssertEqual(DashXScreenTracking.screenName(for: titled), "Greeting")
+    }
+
+    func testEnableSwizzlesOnlyOnce() {
+        func implementationImage(_ selector: Selector) -> String {
+            guard let method = class_getInstanceMethod(UIViewController.self, selector) else { return "" }
+            var info = Dl_info()
+            dladdr(unsafeBitCast(method_getImplementation(method), to: UnsafeRawPointer.self), &info)
+            return info.dli_fname.map { String(cString: $0) } ?? ""
+        }
+        let viewDidAppear = #selector(UIViewController.viewDidAppear(_:))
+        let tracker = #selector(UIViewController.dashx_viewDidAppear(_:))
+
+        // A second exchange would swap the implementations back.
+        DashXScreenTracking.enable()
+        DashXScreenTracking.enable()
+
+        XCTAssertTrue(implementationImage(viewDidAppear).hasSuffix("/DashX"), implementationImage(viewDidAppear))
+        XCTAssertTrue(implementationImage(tracker).hasSuffix("/UIKitCore"), implementationImage(tracker))
     }
 }
