@@ -342,20 +342,23 @@ final class ScreenTrackingTests: XCTestCase {
     }
 
     func testEnableSwizzlesOnlyOnce() {
-        func implementationImage(_ selector: Selector) -> String {
-            guard let method = class_getInstanceMethod(UIViewController.self, selector) else { return "" }
+        func implementationImage(_ cls: AnyClass, _ selector: Selector) -> String {
+            guard let method = class_getInstanceMethod(cls, selector) else { return "" }
             var info = Dl_info()
             dladdr(unsafeBitCast(method_getImplementation(method), to: UnsafeRawPointer.self), &info)
             return info.dli_fname.map { String(cString: $0) } ?? ""
         }
-        let viewDidAppear = #selector(UIViewController.viewDidAppear(_:))
-        let tracker = #selector(UIViewController.dashx_viewDidAppear(_:))
+        // Which binary holds DashX's code depends on how the test build links it, so compare
+        // against unswizzled methods rather than a path.
+        let dashxImage = implementationImage(DashXApplicationLifecycleCallbacks.self, #selector(DashXApplicationLifecycleCallbacks.appForegrounded))
+        let uikitImage = implementationImage(UIViewController.self, #selector(UIViewController.viewWillAppear(_:)))
+        XCTAssertNotEqual(dashxImage, uikitImage)
 
         // A second exchange would swap the implementations back.
         DashXScreenTracking.enable()
         DashXScreenTracking.enable()
 
-        XCTAssertTrue(implementationImage(viewDidAppear).hasSuffix("/DashX"), implementationImage(viewDidAppear))
-        XCTAssertTrue(implementationImage(tracker).hasSuffix("/UIKitCore"), implementationImage(tracker))
+        XCTAssertEqual(implementationImage(UIViewController.self, #selector(UIViewController.viewDidAppear(_:))), dashxImage)
+        XCTAssertEqual(implementationImage(UIViewController.self, #selector(UIViewController.dashx_viewDidAppear(_:))), uikitImage)
     }
 }
