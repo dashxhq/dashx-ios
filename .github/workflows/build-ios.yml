@@ -24,12 +24,25 @@ jobs:
       # with ENABLE_TESTABILITY=YES. The DashXTests scheme aggregates both
       # DashXTests and DashXNotificationServiceExtensionTests bundles.
       # See CONTRIBUTING.md → "Running tests".
+      # Runner images rotate their simulator models, so pick an iPhone from the newest
+      # installed iOS runtime instead of naming one.
       - name: Run Tests
         run: |
+          SIMULATOR_ID=$(xcrun simctl list devices available --json | jq -r '
+            .devices | to_entries
+            | map(select(.key | contains("SimRuntime.iOS")))
+            | map(.value |= map(select(.name | startswith("iPhone"))))
+            | map(select(.value | length > 0))
+            | sort_by(.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber))
+            | last.value | first | .udid // empty')
+          if [ -z "$SIMULATOR_ID" ]; then
+            echo "No available iPhone simulator on this runner" >&2
+            exit 1
+          fi
           xcodebuild test \
             -project build-project/DashX.xcodeproj \
             -scheme DashXTests \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination "id=$SIMULATOR_ID" \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 
