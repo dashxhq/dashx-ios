@@ -122,6 +122,13 @@ class DashXApplicationLifecycleCallbacks: NSObject {
 
     @objc
     func appForegrounded() {
+        // Scene-based apps also post willEnterForeground as the first scene appears at launch,
+        // which is not a return from the background.
+        lock.lock()
+        let isReturning = foregroundStartedAt == nil
+        lock.unlock()
+        guard isReturning else { return }
+
         markForegroundStart()
         let info = buildInfo()
         track(Constants.INTERNAL_EVENT_APP_OPENED, ["version": info.version, "build": info.build, "from_background": true])

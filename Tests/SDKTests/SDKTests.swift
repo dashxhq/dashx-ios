@@ -245,6 +245,16 @@ final class LifecycleTrackingTests: XCTestCase {
         XCTAssertEqual(events.map(\.name), ["Application Installed", "Application Backgrounded"])
     }
 
+    func testForegroundAtLaunchIsNotAReturnFromBackground() {
+        let callbacks = makeCallbacks()
+        callbacks.enable()
+
+        center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+
+        XCTAssertEqual(events.map(\.name), ["Application Installed"])
+        withExtendedLifetime(callbacks) {}
+    }
+
     func testBackgroundAndForegroundTransitions() {
         let callbacks = makeCallbacks()
         callbacks.enable()
