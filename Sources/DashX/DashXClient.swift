@@ -502,7 +502,8 @@ public class DashXClient {
                     event: event,
                     data: withData,
                     accountUid: effectiveAccountUid,
-                    accountAnonymousUid: effectiveAnonymousUid
+                    accountAnonymousUid: effectiveAnonymousUid,
+                    occurredAt: occurredAt
                 )
             }
             if let completion {
@@ -544,6 +545,7 @@ public class DashXClient {
                         withData: withData,
                         accountUid: effectiveAccountUid,
                         accountAnonymousUid: effectiveAnonymousUid,
+                        occurredAt: occurredAt,
                         completion: completion
                     )
                     return
@@ -555,6 +557,7 @@ public class DashXClient {
                         withData: withData,
                         accountUid: effectiveAccountUid,
                         accountAnonymousUid: effectiveAnonymousUid,
+                        occurredAt: occurredAt,
                         completion: completion
                     )
                     return
@@ -570,6 +573,7 @@ public class DashXClient {
                     withData: withData,
                     accountUid: effectiveAccountUid,
                     accountAnonymousUid: effectiveAnonymousUid,
+                    occurredAt: occurredAt,
                     completion: completion
                 )
             }
@@ -581,6 +585,7 @@ public class DashXClient {
         withData: [String: Any]?,
         accountUid: String?,
         accountAnonymousUid: String?,
+        occurredAt: Date,
         completion: ((Bool) -> Void)?
     ) {
         if let completion {
@@ -590,7 +595,8 @@ public class DashXClient {
                 event: event,
                 data: withData,
                 accountUid: accountUid,
-                accountAnonymousUid: accountAnonymousUid
+                accountAnonymousUid: accountAnonymousUid,
+                occurredAt: occurredAt
             )
         }
     }
