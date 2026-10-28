@@ -1476,7 +1476,7 @@ public class DashXClient {
         }
     }
 
-    /// Records a `dx_notification_navigated` event for every notification tap, regardless of navigation type.
+    /// Records a `Push Notification Tapped` event for every notification tap, regardless of navigation type.
     public func trackNotificationNavigation(_ action: NavigationAction?, notificationId: String?) {
         var data: [String: Any] = [
             "timestamp": ISO8601DateFormatter().string(from: Date())

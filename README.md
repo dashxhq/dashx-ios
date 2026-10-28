@@ -49,7 +49,7 @@ The SDK can send these events on your behalf:
 | `Application Crashed` | Uncaught Objective-C exception | `exception` |
 | `$screen` | A view controller appears, or you call `DashX.screen(_:withData:)` | `$screen_name` plus any data you pass |
 | `Deep Link Opened` | A deep link is processed | `url`, `source`, `timestamp` |
-| `dx_notification_navigated` | A DashX notification is tapped | `notification_id`, `type`, `url` / `screen_name` / `screen_data` / `click_action`, `timestamp` |
+| `Push Notification Tapped` | A DashX notification is tapped | `notification_id`, `type`, `url` / `screen_name` / `screen_data` / `click_action`, `timestamp` |
 
 Lifecycle and automatic screen events are opt-in. Call these once, after `configure()`, typically in `application(_:didFinishLaunchingWithOptions:)`; repeat calls are no-ops:
 

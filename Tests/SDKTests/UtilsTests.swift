@@ -76,7 +76,7 @@ final class UtilsTests: XCTestCase {
         XCTAssertEqual(Constants.INTERNAL_EVENT_APP_CRASHED, "Application Crashed")
         XCTAssertEqual(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, "$screen")
         XCTAssertEqual(Constants.EVENT_DEEP_LINK_OPENED, "Deep Link Opened")
-        XCTAssertEqual(Constants.EVENT_NOTIFICATION_NAVIGATED, "dx_notification_navigated")
+        XCTAssertEqual(Constants.EVENT_NOTIFICATION_NAVIGATED, "Push Notification Tapped")
     }
 
     func testUserAttributes() {

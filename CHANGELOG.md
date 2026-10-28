@@ -2,6 +2,12 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.1] — 2026-10-28
+
+### Breaking
+
+- **`dx_notification_navigated` is renamed to `Push Notification Tapped`** (data unchanged), matching the Android SDK. Reports, flows or filters on the old name need updating. The `Constants.EVENT_NOTIFICATION_NAVIGATED` name is unchanged; only its value is.
+
 ## [1.6.0] — 2026-10-28
 
 ### Breaking
