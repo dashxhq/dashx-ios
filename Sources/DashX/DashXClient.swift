@@ -103,6 +103,8 @@ public class DashXClient {
 
     /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
     private static let assetPollQueue = DispatchQueue(label: "com.dashx.ios.assetPoll")
+    private let trackQueue = DispatchQueue(label: "com.dashx.ios.track", qos: .utility)
+    private static let trackTimestampFormatter = ISO8601DateFormatter()
 
     // Single lock protecting all mutable identity / token state below.
     // Using NSLock (non-recursive) is safe here because no getter or setter
@@ -468,7 +470,30 @@ public class DashXClient {
     ) {
         let effectiveAccountUid = queuedAccountUid ?? self.accountUid
         let effectiveAnonymousUid = queuedAccountAnonymousUid ?? self.accountAnonymousUid
+        // Replayed events keep the time they were queued, not the flush time.
+        let occurredAt = queuedTimestamp ?? Date()
 
+        // Building the payload reads device state, so it runs off the caller's (often the main) thread.
+        trackQueue.async {
+            self.sendTrack(
+                event,
+                withData: withData,
+                accountUid: effectiveAccountUid,
+                accountAnonymousUid: effectiveAnonymousUid,
+                occurredAt: occurredAt,
+                completion: completion
+            )
+        }
+    }
+
+    private func sendTrack(
+        _ event: String,
+        withData: [String: Any]?,
+        accountUid effectiveAccountUid: String?,
+        accountAnonymousUid effectiveAnonymousUid: String?,
+        occurredAt: Date,
+        completion: ((Bool) -> Void)?
+    ) {
         guard case .online = NetworkMonitor.shared.connection else {
             DashXLog.d(tag: #function, "Offline — queueing event '\(event)'")
             // When replaying from the disk queue (`completion != nil`), do not enqueue again.
@@ -494,12 +519,7 @@ public class DashXClient {
             dataJSON = .null
         }
 
-        // Use the queued event's original enqueue time when replaying, else stamp
-        // "now". The server rejects track events without a top-level timestamp
-        // (GraphQL `Validation failed`), and queued events should preserve their
-        // original occurrence time rather than the flush time.
-        let formatter = ISO8601DateFormatter()
-        let timestamp = formatter.string(from: queuedTimestamp ?? Date())
+        let timestamp = Self.trackTimestampFormatter.string(from: occurredAt)
 
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,

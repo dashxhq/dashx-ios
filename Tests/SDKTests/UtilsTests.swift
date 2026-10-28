@@ -89,3 +89,26 @@ final class UtilsTests: XCTestCase {
         XCTAssertEqual(UserAttributes.LAST_NAME, "lastName")
     }
 }
+
+final class DashXLogTests: XCTestCase {
+    override func tearDown() {
+        DashXLog.setLogLevel(to: .off)
+        super.tearDown()
+    }
+
+    func testMessagesBelowTheLogLevelAreNeverBuilt() {
+        var built = 0
+        func message() -> String {
+            built += 1
+            return "message"
+        }
+
+        DashXLog.setLogLevel(to: .error)
+        DashXLog.d(tag: "test", message())
+        DashXLog.i(tag: "test", message())
+        XCTAssertEqual(built, 0)
+
+        DashXLog.e(tag: "test", message())
+        XCTAssertEqual(built, 1)
+    }
+}
