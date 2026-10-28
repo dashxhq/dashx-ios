@@ -154,13 +154,14 @@ final class LifecycleTrackingTests: XCTestCase {
         super.tearDown()
     }
 
-    private func makeCallbacks(build: String = "42", configured: Bool = true) -> DashXApplicationLifecycleCallbacks {
+    private func makeCallbacks(build: String = "42", configured: Bool = true, active: Bool = true) -> DashXApplicationLifecycleCallbacks {
         DashXApplicationLifecycleCallbacks(
             track: { [unowned self] name, data in self.events.append((name, data)) },
             defaults: defaults,
             notificationCenter: center,
             installsCrashHandler: false,
             isConfigured: { configured },
+            isActive: { active },
             buildInfo: { ("1.2.0", build) },
             now: { [unowned self] in self.clock }
         )
@@ -252,6 +253,39 @@ final class LifecycleTrackingTests: XCTestCase {
         center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
 
         XCTAssertEqual(events.map(\.name), ["Application Installed"])
+        withExtendedLifetime(callbacks) {}
+    }
+
+    func testLaunchIsSentOnFirstActivation() {
+        let callbacks = makeCallbacks(active: false)
+        callbacks.enable()
+        XCTAssertEqual(events.map(\.name), [])
+
+        center.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        center.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+
+        XCTAssertEqual(events.map(\.name), ["Application Installed"])
+        withExtendedLifetime(callbacks) {}
+    }
+
+    func testBackgroundLaunchIsNotAnOpen() {
+        defaults.set("42", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+        let callbacks = makeCallbacks(active: false)
+        callbacks.enable()
+
+        clock += 600
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(events.map(\.name), [])
+
+        center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        XCTAssertEqual(events.map(\.name), ["Application Opened"])
+        XCTAssertNil(events[0].data["from_background"])
+
+        clock += 2
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(events.last?.name, "Application Backgrounded")
+        XCTAssertEqual(events.last?.data["session_length"] as? Double, 2)
         withExtendedLifetime(callbacks) {}
     }
 

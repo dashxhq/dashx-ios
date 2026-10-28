@@ -58,7 +58,11 @@ DashX.enableLifecycleTracking()
 DashX.enableScreenTracking()
 ```
 
-`enableScreenTracking()` names each screen by the view controller's `title`, then `navigationItem.title`, then its class name. Container controllers (navigation, tab bar, split, page), alerts and system controllers are skipped, and SwiftUI hosting controllers are only reported when they have a title. To name screens yourself, call `DashX.screen("Checkout")` instead.
+`enableScreenTracking()` names each screen by the view controller's `title`, then `navigationItem.title`, then its class name. Container controllers (navigation, tab bar, split, page), alerts and system controllers are skipped, and SwiftUI hosting controllers are only reported when they have a title. To name screens yourself, call `DashX.screen("Checkout")` instead. A screen you also report with `DashX.screen(_:withData:)` is sent twice, and child view controllers in your own containers are reported alongside their parent.
+
+A launch in the background (silent push, background fetch) is not reported as an open; the launch event is sent when the app first becomes active.
+
+If your `SceneDelegate` subclasses `DashXSceneDelegate`, mark `window` and the scene methods you implement `@objc` (for example `@objc var window: UIWindow?`). Swift does not expose a subclass's members to UIKit for a protocol its superclass adopts, so without it UIKit never sees the window and the app launches to a black screen.
 
 ## Install (CocoaPods)
 

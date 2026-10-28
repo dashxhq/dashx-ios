@@ -29,11 +29,13 @@ class DashXApplicationLifecycleCallbacks: NSObject {
     private let notificationCenter: NotificationCenter
     private let installsCrashHandler: Bool
     private let isConfigured: () -> Bool
+    private let isActive: () -> Bool
     private let buildInfo: () -> (version: String, build: String)
     private let now: () -> TimeInterval
 
     private let lock = NSLock()
     private var isEnabled = false
+    private var isLaunchPending = false
     private var foregroundStartedAt: TimeInterval?
 
     init(
@@ -42,6 +44,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         notificationCenter: NotificationCenter = .default,
         installsCrashHandler: Bool = true,
         isConfigured: @escaping () -> Bool = { ConfigInterceptor.shared.publicKey != nil },
+        isActive: @escaping () -> Bool = { UIApplication.shared.applicationState == .active },
         buildInfo: @escaping () -> (version: String, build: String) = DashXApplicationLifecycleCallbacks.mainBundleBuildInfo,
         now: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) {
@@ -50,6 +53,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         self.notificationCenter = notificationCenter
         self.installsCrashHandler = installsCrashHandler
         self.isConfigured = isConfigured
+        self.isActive = isActive
         self.buildInfo = buildInfo
         self.now = now
     }
@@ -73,17 +77,41 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         lock.lock()
         let alreadyEnabled = isEnabled
         isEnabled = true
+        isLaunchPending = !alreadyEnabled
         lock.unlock()
         guard !alreadyEnabled else { return }
 
         notificationCenter.addObserver(self, selector: #selector(appBackgrounded), name: UIApplication.didEnterBackgroundNotification, object: nil)
         notificationCenter.addObserver(self, selector: #selector(appForegrounded), name: UIApplication.willEnterForegroundNotification, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(appBecameActive), name: UIApplication.didBecomeActiveNotification, object: nil)
 
         if installsCrashHandler {
             _ = installCrashHandlerOnce
         }
 
-        appLaunched()
+        launchIfActive()
+    }
+
+    // A background launch (silent push, background fetch) is not an open, and applicationState
+    // is not yet .active during didFinishLaunching, so a normal launch is sent on first activation.
+    private func launchIfActive() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.launchIfActive() }
+            return
+        }
+        if isActive() {
+            launchIfPending()
+        }
+    }
+
+    private func launchIfPending() {
+        lock.lock()
+        let isPending = isLaunchPending
+        isLaunchPending = false
+        lock.unlock()
+        if isPending {
+            appLaunched()
+        }
     }
 
     private func markForegroundStart() {
@@ -121,12 +149,20 @@ class DashXApplicationLifecycleCallbacks: NSObject {
     }
 
     @objc
+    func appBecameActive() {
+        launchIfPending()
+    }
+
+    @objc
     func appForegrounded() {
-        // Scene-based apps also post willEnterForeground as the first scene appears at launch,
-        // which is not a return from the background.
         lock.lock()
+        let isPending = isLaunchPending
         let isReturning = foregroundStartedAt == nil
         lock.unlock()
+        if isPending {
+            launchIfPending()
+            return
+        }
         guard isReturning else { return }
 
         markForegroundStart()
