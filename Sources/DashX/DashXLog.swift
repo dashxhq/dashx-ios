@@ -19,32 +19,32 @@ public class DashXLog {
         self.logLevel = to
     }
 
-    static public func d(tag: String, _ data: String) {
+    static public func d(tag: String, _ data: @autoclosure () -> String) {
         if logLevel >= .debug {
             if #available(iOS 10.0, *) {
-                os_log("%@: %@", type: .debug, tag, data)
+                os_log("%@: %@", type: .debug, tag, data())
             } else {
-                print("[DEBUG] %@: %@", tag, data)
+                print("[DEBUG] %@: %@", tag, data())
             }
         }
     }
 
-    static public func i(tag: String, _ data: String) {
+    static public func i(tag: String, _ data: @autoclosure () -> String) {
         if logLevel >= .info {
             if #available(iOS 10.0, *) {
-                os_log("%@: %@", type: .info, tag, data)
+                os_log("%@: %@", type: .info, tag, data())
             } else {
-                print("[INFO] %@: %@", tag, data)
+                print("[INFO] %@: %@", tag, data())
             }
         }
     }
 
-    static public func e(tag: String, _ data: String) {
+    static public func e(tag: String, _ data: @autoclosure () -> String) {
         if logLevel >= .error {
             if #available(iOS 10.0, *) {
-                os_log("%@: %@", type: .error, tag, data)
+                os_log("%@: %@", type: .error, tag, data())
             } else {
-                print("[ERROR] %@: %@", tag, data)
+                print("[ERROR] %@: %@", tag, data())
             }
         }
     }

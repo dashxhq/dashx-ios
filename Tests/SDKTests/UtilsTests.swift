@@ -67,14 +67,16 @@ final class UtilsTests: XCTestCase {
         XCTAssertTrue(Constants.USER_PREFERENCES_KEY_BUILD.hasPrefix("com.dashx.ios"))
     }
 
+    // Wire contract: customers' dashboards and the public docs depend on these names.
     func testInternalEventNames() {
-        XCTAssertFalse(Constants.INTERNAL_EVENT_APP_INSTALLED.isEmpty)
-        XCTAssertFalse(Constants.INTERNAL_EVENT_APP_UPDATED.isEmpty)
-        XCTAssertFalse(Constants.INTERNAL_EVENT_APP_OPENED.isEmpty)
-        XCTAssertFalse(Constants.INTERNAL_EVENT_APP_BACKGROUNDED.isEmpty)
-        XCTAssertFalse(Constants.INTERNAL_EVENT_APP_CRASHED.isEmpty)
-        XCTAssertFalse(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED.isEmpty)
-        XCTAssertFalse(Constants.EVENT_DEEP_LINK_OPENED.isEmpty)
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_INSTALLED, "Application Installed")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_UPDATED, "Application Updated")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_OPENED, "Application Opened")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, "Application Backgrounded")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_CRASHED, "Application Crashed")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, "$screen")
+        XCTAssertEqual(Constants.EVENT_DEEP_LINK_OPENED, "Deep Link Opened")
+        XCTAssertEqual(Constants.EVENT_NOTIFICATION_NAVIGATED, "dx_notification_navigated")
     }
 
     func testUserAttributes() {
@@ -85,5 +87,28 @@ final class UtilsTests: XCTestCase {
         XCTAssertEqual(UserAttributes.NAME, "name")
         XCTAssertEqual(UserAttributes.FIRST_NAME, "firstName")
         XCTAssertEqual(UserAttributes.LAST_NAME, "lastName")
+    }
+}
+
+final class DashXLogTests: XCTestCase {
+    override func tearDown() {
+        DashXLog.setLogLevel(to: .off)
+        super.tearDown()
+    }
+
+    func testMessagesBelowTheLogLevelAreNeverBuilt() {
+        var built = 0
+        func message() -> String {
+            built += 1
+            return "message"
+        }
+
+        DashXLog.setLogLevel(to: .error)
+        DashXLog.d(tag: "test", message())
+        DashXLog.i(tag: "test", message())
+        XCTAssertEqual(built, 0)
+
+        DashXLog.e(tag: "test", message())
+        XCTAssertEqual(built, 1)
     }
 }

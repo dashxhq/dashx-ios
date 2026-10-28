@@ -7,6 +7,7 @@ struct QueuedEvent: Codable {
     let dataJSON: Data?
     let accountUid: String?
     let accountAnonymousUid: String?
+    /// When `track()` was called, sent as the event's timestamp on replay. Named for the stored key.
     let enqueuedAt: Date
     var retryCount: Int
 
@@ -64,6 +65,23 @@ struct QueuedEvent: Codable {
         try c.encode(retryCount, forKey: .retryCount)
     }
 
+    static func pending(
+        event: String,
+        data: [String: Any]?,
+        accountUid: String?,
+        accountAnonymousUid: String?,
+        occurredAt: Date
+    ) -> QueuedEvent {
+        QueuedEvent(
+            event: event,
+            dataJSON: makeJSONData(from: data),
+            accountUid: accountUid,
+            accountAnonymousUid: accountAnonymousUid,
+            enqueuedAt: occurredAt,
+            retryCount: 0
+        )
+    }
+
     static func makeJSONData(from dictionary: [String: Any]?) -> Data? {
         guard let dictionary else { return nil }
         guard JSONSerialization.isValidJSONObject(dictionary) else {
@@ -99,15 +117,13 @@ final class EventQueue {
 
     // MARK: - Public Interface
 
-    func enqueue(event: String, data: [String: Any]?, accountUid: String?, accountAnonymousUid: String?) {
-        let payload = QueuedEvent.makeJSONData(from: data)
-        let queued = QueuedEvent(
+    func enqueue(event: String, data: [String: Any]?, accountUid: String?, accountAnonymousUid: String?, occurredAt: Date) {
+        let queued = QueuedEvent.pending(
             event: event,
-            dataJSON: payload,
+            data: data,
             accountUid: accountUid,
             accountAnonymousUid: accountAnonymousUid,
-            enqueuedAt: Date(),
-            retryCount: 0
+            occurredAt: occurredAt
         )
 
         queue.async { [weak self] in

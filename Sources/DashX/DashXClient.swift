@@ -103,6 +103,8 @@ public class DashXClient {
 
     /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
     private static let assetPollQueue = DispatchQueue(label: "com.dashx.ios.assetPoll")
+    private let trackQueue = DispatchQueue(label: "com.dashx.ios.track", qos: .utility)
+    private static let trackTimestampFormatter = ISO8601DateFormatter()
 
     // Single lock protecting all mutable identity / token state below.
     // Using NSLock (non-recursive) is safe here because no getter or setter
@@ -304,8 +306,16 @@ public class DashXClient {
         }
     }
 
+    /// Sends `Application Installed` / `Application Updated` / `Application Opened` now, then
+    /// `Application Opened` and `Application Backgrounded` on every foreground / background
+    /// transition. Idempotent.
     public func enableLifecycleTracking() {
-        DashXApplicationLifecycleCallbacks().enable()
+        DashXApplicationLifecycleCallbacks.instance.enable()
+    }
+
+    /// Sends `$screen` each time a view controller appears. Idempotent.
+    public func enableScreenTracking() {
+        DashXScreenTracking.enable()
     }
 
     // MARK: - Ad Tracking
@@ -460,7 +470,30 @@ public class DashXClient {
     ) {
         let effectiveAccountUid = queuedAccountUid ?? self.accountUid
         let effectiveAnonymousUid = queuedAccountAnonymousUid ?? self.accountAnonymousUid
+        // Replayed events keep the time they were queued, not the flush time.
+        let occurredAt = queuedTimestamp ?? Date()
 
+        // Building the payload reads device state, so it runs off the caller's (often the main) thread.
+        trackQueue.async {
+            self.sendTrack(
+                event,
+                withData: withData,
+                accountUid: effectiveAccountUid,
+                accountAnonymousUid: effectiveAnonymousUid,
+                occurredAt: occurredAt,
+                completion: completion
+            )
+        }
+    }
+
+    private func sendTrack(
+        _ event: String,
+        withData: [String: Any]?,
+        accountUid effectiveAccountUid: String?,
+        accountAnonymousUid effectiveAnonymousUid: String?,
+        occurredAt: Date,
+        completion: ((Bool) -> Void)?
+    ) {
         guard case .online = NetworkMonitor.shared.connection else {
             DashXLog.d(tag: #function, "Offline — queueing event '\(event)'")
             // When replaying from the disk queue (`completion != nil`), do not enqueue again.
@@ -469,7 +502,8 @@ public class DashXClient {
                     event: event,
                     data: withData,
                     accountUid: effectiveAccountUid,
-                    accountAnonymousUid: effectiveAnonymousUid
+                    accountAnonymousUid: effectiveAnonymousUid,
+                    occurredAt: occurredAt
                 )
             }
             if let completion {
@@ -486,12 +520,7 @@ public class DashXClient {
             dataJSON = .null
         }
 
-        // Use the queued event's original enqueue time when replaying, else stamp
-        // "now". The server rejects track events without a top-level timestamp
-        // (GraphQL `Validation failed`), and queued events should preserve their
-        // original occurrence time rather than the flush time.
-        let formatter = ISO8601DateFormatter()
-        let timestamp = formatter.string(from: queuedTimestamp ?? Date())
+        let timestamp = Self.trackTimestampFormatter.string(from: occurredAt)
 
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
@@ -516,6 +545,7 @@ public class DashXClient {
                         withData: withData,
                         accountUid: effectiveAccountUid,
                         accountAnonymousUid: effectiveAnonymousUid,
+                        occurredAt: occurredAt,
                         completion: completion
                     )
                     return
@@ -527,6 +557,7 @@ public class DashXClient {
                         withData: withData,
                         accountUid: effectiveAccountUid,
                         accountAnonymousUid: effectiveAnonymousUid,
+                        occurredAt: occurredAt,
                         completion: completion
                     )
                     return
@@ -542,6 +573,7 @@ public class DashXClient {
                     withData: withData,
                     accountUid: effectiveAccountUid,
                     accountAnonymousUid: effectiveAnonymousUid,
+                    occurredAt: occurredAt,
                     completion: completion
                 )
             }
@@ -553,6 +585,7 @@ public class DashXClient {
         withData: [String: Any]?,
         accountUid: String?,
         accountAnonymousUid: String?,
+        occurredAt: Date,
         completion: ((Bool) -> Void)?
     ) {
         if let completion {
@@ -562,7 +595,8 @@ public class DashXClient {
                 event: event,
                 data: withData,
                 accountUid: accountUid,
-                accountAnonymousUid: accountAnonymousUid
+                accountAnonymousUid: accountAnonymousUid,
+                occurredAt: occurredAt
             )
         }
     }
@@ -622,7 +656,7 @@ public class DashXClient {
 
     public func screen(_ screenName: String, withData: [String: Any]? = nil) {
         var properties = withData ?? [:]
-        properties["name"] = screenName
+        properties["$screen_name"] = screenName
         self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties)
     }
 
@@ -1423,7 +1457,7 @@ public class DashXClient {
 
     public var linkHandler: ((URL) -> Void)?
 
-    /// Records a `dx_deep_link_opened` analytics event and optionally forwards the URL to ``linkHandler``.
+    /// Records a `Deep Link Opened` analytics event and optionally forwards the URL to ``linkHandler``.
     /// - Parameters:
     ///   - url: The opened deep link.
     ///   - source: Optional attribution (e.g. `universal_link`, `scene_url`, `notification`).

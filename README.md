@@ -36,6 +36,34 @@ Full setup, configuration, push notifications (including Notification Service Ex
 - [Messaging → Receive Push Notifications](https://docs.dashx.com/apps/messaging/receive-push-notifications)
 - [Deep Linking & Push Navigation](https://docs.dashx.com/apps/messaging/deep-linking)
 
+## Automatic events
+
+The SDK can send these events on your behalf:
+
+| Event | When | Data |
+|---|---|---|
+| `Application Installed` | First launch after install | `version`, `build` |
+| `Application Updated` | First launch after an upgrade | `version`, `build`, `previous_build`, `previous_version` |
+| `Application Opened` | Every other cold start, and every return from the background | `version`, `build`; `from_background: true` when returning from the background |
+| `Application Backgrounded` | App enters the background | `session_length` (seconds in the foreground since the matching open) |
+| `Application Crashed` | Uncaught Objective-C exception | `exception` |
+| `$screen` | A view controller appears, or you call `DashX.screen(_:withData:)` | `$screen_name` plus any data you pass |
+| `Deep Link Opened` | A deep link is processed | `url`, `source`, `timestamp` |
+| `dx_notification_navigated` | A DashX notification is tapped | `notification_id`, `type`, `url` / `screen_name` / `screen_data` / `click_action`, `timestamp` |
+
+Lifecycle and automatic screen events are opt-in. Call these once, after `configure()`, typically in `application(_:didFinishLaunchingWithOptions:)`; repeat calls are no-ops:
+
+```swift
+DashX.enableLifecycleTracking()
+DashX.enableScreenTracking()
+```
+
+`enableScreenTracking()` names each screen by the view controller's `title`, then `navigationItem.title`, then its class name. Container controllers (navigation, tab bar, split, page), alerts and system controllers are skipped, and SwiftUI hosting controllers are only reported when they have a title. To name screens yourself, call `DashX.screen("Checkout")` instead. A screen you also report with `DashX.screen(_:withData:)` is sent twice, and child view controllers in your own containers are reported alongside their parent.
+
+A launch in the background (silent push, background fetch) is not reported as an open; the launch event is sent when the app first becomes active.
+
+If your `SceneDelegate` subclasses `DashXSceneDelegate`, mark `window` and the scene methods you implement `@objc` (for example `@objc var window: UIWindow?`). Swift does not expose a subclass's members to UIKit for a protocol its superclass adopts, so without it UIKit never sees the window and the app launches to a black screen.
+
 ## Install (CocoaPods)
 
 CocoaPods consumers pull a prebuilt XCFramework — source compilation (and any downstream Apollo module surprises) happens on our Mac at release time, not on consumers' machines. The pod is **not** published to the CocoaPods trunk; reference it from git by tag:
