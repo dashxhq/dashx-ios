@@ -1,7 +1,7 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.3.2 effective-5.10 (swiftlang-6.3.2.1.108 clang-2100.1.1.101)
+// swift-compiler-version: Apple Swift version 6.3.3 effective-5.10 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
 // swift-module-flags: -target x86_64-apple-ios13.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name DashX -package-name DashX
-// swift-module-flags-ignorable: -no-verify-emitted-module-interface -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.2
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -formal-cxx-interoperability-mode=off -interface-compiler-version 6.3.3
 import AdSupport
 import AppTrackingTransparency
 import Foundation
@@ -25,6 +25,7 @@ public struct Constants {
   public static let USER_PREFERENCES_KEY_SUBSCRIBED_LIBRARY_VERSION: Swift.String
   public static let USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION: Swift.String
   public static let USER_PREFERENCES_KEY_BUILD: Swift.String
+  public static let USER_PREFERENCES_KEY_VERSION: Swift.String
   public static let INTERNAL_EVENT_APP_INSTALLED: Swift.String
   public static let INTERNAL_EVENT_APP_UPDATED: Swift.String
   public static let INTERNAL_EVENT_APP_OPENED: Swift.String
@@ -105,6 +106,7 @@ public let DashX: DashX.DashXClient
   public func configure(withPublicKey publicKey: Swift.String, baseURI: Swift.String? = nil, targetEnvironment: Swift.String? = nil, libraryInfo: DashX.LibraryInfo? = nil)
   public func setFCMToken(to: Swift.String)
   public func enableLifecycleTracking()
+  public func enableScreenTracking()
   public func enableAdTracking()
   public func setIdentity(uid: Swift.String?, token: Swift.String?)
   @available(*, deprecated, message: "Use identify(options:) instead")
@@ -168,9 +170,9 @@ extension DashX.DashXClient {
     }
   }
   public static func setLogLevel(to: DashX.DashXLog.LogLevel)
-  public static func d(tag: Swift.String, _ data: Swift.String)
-  public static func i(tag: Swift.String, _ data: Swift.String)
-  public static func e(tag: Swift.String, _ data: Swift.String)
+  public static func d(tag: Swift.String, _ data: @autoclosure () -> Swift.String)
+  public static func i(tag: Swift.String, _ data: @autoclosure () -> Swift.String)
+  public static func e(tag: Swift.String, _ data: @autoclosure () -> Swift.String)
   @objc deinit
 }
 public enum DashXNotificationKeys {
