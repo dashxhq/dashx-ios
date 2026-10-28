@@ -2,6 +2,28 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.0] — 2026-10-28
+
+### Breaking
+
+- **Screen and deep link events are renamed.** `Screen Viewed` is now `$screen`, with the screen name in `$screen_name` instead of `name`, and `dx_deep_link_opened` is now `Deep Link Opened` (data unchanged). Reports, flows or filters on the old names or the `name` key need updating. The `Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED` and `Constants.EVENT_DEEP_LINK_OPENED` names are unchanged; only their values are. Lifecycle event names and keys are unchanged.
+
+### Fixed
+
+- **`Application Backgrounded` and from-background `Application Opened` are now actually sent.** `enableLifecycleTracking()` created its lifecycle observer without retaining it, so it was deallocated straight away and its `NotificationCenter` observers went with it: only the cold-start event (and the crash handler) ever worked. The observer is now a retained shared instance. **Apps that call `enableLifecycleTracking()` will see `Application Backgrounded` and `Application Opened` with `from_background: true` for the first time, so lifecycle event volume will rise after upgrading.**
+- **`Application Backgrounded` fires only when the app actually enters the background.** It was wired to `willResignActive`, which also fires for Control Center, Notification Center, incoming calls and the app switcher. It now uses `didEnterBackground`; returning uses `willEnterForeground` and sends `Application Opened` with `from_background: true`. `session_length` (seconds) is measured from the matching open on a monotonic clock.
+- **`enableLifecycleTracking()` is idempotent.** Each call sent another cold-start event and reinstalled the crash handler. Repeat calls are now no-ops.
+- **A cold start sends exactly one event**: `Application Installed` (first launch), `Application Updated` (stored build is lower than the current one) or `Application Opened`. A downgrade sends `Application Opened` and stores the current build, so a later upgrade reports `Application Updated`.
+- **A launch in the background is not reported as an open.** The cold-start event used to be sent from `enableLifecycleTracking()` itself, so a launch for a silent push or background fetch counted as `Application Opened`. It is now sent when the app first becomes active (or its first scene enters the foreground). A launch that stays in the background sends nothing, and when the user later opens the app it sends the cold-start event, not a from-background `Application Opened`, with `session_length` counting foreground time only.
+- **An install or update seen before `configure()` is deferred.** The launch event is checked when the app first becomes active, so calling `configure()` any time before then is enough. If `configure()` still has not been called by then, no launch event is sent and the stored build is left untouched, so the install or update is reported on the next launch after `configure()`.
+- **`track()` no longer does work on the calling thread.** It used to build the event (device details, data, timestamp, debug log text) on the caller's thread, which is the main thread for lifecycle and screen events and most app code. It now returns immediately and builds and sends the event on a background queue, in call order. Debug log messages are only built when logging is on: `DashXLog.d`, `.i` and `.e` take an `@autoclosure` message, which existing call sites compile against unchanged. Events queued while offline or after a failed send keep the time `track()` was called, not the time they were queued.
+- **The crash handler chains to any previously installed `NSUncaughtExceptionHandler`** instead of replacing it (e.g. a crash reporter installed earlier).
+
+### Added
+
+- **`Application Updated` carries `previous_build` and `previous_version`** (strings), the build and version the app was upgraded from. The version is recorded from this release on, so the first update after upgrading the SDK has no `previous_version`.
+- **`enableScreenTracking()`** - opt-in automatic `$screen` events. Sent on every `viewDidAppear(_:)` with `$screen_name` set to the controller's `title`, else `navigationItem.title`, else its class name. Container and system controllers (`UINavigationController`, `UITabBarController`, `UISplitViewController`, `UIPageViewController`, `UIAlertController`, keyboard and other private UIKit controllers) are skipped, as are SwiftUI `UIHostingController`s and other system controllers without a title. The previous automatic screen tracking hooked `viewDidLoad`, sent no screen name, and was never actually enabled.
+
 ## [1.5.1] — 2026-05-06
 
 ### Fixed

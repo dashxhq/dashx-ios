@@ -97,6 +97,26 @@ final class QueuedEventTests: XCTestCase {
         XCTAssertNil(data)
     }
 
+    // MARK: - pending
+
+    func testPendingEventKeepsTheTimeTrackWasCalled() throws {
+        let occurredAt = Date(timeIntervalSince1970: 1700000000)
+        let queued = QueuedEvent.pending(
+            event: "button_click",
+            data: ["key": "value"],
+            accountUid: "user_123",
+            accountAnonymousUid: nil,
+            occurredAt: occurredAt
+        )
+
+        let decoded = try JSONDecoder().decode(QueuedEvent.self, from: JSONEncoder().encode(queued))
+
+        XCTAssertEqual(decoded.enqueuedAt.timeIntervalSince1970, 1700000000.0, accuracy: 0.001)
+        XCTAssertEqual(decoded.retryCount, 0)
+        XCTAssertEqual(decoded.accountUid, "user_123")
+        XCTAssertEqual(decoded.decodedData()?["key"] as? String, "value")
+    }
+
     // MARK: - decodedData
 
     func testDecodedDataReturnsNilForNilJSON() {
