@@ -25,14 +25,15 @@ public struct Constants {
     /// isn't held hostage by the ATT prompt.
     public static let USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION = "\(PACKAGE_NAME).subscribed_ad_info_version"
     public static let USER_PREFERENCES_KEY_BUILD = "\(PACKAGE_NAME).build"
+    public static let USER_PREFERENCES_KEY_VERSION = "\(PACKAGE_NAME).version"
     public static let INTERNAL_EVENT_APP_INSTALLED = "Application Installed"
     public static let INTERNAL_EVENT_APP_UPDATED = "Application Updated"
     public static let INTERNAL_EVENT_APP_OPENED = "Application Opened"
     public static let INTERNAL_EVENT_APP_BACKGROUNDED = "Application Backgrounded"
     public static let INTERNAL_EVENT_APP_CRASHED = "Application Crashed"
-    public static let INTERNAL_EVENT_APP_SCREEN_VIEWED = "Screen Viewed"
+    public static let INTERNAL_EVENT_APP_SCREEN_VIEWED = "$screen"
     /// Emitted when a deep link URL is processed (push, universal link, custom scheme, etc.).
-    public static let EVENT_DEEP_LINK_OPENED = "dx_deep_link_opened"
+    public static let EVENT_DEEP_LINK_OPENED = "Deep Link Opened"
     /// Emitted on every notification tap regardless of navigation type (deep link, screen, click action, etc.).
     public static let EVENT_NOTIFICATION_NAVIGATED = "dx_notification_navigated"
     public static let CONTENT_TYPE = "Content-Type"

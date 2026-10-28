@@ -74,8 +74,8 @@ final class UtilsTests: XCTestCase {
         XCTAssertEqual(Constants.INTERNAL_EVENT_APP_OPENED, "Application Opened")
         XCTAssertEqual(Constants.INTERNAL_EVENT_APP_BACKGROUNDED, "Application Backgrounded")
         XCTAssertEqual(Constants.INTERNAL_EVENT_APP_CRASHED, "Application Crashed")
-        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, "Screen Viewed")
-        XCTAssertEqual(Constants.EVENT_DEEP_LINK_OPENED, "dx_deep_link_opened")
+        XCTAssertEqual(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, "$screen")
+        XCTAssertEqual(Constants.EVENT_DEEP_LINK_OPENED, "Deep Link Opened")
         XCTAssertEqual(Constants.EVENT_NOTIFICATION_NAVIGATED, "dx_notification_navigated")
     }
 

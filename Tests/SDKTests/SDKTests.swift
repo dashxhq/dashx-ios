@@ -185,15 +185,35 @@ final class LifecycleTrackingTests: XCTestCase {
         XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
     }
 
-    func testNewBuildSendsUpdatedWithPreviousBuild() {
+    func testNewBuildSendsUpdatedWithPreviousBuildAndVersion() {
         defaults.set("41", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+        defaults.set("1.1.0", forKey: Constants.USER_PREFERENCES_KEY_VERSION)
 
         makeCallbacks().enable()
 
         XCTAssertEqual(events.map(\.name), ["Application Updated"])
         XCTAssertEqual(events[0].data["previous_build"] as? String, "41")
+        XCTAssertEqual(events[0].data["previous_version"] as? String, "1.1.0")
         XCTAssertEqual(events[0].data["build"] as? String, "42")
         XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD), "42")
+        XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_VERSION), "1.2.0")
+    }
+
+    func testUpdateFromABuildWithoutAStoredVersionOmitsPreviousVersion() {
+        defaults.set("41", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+
+        makeCallbacks().enable()
+
+        XCTAssertEqual(events[0].data["previous_build"] as? String, "41")
+        XCTAssertFalse(events[0].data.keys.contains("previous_version"))
+    }
+
+    func testColdOpenStoresTheVersionForTheNextUpdate() {
+        defaults.set("42", forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+
+        makeCallbacks().enable()
+
+        XCTAssertEqual(defaults.string(forKey: Constants.USER_PREFERENCES_KEY_VERSION), "1.2.0")
     }
 
     func testDowngradeSendsOpenedAndStoresCurrentBuild() {

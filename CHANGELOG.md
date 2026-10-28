@@ -4,7 +4,9 @@ All notable changes to `dashx-ios` are documented in this file. Format loosely f
 
 ## Unreleased
 
-Event names and data keys are unchanged.
+### Breaking
+
+- **Screen and deep link events are renamed.** `Screen Viewed` is now `$screen`, with the screen name in `$screen_name` instead of `name`, and `dx_deep_link_opened` is now `Deep Link Opened` (data unchanged). Reports, flows or filters on the old names or the `name` key need updating. The `Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED` and `Constants.EVENT_DEEP_LINK_OPENED` names are unchanged; only their values are. Lifecycle event names and keys are unchanged.
 
 ### Fixed
 
@@ -18,8 +20,8 @@ Event names and data keys are unchanged.
 
 ### Added
 
-- **`Application Updated` carries `previous_build`** (string), the build the app was upgraded from.
-- **`enableScreenTracking()`** - opt-in automatic `Screen Viewed` events. Sent on every `viewDidAppear(_:)` with `name` set to the controller's `title`, else `navigationItem.title`, else its class name. Container and system controllers (`UINavigationController`, `UITabBarController`, `UISplitViewController`, `UIPageViewController`, `UIAlertController`, keyboard and other private UIKit controllers) are skipped, as are SwiftUI `UIHostingController`s and other system controllers without a title. The previous automatic screen tracking hooked `viewDidLoad`, sent no screen name, and was never actually enabled.
+- **`Application Updated` carries `previous_build` and `previous_version`** (strings), the build and version the app was upgraded from. The version is recorded from this release on, so the first update after upgrading the SDK has no `previous_version`.
+- **`enableScreenTracking()`** - opt-in automatic `$screen` events. Sent on every `viewDidAppear(_:)` with `$screen_name` set to the controller's `title`, else `navigationItem.title`, else its class name. Container and system controllers (`UINavigationController`, `UITabBarController`, `UISplitViewController`, `UIPageViewController`, `UIAlertController`, keyboard and other private UIKit controllers) are skipped, as are SwiftUI `UIHostingController`s and other system controllers without a title. The previous automatic screen tracking hooked `viewDidLoad`, sent no screen name, and was never actually enabled.
 
 ## [1.5.1] — 2026-05-06
 

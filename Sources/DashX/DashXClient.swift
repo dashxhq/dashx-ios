@@ -311,7 +311,7 @@ public class DashXClient {
         DashXApplicationLifecycleCallbacks.instance.enable()
     }
 
-    /// Sends `Screen Viewed` each time a view controller appears. Idempotent.
+    /// Sends `$screen` each time a view controller appears. Idempotent.
     public func enableScreenTracking() {
         DashXScreenTracking.enable()
     }
@@ -630,7 +630,7 @@ public class DashXClient {
 
     public func screen(_ screenName: String, withData: [String: Any]? = nil) {
         var properties = withData ?? [:]
-        properties["name"] = screenName
+        properties["$screen_name"] = screenName
         self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties)
     }
 
@@ -1431,7 +1431,7 @@ public class DashXClient {
 
     public var linkHandler: ((URL) -> Void)?
 
-    /// Records a `dx_deep_link_opened` analytics event and optionally forwards the URL to ``linkHandler``.
+    /// Records a `Deep Link Opened` analytics event and optionally forwards the URL to ``linkHandler``.
     /// - Parameters:
     ///   - url: The opened deep link.
     ///   - source: Optional attribution (e.g. `universal_link`, `scene_url`, `notification`).

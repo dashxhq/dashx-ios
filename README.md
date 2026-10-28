@@ -43,12 +43,12 @@ The SDK can send these events on your behalf:
 | Event | When | Data |
 |---|---|---|
 | `Application Installed` | First launch after install | `version`, `build` |
-| `Application Updated` | First launch after an upgrade | `version`, `build`, `previous_build` |
+| `Application Updated` | First launch after an upgrade | `version`, `build`, `previous_build`, `previous_version` |
 | `Application Opened` | Every other cold start, and every return from the background | `version`, `build`; `from_background: true` when returning from the background |
 | `Application Backgrounded` | App enters the background | `session_length` (seconds in the foreground since the matching open) |
 | `Application Crashed` | Uncaught Objective-C exception | `exception` |
-| `Screen Viewed` | A view controller appears, or you call `DashX.screen(_:withData:)` | `name` plus any data you pass |
-| `dx_deep_link_opened` | A deep link is processed | `url`, `source`, `timestamp` |
+| `$screen` | A view controller appears, or you call `DashX.screen(_:withData:)` | `$screen_name` plus any data you pass |
+| `Deep Link Opened` | A deep link is processed | `url`, `source`, `timestamp` |
 | `dx_notification_navigated` | A DashX notification is tapped | `notification_id`, `type`, `url` / `screen_name` / `screen_data` / `click_action`, `timestamp` |
 
 Lifecycle and automatic screen events are opt-in. Call these once, after `configure()`, typically in `application(_:didFinishLaunchingWithOptions:)`; repeat calls are no-ops:

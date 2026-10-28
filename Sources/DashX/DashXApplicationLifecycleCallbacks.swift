@@ -126,6 +126,7 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         let info = buildInfo()
         let data: [String: Any] = ["version": info.version, "build": info.build]
         let previousBuild = defaults.string(forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+        let previousVersion = defaults.string(forKey: Constants.USER_PREFERENCES_KEY_VERSION)
         let kind = Self.launchKind(previousBuild: previousBuild, currentBuild: info.build)
 
         // Nothing can be sent before configure(); leaving the stored build untouched reports
@@ -139,13 +140,16 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         case .installed:
             track(Constants.INTERNAL_EVENT_APP_INSTALLED, data)
         case let .updated(previousBuild):
-            track(Constants.INTERNAL_EVENT_APP_UPDATED, data.merging(["previous_build": previousBuild]) { current, _ in current })
+            var updated = data
+            updated["previous_build"] = previousBuild
+            // Builds stored before the version was recorded have no previous version.
+            updated["previous_version"] = previousVersion
+            track(Constants.INTERNAL_EVENT_APP_UPDATED, updated)
         case .downgraded, .opened:
             track(Constants.INTERNAL_EVENT_APP_OPENED, data)
         }
-        if kind != .opened {
-            defaults.set(info.build, forKey: Constants.USER_PREFERENCES_KEY_BUILD)
-        }
+        defaults.set(info.build, forKey: Constants.USER_PREFERENCES_KEY_BUILD)
+        defaults.set(info.version, forKey: Constants.USER_PREFERENCES_KEY_VERSION)
     }
 
     @objc
