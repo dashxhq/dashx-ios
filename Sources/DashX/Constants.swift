@@ -13,7 +13,7 @@ public struct Constants {
     /// across platforms so dashboard filters work uniformly.
     static let LIBRARY_NAME = "dashx-ios"
 
-    static let PACKAGE_VERSION = "1.6.0"
+    static let PACKAGE_VERSION = "1.6.1"
     public static let USER_PREFERENCES_KEY_ACCOUNT_UID = "\(PACKAGE_NAME).account_uid"
     public static let USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID = "\(PACKAGE_NAME).account_anonymous_uid"
     public static let USER_PREFERENCES_KEY_IDENTITY_TOKEN = "\(PACKAGE_NAME).identity_token"
@@ -35,7 +35,7 @@ public struct Constants {
     /// Emitted when a deep link URL is processed (push, universal link, custom scheme, etc.).
     public static let EVENT_DEEP_LINK_OPENED = "Deep Link Opened"
     /// Emitted on every notification tap regardless of navigation type (deep link, screen, click action, etc.).
-    public static let EVENT_NOTIFICATION_NAVIGATED = "dx_notification_navigated"
+    public static let EVENT_NOTIFICATION_NAVIGATED = "Push Notification Tapped"
     public static let CONTENT_TYPE = "Content-Type"
     public static let GCS_ASSET_UPLOAD_HEADER_KEY = "x-goog-meta-origin-id"
     public static let DASHX_NOTIFICATION_DATA_KEY = "dashx"
