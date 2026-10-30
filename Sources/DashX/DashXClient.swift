@@ -449,27 +449,43 @@ public class DashXClient {
         track(
             event,
             withData: withData,
-            queuedAccountUid: nil,
-            queuedAccountAnonymousUid: nil,
+            queuedIdentity: nil,
             queuedTimestamp: nil,
             completion: nil
         )
     }
 
+    /// The identity an event was queued with.
+    struct QueuedIdentity: Equatable {
+        let accountUid: String?
+        let accountAnonymousUid: String?
+    }
+
+    /// A replayed event keeps the identity it was queued with, a nil account uid included: an event
+    /// tracked signed out must not be credited to whoever signs in before it is sent. Only an event
+    /// queued before identities were stored, with neither id, takes the current identity.
+    static func trackIdentity(queued: QueuedIdentity?, current: QueuedIdentity) -> QueuedIdentity {
+        guard let queued, queued.accountUid != nil || queued.accountAnonymousUid != nil else { return current }
+        return queued
+    }
+
     /// - Parameters:
-    ///   - queuedAccountUid: Identity captured when the event was queued; use for replay so changing `setIdentity` mid-queue does not corrupt payloads.
+    ///   - queuedIdentity: Set when replaying a queued event; nil for a new call, which uses the current identity.
     ///   - queuedTimestamp: Wall-clock time when the event was originally enqueued. Preserves the historical timestamp when the queue flushes later.
     ///   - completion: Called on the main queue with `true` when the server accepted the mutation (no GraphQL errors, non-nil data).
     internal func track(
         _ event: String,
         withData: [String: Any]?,
-        queuedAccountUid: String?,
-        queuedAccountAnonymousUid: String?,
+        queuedIdentity: QueuedIdentity?,
         queuedTimestamp: Date?,
         completion: ((Bool) -> Void)?
     ) {
-        let effectiveAccountUid = queuedAccountUid ?? self.accountUid
-        let effectiveAnonymousUid = queuedAccountAnonymousUid ?? self.accountAnonymousUid
+        let identity = Self.trackIdentity(
+            queued: queuedIdentity,
+            current: QueuedIdentity(accountUid: self.accountUid, accountAnonymousUid: self.accountAnonymousUid)
+        )
+        let effectiveAccountUid = identity.accountUid
+        let effectiveAnonymousUid = identity.accountAnonymousUid
         // Replayed events keep the time they were queued, not the flush time.
         let occurredAt = queuedTimestamp ?? Date()
 
