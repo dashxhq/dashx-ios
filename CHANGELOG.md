@@ -2,6 +2,13 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.2] — 2026-10-30
+
+### Fixed
+
+- **No crash on a network interface without an address.** Collecting the device's IP address for every event's system context read each interface's `ifa_addr` without checking it, and `getifaddrs` may report a null one, which is a fatal error the app cannot catch. Interfaces without an address, or with a family other than IPv4 or IPv6, are now skipped, and an address is used only when `getnameinfo` succeeds.
+- **A replayed event keeps the identity it was queued with.** An event that was queued offline or after a failed send while signed out was replayed with the account uid of whoever had signed in by then, crediting their account with it. Replay now sends the queued account uid as it was, nil included, and only an event queued before identities were stored takes the current identity.
+
 ## [1.6.1] — 2026-10-28
 
 ### Breaking

@@ -44,6 +44,7 @@
 		73703E00ED231AB7B30C0C26 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370AED59CAAF59E3D77EE8B /* Utils.swift */; };
 		74CE1BE92360A0D4255E370F /* ApolloAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 7ACD41EDD9EF462B03348AEE /* ApolloAPI */; };
 		7C49674BE1D6C76A587EC165 /* UnsubscribeContactMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = D045C590AEB908C8AC52CC93 /* UnsubscribeContactMutation.graphql.swift */; };
+		7FFF5AE7AC98E57505E9C159 /* DashXNotificationServiceExtension.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 98B176F1249F982A4599D27E /* DashXNotificationServiceExtension.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		800D18B32C821FF8AF5400D2 /* SystemContextInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CE4AD72B3D560A9952B8AC /* SystemContextInput.graphql.swift */; };
 		85D5303AF9C18C8B3C469B18 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C132373BA08A940D481F5EBA /* Decimal.swift */; };
 		8B06C33C5E4ACF6386A72914 /* UtilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4EA69FF1D7C8C5E39B5438A /* UtilsTests.swift */; };
@@ -111,6 +112,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		C4B205E759B9D9DE56B53AB8 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				7FFF5AE7AC98E57505E9C159 /* DashXNotificationServiceExtension.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C687662E4F21F5A89882B67B /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -534,6 +546,7 @@
 			buildPhases = (
 				323260FFCCC0BE2803226511 /* Sources */,
 				4BE5249E61A7DAC8B99EF6A5 /* Frameworks */,
+				C4B205E759B9D9DE56B53AB8 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -610,8 +623,8 @@
 			targets = (
 				E79B208C33D8BBD25CDD1916 /* DashX */,
 				8739E168D43E6EDFF7A93E76 /* DashXNotificationServiceExtension */,
-				9A6C1E2ADF2980FF7A104A5B /* DashXNotificationServiceExtensionTests */,
 				27266A8ACC894C9536E2D6FD /* DashXTests */,
+				9A6C1E2ADF2980FF7A104A5B /* DashXNotificationServiceExtensionTests */,
 			);
 		};
 /* End PBXProject section */
@@ -834,7 +847,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.1;
+				MARKETING_VERSION = 1.6.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -package-name DashX";
@@ -1029,7 +1042,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.1;
+				MARKETING_VERSION = 1.6.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

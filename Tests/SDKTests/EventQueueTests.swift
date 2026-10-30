@@ -173,4 +173,27 @@ final class QueuedEventTests: XCTestCase {
         XCTAssertEqual(decoded[1].retryCount, 5)
         XCTAssertEqual(decoded[1].decodedData()?["a"] as? String, "b")
     }
+
+    // MARK: - Replay identity
+
+    private let signedIn = DashXClient.QueuedIdentity(accountUid: "user-later", accountAnonymousUid: "anon-now")
+
+    func testReplayKeepsANilAccountUid_soASignedOutEventIsNotCreditedToALaterUser() {
+        let queued = DashXClient.QueuedIdentity(accountUid: nil, accountAnonymousUid: "anon-then")
+        XCTAssertEqual(DashXClient.trackIdentity(queued: queued, current: signedIn), queued)
+    }
+
+    func testReplayKeepsTheQueuedUserOverTheCurrentOne() {
+        let queued = DashXClient.QueuedIdentity(accountUid: "user-then", accountAnonymousUid: "anon-then")
+        XCTAssertEqual(DashXClient.trackIdentity(queued: queued, current: signedIn), queued)
+    }
+
+    func testANewCallUsesTheCurrentIdentity() {
+        XCTAssertEqual(DashXClient.trackIdentity(queued: nil, current: signedIn), signedIn)
+    }
+
+    func testAnEventQueuedWithoutIdentityUsesTheCurrentOne() {
+        let legacy = DashXClient.QueuedIdentity(accountUid: nil, accountAnonymousUid: nil)
+        XCTAssertEqual(DashXClient.trackIdentity(queued: legacy, current: signedIn), signedIn)
+    }
 }

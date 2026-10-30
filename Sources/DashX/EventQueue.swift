@@ -167,8 +167,10 @@ final class EventQueue {
         DashXClient.instance.track(
             head.event,
             withData: data,
-            queuedAccountUid: head.accountUid,
-            queuedAccountAnonymousUid: head.accountAnonymousUid,
+            queuedIdentity: DashXClient.QueuedIdentity(
+                accountUid: head.accountUid,
+                accountAnonymousUid: head.accountAnonymousUid
+            ),
             queuedTimestamp: head.enqueuedAt
         ) { [weak self] success in
             guard let self else { return }
