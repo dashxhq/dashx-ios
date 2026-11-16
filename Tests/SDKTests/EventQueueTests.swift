@@ -97,6 +97,26 @@ final class QueuedEventTests: XCTestCase {
         XCTAssertNil(data)
     }
 
+    // MARK: - pending
+
+    func testPendingEventKeepsTheTimeTrackWasCalled() throws {
+        let occurredAt = Date(timeIntervalSince1970: 1700000000)
+        let queued = QueuedEvent.pending(
+            event: "button_click",
+            data: ["key": "value"],
+            accountUid: "user_123",
+            accountAnonymousUid: nil,
+            occurredAt: occurredAt
+        )
+
+        let decoded = try JSONDecoder().decode(QueuedEvent.self, from: JSONEncoder().encode(queued))
+
+        XCTAssertEqual(decoded.enqueuedAt.timeIntervalSince1970, 1700000000.0, accuracy: 0.001)
+        XCTAssertEqual(decoded.retryCount, 0)
+        XCTAssertEqual(decoded.accountUid, "user_123")
+        XCTAssertEqual(decoded.decodedData()?["key"] as? String, "value")
+    }
+
     // MARK: - decodedData
 
     func testDecodedDataReturnsNilForNilJSON() {
@@ -152,5 +172,28 @@ final class QueuedEventTests: XCTestCase {
         XCTAssertEqual(decoded[1].event, "e2")
         XCTAssertEqual(decoded[1].retryCount, 5)
         XCTAssertEqual(decoded[1].decodedData()?["a"] as? String, "b")
+    }
+
+    // MARK: - Replay identity
+
+    private let signedIn = DashXClient.QueuedIdentity(accountUid: "user-later", accountAnonymousUid: "anon-now")
+
+    func testReplayKeepsANilAccountUid_soASignedOutEventIsNotCreditedToALaterUser() {
+        let queued = DashXClient.QueuedIdentity(accountUid: nil, accountAnonymousUid: "anon-then")
+        XCTAssertEqual(DashXClient.trackIdentity(queued: queued, current: signedIn), queued)
+    }
+
+    func testReplayKeepsTheQueuedUserOverTheCurrentOne() {
+        let queued = DashXClient.QueuedIdentity(accountUid: "user-then", accountAnonymousUid: "anon-then")
+        XCTAssertEqual(DashXClient.trackIdentity(queued: queued, current: signedIn), queued)
+    }
+
+    func testANewCallUsesTheCurrentIdentity() {
+        XCTAssertEqual(DashXClient.trackIdentity(queued: nil, current: signedIn), signedIn)
+    }
+
+    func testAnEventQueuedWithoutIdentityUsesTheCurrentOne() {
+        let legacy = DashXClient.QueuedIdentity(accountUid: nil, accountAnonymousUid: nil)
+        XCTAssertEqual(DashXClient.trackIdentity(queued: legacy, current: signedIn), signedIn)
     }
 }

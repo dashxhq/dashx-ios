@@ -150,6 +150,8 @@ public class DashXClient {
 
     /// Background queue for asset readiness polling (avoids tying retries to the main run loop).
     private static let assetPollQueue = DispatchQueue(label: "com.dashx.ios.assetPoll")
+    private let trackQueue = DispatchQueue(label: "com.dashx.ios.track", qos: .utility)
+    private static let trackTimestampFormatter = ISO8601DateFormatter()
 
     // Single lock protecting all mutable identity / token / realtime state below.
     // Using NSLock (non-recursive) is safe here because no getter or setter
@@ -382,8 +384,16 @@ public class DashXClient {
         }
     }
 
+    /// Sends `Application Installed` / `Application Updated` / `Application Opened` now, then
+    /// `Application Opened` and `Application Backgrounded` on every foreground / background
+    /// transition. Idempotent.
     public func enableLifecycleTracking() {
-        DashXApplicationLifecycleCallbacks().enable()
+        DashXApplicationLifecycleCallbacks.instance.enable()
+    }
+
+    /// Sends `$screen` each time a view controller appears. Idempotent.
+    public func enableScreenTracking() {
+        DashXScreenTracking.enable()
     }
 
     // MARK: - Ad Tracking
@@ -569,29 +579,69 @@ public class DashXClient {
         track(
             event,
             withData: withData,
-            queuedAccountUid: nil,
-            queuedAccountAnonymousUid: nil,
+            queuedIdentity: nil,
             queuedTimestamp: nil,
             completion: nil
         )
     }
 
+    /// The identity an event was queued with.
+    struct QueuedIdentity: Equatable {
+        let accountUid: String?
+        let accountAnonymousUid: String?
+    }
+
+    /// A replayed event keeps the identity it was queued with, a nil account uid included: an event
+    /// tracked signed out must not be credited to whoever signs in before it is sent. Only an event
+    /// queued before identities were stored, with neither id, takes the current identity.
+    static func trackIdentity(queued: QueuedIdentity?, current: QueuedIdentity) -> QueuedIdentity {
+        guard let queued, queued.accountUid != nil || queued.accountAnonymousUid != nil else { return current }
+        return queued
+    }
+
     /// - Parameters:
-    ///   - queuedAccountUid: Identity captured when the event was queued; use for replay so changing `setIdentity` mid-queue does not corrupt payloads.
+    ///   - queuedIdentity: Set when replaying a queued event; nil for a new call, which uses the current identity.
     ///   - queuedTimestamp: Wall-clock time when the event was originally enqueued. Preserves the historical timestamp when the queue flushes later.
     ///   - completion: Called on the main queue with `true` when the server accepted the mutation (no GraphQL errors, non-nil data).
     internal func track(
         _ event: String,
         withData: [String: Any]?,
-        queuedAccountUid: String?,
-        queuedAccountAnonymousUid: String?,
+        queuedIdentity: QueuedIdentity?,
         queuedTimestamp: Date?,
         completion: ((Bool) -> Void)?
     ) {
+        // One snapshot read, so the uid and anonymous uid come from the same identity.
         let snapshot = account
-        let effectiveAccountUid = queuedAccountUid ?? snapshot.uid
-        let effectiveAnonymousUid = queuedAccountAnonymousUid ?? snapshot.anonymousUid
+        let identity = Self.trackIdentity(
+            queued: queuedIdentity,
+            current: QueuedIdentity(accountUid: snapshot.uid, accountAnonymousUid: snapshot.anonymousUid)
+        )
+        let effectiveAccountUid = identity.accountUid
+        let effectiveAnonymousUid = identity.accountAnonymousUid
+        // Replayed events keep the time they were queued, not the flush time.
+        let occurredAt = queuedTimestamp ?? Date()
 
+        // Building the payload reads device state, so it runs off the caller's (often the main) thread.
+        trackQueue.async {
+            self.sendTrack(
+                event,
+                withData: withData,
+                accountUid: effectiveAccountUid,
+                accountAnonymousUid: effectiveAnonymousUid,
+                occurredAt: occurredAt,
+                completion: completion
+            )
+        }
+    }
+
+    private func sendTrack(
+        _ event: String,
+        withData: [String: Any]?,
+        accountUid effectiveAccountUid: String?,
+        accountAnonymousUid effectiveAnonymousUid: String?,
+        occurredAt: Date,
+        completion: ((Bool) -> Void)?
+    ) {
         guard case .online = NetworkMonitor.shared.connection else {
             DashXLog.d(tag: #function, "Offline — queueing event '\(event)'")
             // When replaying from the disk queue (`completion != nil`), do not enqueue again.
@@ -600,7 +650,8 @@ public class DashXClient {
                     event: event,
                     data: withData,
                     accountUid: effectiveAccountUid,
-                    accountAnonymousUid: effectiveAnonymousUid
+                    accountAnonymousUid: effectiveAnonymousUid,
+                    occurredAt: occurredAt
                 )
             }
             if let completion {
@@ -617,12 +668,7 @@ public class DashXClient {
             dataJSON = .null
         }
 
-        // Use the queued event's original enqueue time when replaying, else stamp
-        // "now". The server rejects track events without a top-level timestamp
-        // (GraphQL `Validation failed`), and queued events should preserve their
-        // original occurrence time rather than the flush time.
-        let formatter = ISO8601DateFormatter()
-        let timestamp = formatter.string(from: queuedTimestamp ?? Date())
+        let timestamp = Self.trackTimestampFormatter.string(from: occurredAt)
 
         let trackEventInput = DashXGql.TrackEventInput(
             event: event,
@@ -647,6 +693,7 @@ public class DashXClient {
                         withData: withData,
                         accountUid: effectiveAccountUid,
                         accountAnonymousUid: effectiveAnonymousUid,
+                        occurredAt: occurredAt,
                         completion: completion
                     )
                     return
@@ -658,6 +705,7 @@ public class DashXClient {
                         withData: withData,
                         accountUid: effectiveAccountUid,
                         accountAnonymousUid: effectiveAnonymousUid,
+                        occurredAt: occurredAt,
                         completion: completion
                     )
                     return
@@ -673,6 +721,7 @@ public class DashXClient {
                     withData: withData,
                     accountUid: effectiveAccountUid,
                     accountAnonymousUid: effectiveAnonymousUid,
+                    occurredAt: occurredAt,
                     completion: completion
                 )
             }
@@ -684,6 +733,7 @@ public class DashXClient {
         withData: [String: Any]?,
         accountUid: String?,
         accountAnonymousUid: String?,
+        occurredAt: Date,
         completion: ((Bool) -> Void)?
     ) {
         if let completion {
@@ -693,7 +743,8 @@ public class DashXClient {
                 event: event,
                 data: withData,
                 accountUid: accountUid,
-                accountAnonymousUid: accountAnonymousUid
+                accountAnonymousUid: accountAnonymousUid,
+                occurredAt: occurredAt
             )
         }
     }
@@ -753,7 +804,7 @@ public class DashXClient {
 
     public func screen(_ screenName: String, withData: [String: Any]? = nil) {
         var properties = withData ?? [:]
-        properties["name"] = screenName
+        properties["$screen_name"] = screenName
         self.track(Constants.INTERNAL_EVENT_APP_SCREEN_VIEWED, withData: properties)
     }
 
@@ -1554,7 +1605,7 @@ public class DashXClient {
 
     public var linkHandler: ((URL) -> Void)?
 
-    /// Records a `dx_deep_link_opened` analytics event and optionally forwards the URL to ``linkHandler``.
+    /// Records a `Deep Link Opened` analytics event and optionally forwards the URL to ``linkHandler``.
     /// - Parameters:
     ///   - url: The opened deep link.
     ///   - source: Optional attribution (e.g. `universal_link`, `scene_url`, `notification`).
@@ -1573,7 +1624,7 @@ public class DashXClient {
         }
     }
 
-    /// Records a `dx_notification_navigated` event for every notification tap, regardless of navigation type.
+    /// Records a `Push Notification Tapped` event for every notification tap, regardless of navigation type.
     public func trackNotificationNavigation(_ action: NavigationAction?, notificationId: String?) {
         var data: [String: Any] = [
             "timestamp": ISO8601DateFormatter().string(from: Date())
