@@ -5,7 +5,8 @@
 #endif
 import Foundation
 
-// Raw chat operations; each requires an identity token. `chat(chatIdentityId:)` is the managed surface.
+// Raw chat operations; each needs an identity token, waiting for the bound provider to load one when
+// none is held. `chat(chatIdentityId:)` is the managed surface.
 
 public extension DashXClient {
     /// `content` is `{"text": "<1–4096 characters>"}` and `clientMessageId` 1–128 characters of
@@ -17,16 +18,14 @@ public extension DashXClient {
         clientMessageId: String,
         completion: @escaping (Result<DashXChatMessage, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
-        let mutation = DashXGql.SendInAppChatMessageMutation(
+        sendInAppChatMessage(
             conversationId: conversationId,
             identityId: identityId,
-            content: Self.toJSONScalar(content),
-            clientMessageId: clientMessageId
+            content: content,
+            clientMessageId: clientMessageId,
+            shouldDispatch: { true },
+            completion: completion
         )
-        performChat(mutation, completion: sessionBound(completion)) { data in
-            DashXChatMessage(fragment: data.sendInAppChatMessage.fragments.chatMessageFragment)
-        }
     }
 
     /// `afterMessageId` selects rows strictly after that message; mutually exclusive with `page`.
@@ -37,14 +36,13 @@ public extension DashXClient {
         afterMessageId: String? = nil,
         completion: @escaping (Result<[DashXChatMessage], Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let query = DashXGql.FetchInAppChatMessagesQuery(
             conversationId: conversationId,
             limit: limit.map { .some($0) } ?? .null,
             page: page.map { .some($0) } ?? .null,
             afterMessageId: afterMessageId.map { .some($0) } ?? .null
         )
-        fetchChat(query, completion: sessionBound(completion)) { data in
+        fetchChat(query, completion: completion) { data in
             data.fetchInAppChatMessages.map { DashXChatMessage(fragment: $0.fragments.chatMessageFragment) }
         }
     }
@@ -53,9 +51,8 @@ public extension DashXClient {
         conversationId: String,
         completion: @escaping (Result<Int, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let query = DashXGql.SummarizeInAppChatMessagesQuery(conversationId: conversationId)
-        fetchChat(query, completion: sessionBound(completion)) { data in
+        fetchChat(query, completion: completion) { data in
             data.summarizeInAppChatMessages.count
         }
     }
@@ -69,7 +66,6 @@ public extension DashXClient {
         properties: [String: Any]? = nil,
         completion: @escaping (Result<[DashXChatConversationSummary], Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let query = DashXGql.FetchInAppChatConversationsQuery(
             identityId: identityId,
             limit: limit.map { .some($0) } ?? .null,
@@ -77,7 +73,7 @@ public extension DashXClient {
             statuses: statuses.map { .some($0) } ?? .null,
             properties: properties.map { .some(Self.toJSONScalar($0)) } ?? .null
         )
-        fetchChat(query, completion: sessionBound(completion)) { data in
+        fetchChat(query, completion: completion) { data in
             data.fetchInAppChatConversations.map {
                 DashXChatConversationSummary(fragment: $0.fragments.chatConversationSummaryFragment)
             }
@@ -89,9 +85,8 @@ public extension DashXClient {
         conversationId: String,
         completion: @escaping (Result<DashXChatConversationSummary, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let query = DashXGql.FetchInAppChatConversationQuery(identityId: identityId, conversationId: conversationId)
-        fetchChat(query, completion: sessionBound(completion)) { data in
+        fetchChat(query, completion: completion) { data in
             DashXChatConversationSummary(fragment: data.fetchInAppChatConversation.fragments.chatConversationSummaryFragment)
         }
     }
@@ -103,13 +98,12 @@ public extension DashXClient {
         properties: [String: Any]? = nil,
         completion: @escaping (Result<Int, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let query = DashXGql.SummarizeInAppChatConversationsQuery(
             identityId: identityId,
             statuses: statuses.map { .some($0) } ?? .null,
             properties: properties.map { .some(Self.toJSONScalar($0)) } ?? .null
         )
-        fetchChat(query, completion: sessionBound(completion)) { data in
+        fetchChat(query, completion: completion) { data in
             data.summarizeInAppChatConversations.count
         }
     }
@@ -119,9 +113,8 @@ public extension DashXClient {
         identityId: String,
         completion: @escaping (Result<Int, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let query = DashXGql.SummarizeInAppChatUnreadQuery(identityId: identityId)
-        fetchChat(query, completion: sessionBound(completion)) { data in
+        fetchChat(query, completion: completion) { data in
             data.summarizeInAppChatUnread.count
         }
     }
@@ -134,13 +127,12 @@ public extension DashXClient {
         lastMessageId: String,
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let mutation = DashXGql.MarkInAppChatConversationReadMutation(
             identityId: identityId,
             conversationId: conversationId,
             lastMessageId: lastMessageId
         )
-        performChat(mutation, completion: sessionBound(completion)) { data in
+        performChat(mutation, completion: completion) { data in
             data.markInAppChatConversationRead.success
         }
     }
@@ -152,9 +144,8 @@ public extension DashXClient {
         conversationId: String,
         completion: @escaping (Result<DashXChatConversationSummary, Error>) -> Void
     ) {
-        guard requireIdentityToken(completion) else { return }
         let mutation = DashXGql.ResolveInAppChatConversationMutation(identityId: identityId, conversationId: conversationId)
-        performChat(mutation, completion: sessionBound(completion)) { data in
+        performChat(mutation, completion: completion) { data in
             DashXChatConversationSummary(fragment: data.resolveInAppChatConversation.fragments.chatConversationSummaryFragment)
         }
     }
@@ -250,11 +241,41 @@ public extension DashXClient {
 
 // MARK: - Internals
 
+/// The identity session a chat request began under. `AuthRetryInterceptor` refuses it under any
+/// other, checked against the snapshot that sets the request's token header.
+struct DashXSessionRequestContext: RequestContext {
+    let sessionGeneration: Int
+}
+
 extension DashXClient {
+    /// `shouldDispatch` is asked right before the request leaves, which may be after a token load;
+    /// false completes with `.sessionEnded` and sends nothing.
+    func sendInAppChatMessage(
+        conversationId: String,
+        identityId: String,
+        content: [String: Any],
+        clientMessageId: String,
+        shouldDispatch: @escaping () -> Bool,
+        completion: @escaping (Result<DashXChatMessage, Error>) -> Void
+    ) {
+        let mutation = DashXGql.SendInAppChatMessageMutation(
+            conversationId: conversationId,
+            identityId: identityId,
+            content: Self.toJSONScalar(content),
+            clientMessageId: clientMessageId
+        )
+        performChat(mutation, shouldDispatch: shouldDispatch, completion: completion) { data in
+            DashXChatMessage(fragment: data.sendInAppChatMessage.fragments.chatMessageFragment)
+        }
+    }
+
     /// Gates a completion on the session generation it began under: a request begun as user A must
     /// not deliver into user B's UI. Same-identity token refreshes leave the generation unchanged.
     func sessionBound<T>(_ completion: @escaping (Result<T, Error>) -> Void) -> (Result<T, Error>) -> Void {
-        let generation = currentSessionGeneration
+        sessionBound(completion, generation: currentSessionGeneration)
+    }
+
+    func sessionBound<T>(_ completion: @escaping (Result<T, Error>) -> Void, generation: Int) -> (Result<T, Error>) -> Void {
         return { result in
             if DashXClient.instance.currentSessionGeneration != generation {
                 completion(.failure(DashXClientError.sessionEnded))
@@ -264,19 +285,42 @@ extension DashXClient {
         }
     }
 
-    private func requireIdentityToken<T>(_ completion: @escaping (Result<T, Error>) -> Void) -> Bool {
-        if hasIdentityToken { return true }
-        DispatchQueue.main.async { completion(.failure(DashXClientError.notIdentified)) }
-        return false
+    /// Sends once an identity token is held or loaded by the bound provider, under the session the
+    /// call began in: the completion and the request's token are both bound to it. A failed wait or a
+    /// false `shouldDispatch` completes on the main queue without sending.
+    private func dispatchChat<Value>(
+        shouldDispatch: @escaping () -> Bool,
+        completion: @escaping (Result<Value, Error>) -> Void,
+        send: @escaping (_ context: DashXSessionRequestContext, _ completion: @escaping (Result<Value, Error>) -> Void) -> Void
+    ) {
+        let generation = currentSessionGeneration
+        let bound = sessionBound(completion, generation: generation)
+        awaitIdentityToken { result in
+            // Asked before either outcome: a caller gone during the wait hears sessionEnded, not
+            // the provider's failure.
+            guard shouldDispatch() else {
+                DispatchQueue.main.async { bound(.failure(DashXClientError.sessionEnded)) }
+                return
+            }
+            switch result {
+            case .success:
+                send(DashXSessionRequestContext(sessionGeneration: generation), bound)
+            case .failure(let error):
+                DispatchQueue.main.async { bound(.failure(error)) }
+            }
+        }
     }
 
     private func performChat<Mutation: GraphQLMutation, Value>(
         _ mutation: Mutation,
+        shouldDispatch: @escaping () -> Bool = { true },
         completion: @escaping (Result<Value, Error>) -> Void,
         map: @escaping (Mutation.Data) -> Value
     ) {
-        Network.shared.apollo.perform(mutation: mutation) { result in
-            completion(Self.mapChatResult(result, map: map))
+        dispatchChat(shouldDispatch: shouldDispatch, completion: completion) { context, completion in
+            Network.shared.apollo.perform(mutation: mutation, context: context) { result in
+                completion(Self.mapChatResult(result, map: map))
+            }
         }
     }
 
@@ -285,8 +329,10 @@ extension DashXClient {
         completion: @escaping (Result<Value, Error>) -> Void,
         map: @escaping (Query.Data) -> Value
     ) {
-        Network.shared.apollo.fetch(query: query, cachePolicy: .fetchIgnoringCacheCompletely) { result in
-            completion(Self.mapChatResult(result, map: map))
+        dispatchChat(shouldDispatch: { true }, completion: completion) { context, completion in
+            Network.shared.apollo.fetch(query: query, cachePolicy: .fetchIgnoringCacheCompletely, context: context) { result in
+                completion(Self.mapChatResult(result, map: map))
+            }
         }
     }
 
@@ -306,7 +352,7 @@ extension DashXClient {
             return .success(map(data))
         case .failure(let error):
             DashXLog.e(tag: "DashXChat", "Request failed: \(error)")
-            return .failure(DashXClientError.networkError(underlying: error))
+            return .failure(DashXClientError.wrap(error))
         }
     }
 }

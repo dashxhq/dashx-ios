@@ -16,12 +16,20 @@ final class BoundTokenProvider {
 final class TokenLoad {
     private enum Outcome {
         case pending
+        /// Handed to a successor; only the successor's result completes it.
+        case forwarded
         case done(String?)
     }
 
+    /// Whether the load was asked for a token other than the held one, after a rejection.
+    let forceRefresh: Bool
     private let lock = NSLock()
     private var outcome: Outcome = .pending
     private var waiters: [(String?) -> Void] = []
+
+    init(forceRefresh: Bool) {
+        self.forceRefresh = forceRefresh
+    }
 
     func await(_ completion: @escaping (String?) -> Void) {
         lock.lock()
@@ -34,12 +42,43 @@ final class TokenLoad {
         lock.unlock()
     }
 
+    /// Ignored once done or forwarded: a forwarded load's own provider no longer decides it.
     func complete(_ token: String?) {
         lock.lock()
-        if case .done = outcome {
+        guard case .pending = outcome else {
             lock.unlock()
             return
         }
+        finishLocked(token)
+    }
+
+    /// Stops this load's own provider from deciding it; `finishForwarding(to:)` hands its waiters
+    /// on. Call in the `stateLock` hold that unbinds the provider: a provider answering after that
+    /// hold but before the hand-off would otherwise complete the waiters empty. False when the
+    /// load had already finished.
+    func beginForwarding() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard case .pending = outcome else { return false }
+        outcome = .forwarded
+        return true
+    }
+
+    /// Completes a load that began forwarding with `successor`'s result. Call outside `stateLock`:
+    /// a finished successor runs the waiters inline.
+    func finishForwarding(to successor: TokenLoad) {
+        successor.await { token in
+            self.lock.lock()
+            if case .done = self.outcome {
+                self.lock.unlock()
+                return
+            }
+            self.finishLocked(token)
+        }
+    }
+
+    /// Call with `lock` held; releases it.
+    private func finishLocked(_ token: String?) {
         outcome = .done(token)
         let pending = waiters
         waiters.removeAll()
@@ -81,7 +120,8 @@ private final class OnceTokenCallback: DashXTokenCallback {
 extension DashXClient {
     static let tokenLoadTimeout: TimeInterval = 30
 
-    /// Whether an identity token is currently held; chat operations require one.
+    /// Whether an identity token is currently held. Chat operations need one, or a bound
+    /// `DashXTokenProvider` to load it.
     public var hasIdentityToken: Bool { account.identityToken != nil }
 
     var identityToken: String? { account.identityToken }
@@ -114,14 +154,17 @@ extension DashXClient {
             let authFailed: Bool
             if case .authenticationFailed = _connectionState { authFailed = true } else { authFailed = false }
             let hasToken = _account.identityToken != nil
-            // A cached token under authenticationFailed IS the rejected token.
-            let claimed = !hasToken || authFailed
-                ? claimTokenLoadLocked(bound: bound, forceRefresh: authFailed && hasToken)
+            let awaitingToken = !hasToken || authFailed
+            // A cached token under authenticationFailed IS the rejected token. A load the previous
+            // provider left in flight is taken over, so its waiting retries reach this provider.
+            let handedOff = superseded?.beginForwarding() == true ? superseded : nil
+            let claimed = awaitingToken || handedOff != nil
+                ? claimTokenLoadLocked(bound: bound, forceRefresh: (authFailed && hasToken) || handedOff?.forceRefresh == true)
                 : nil
             stateLock.unlock()
-            superseded?.complete(nil)
             if let claimed {
-                publishDirect(.connecting)
+                handedOff?.finishForwarding(to: claimed.load)
+                if awaitingToken { publishDirect(.connecting) }
                 claimed.launch?()
             }
         } else {
@@ -214,6 +257,51 @@ extension DashXClient {
         }
     }
 
+    static let identityTokenUnavailableError = DashXClientError.customError(
+        message: "The identity token provider supplied no token; the next call asks it again")
+
+    /// The held token, or one from the bound provider: an in-flight load is joined, and with none
+    /// in flight one starts, so a call right after registration or after a failed load reaches the
+    /// provider. `.notIdentified` only when there is neither a token nor a provider; `.sessionEnded`
+    /// when the identity session changes while waiting.
+    func awaitIdentityToken(completion: @escaping (Result<String, DashXClientError>) -> Void) {
+        stateLock.lock()
+        if let token = _account.identityToken {
+            stateLock.unlock()
+            completion(.success(token))
+            return
+        }
+        guard let bound = _boundProvider, bound.uid == _account.uid else {
+            stateLock.unlock()
+            completion(.failure(.notIdentified))
+            return
+        }
+        let generation = _account.sessionGeneration
+        let claimed = claimTokenLoadLocked(bound: bound, forceRefresh: false)
+        stateLock.unlock()
+        claimed.launch?()
+        awaitIdentityToken(from: claimed.load, generation: generation, completion: completion)
+    }
+
+    /// Settled by `load` alone: a re-registered provider forwards it explicitly, so a failure is
+    /// final for this call and never waits on a load another call started.
+    private func awaitIdentityToken(
+        from load: TokenLoad,
+        generation: Int,
+        completion: @escaping (Result<String, DashXClientError>) -> Void
+    ) {
+        load.await { token in
+            let current = self.account
+            if current.sessionGeneration != generation {
+                completion(.failure(.sessionEnded))
+            } else if let token = token ?? current.identityToken {
+                completion(.success(token))
+            } else {
+                completion(.failure(Self.identityTokenUnavailableError))
+            }
+        }
+    }
+
     /// A 4401 on a socket opened with `credentials`. Once they are replaced, by a later identity
     /// or a newer token of this one, the answer is `.superseded`: neither the provider nor the
     /// published state is touched, and the runtime returns the refresh attempt to the replacement,
@@ -250,7 +338,7 @@ extension DashXClient {
     /// provider was replaced since the claim.
     func claimTokenLoadLocked(bound: BoundTokenProvider, forceRefresh: Bool) -> ClaimedTokenLoad {
         if let inFlight = _tokenLoadInFlight { return ClaimedTokenLoad(load: inFlight, launch: nil) }
-        let fresh = TokenLoad()
+        let fresh = TokenLoad(forceRefresh: forceRefresh)
         _tokenLoadInFlight = fresh
         let requestSnapshot = _account
         return ClaimedTokenLoad(load: fresh, launch: {

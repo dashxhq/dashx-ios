@@ -21,6 +21,8 @@ server-only: the host's backend creates the conversation and returns the
   `addStateListener(_:)` (replays the current state on add), `sendMessage(content:completion:)`
   (returns the client message id synchronously — the idempotency key a retry must reuse),
   `loadPreviousPage`, `setVisible(_:)` (drives read-marking and push suppression) and `close()`.
+  A lease that is closed, or whose session has ended, sends nothing and completes with
+  `.sessionEnded`.
   Missed messages are reconciled after a reconnect; the first load shows at least a full page when
   the history has one, and `hasOlderMessages` tells a host when to offer "load older". Also `fetchConversations`, `fetchConversation`, `summarizeConversations`,
   `summarizeUnread` and `resolveConversation`, plus the same operations as raw `DashXClient`
@@ -33,7 +35,9 @@ server-only: the host's backend creates the conversation and returns the
   the endpoint with `DashX.setRealtimeBaseURI(_:)`.
 - **`DashX.setIdentityTokenProvider(uid:provider:)`** — on-demand identity token loading through
   `DashXTokenProvider` (adapters: `DashXClosureTokenProvider`, `DashXAsyncTokenProvider`), called
-  with `forceRefresh: true` after a rejection. Register it at launch.
+  with `forceRefresh: true` after a rejection. Register it at launch. A chat operation made while
+  it loads waits for its token, and one made after a failed load asks it again; `.notIdentified`
+  means neither a token nor a provider is set.
 - **Composable push** — `DashXPush.isDashXMessage(_:)` / `shouldDisplay(_:)` for hosts with their
   own `UNUserNotificationCenterDelegate`. A chat push for the conversation on screen is not
   presented in the foreground (`DashXAppDelegate` applies this before

@@ -100,6 +100,12 @@ final class AuthRetryInterceptor: ApolloInterceptor {
     ) {
         let (tokenAtStart, versionAtStart) = credentials()
         let generationAtStart = versionAtStart.sessionGeneration
+        // A request bound to the session it began in is refused under any other, judged by the same
+        // snapshot that supplies its token: it must never carry the next identity's token.
+        if Self.isBoundToAnotherSession(request.context, sessionGeneration: generationAtStart) {
+            chain.handleErrorAsync(DashXClientError.sessionEnded, request: request, response: response, completion: completion)
+            return
+        }
         // Set per pass: a retry carries the refreshed token, and a dropped token leaves with it.
         if let tokenAtStart {
             request.addHeader(name: Self.identityTokenHeader, value: tokenAtStart)
@@ -154,6 +160,12 @@ final class AuthRetryInterceptor: ApolloInterceptor {
                 chain.retry(request: request, completion: completion)
             }
         }
+    }
+
+    /// Whether `context` binds the request to a session other than `sessionGeneration`.
+    static func isBoundToAnotherSession(_ context: Any?, sessionGeneration: Int) -> Bool {
+        guard let bound = context as? DashXSessionRequestContext else { return false }
+        return bound.sessionGeneration != sessionGeneration
     }
 
     /// One retry per request chain; the retried pass must pass its own result through.

@@ -55,14 +55,31 @@ final class DashXPushTests: XCTestCase {
         let state = PushRuntimeState()
         XCTAssertFalse(state.get().isForeground, "before the lifecycle observer reports, assume backgrounded")
         state.setForeground(true)
-        state.setConversationVisible("c1", visible: true)
-        state.setConversationVisible("c2", visible: true)
-        state.setConversationVisible("c1", visible: false)
+        let owner = ObjectIdentifier(NSObject())
+        state.setConversationVisible("c1", owner: owner, visible: true)
+        state.setConversationVisible("c2", owner: owner, visible: true)
+        state.setConversationVisible("c1", owner: owner, visible: false)
         XCTAssertEqual(state.get().visibleConversationIds, ["c2"])
         state.clearVisible()
         XCTAssertTrue(state.get().isForeground, "clearing visibility must not touch foreground")
         XCTAssertTrue(state.get().visibleConversationIds.isEmpty)
         state.reset()
         XCTAssertFalse(state.get().isForeground)
+    }
+
+    func testAConversationStaysVisibleWhileAnyOwnerShowsIt() {
+        let state = PushRuntimeState()
+        let first = NSObject()
+        let second = NSObject()
+        state.setConversationVisible("c1", owner: ObjectIdentifier(first), visible: true)
+        state.setConversationVisible("c1", owner: ObjectIdentifier(second), visible: true)
+
+        state.setConversationVisible("c1", owner: ObjectIdentifier(first), visible: false)
+        XCTAssertEqual(state.get().visibleConversationIds, ["c1"], "the second owner still shows it")
+        state.setConversationVisible("c1", owner: ObjectIdentifier(first), visible: false)
+        XCTAssertEqual(state.get().visibleConversationIds, ["c1"], "a repeated hide is not another owner's")
+
+        state.setConversationVisible("c1", owner: ObjectIdentifier(second), visible: false)
+        XCTAssertTrue(state.get().visibleConversationIds.isEmpty)
     }
 }

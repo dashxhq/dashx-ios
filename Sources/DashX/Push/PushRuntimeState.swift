@@ -2,7 +2,8 @@ import Foundation
 
 /// Foreground and visibility snapshot so `DashXPush.shouldDisplay` can decide synchronously on the
 /// notification thread. The lifecycle observer writes `isForeground`; chat sessions write
-/// `visibleConversationIds`.
+/// `visibleConversationIds`, each as one owner: a conversation stays visible while any owner shows
+/// it, so one chat identity closing its screen never unsuppresses another's.
 final class PushRuntimeState {
     struct Snapshot {
         var isForeground: Bool
@@ -12,6 +13,7 @@ final class PushRuntimeState {
     private let lock = NSLock()
     // Assume backgrounded until the lifecycle observer reports: that displays rather than drops.
     private var snapshot = Snapshot(isForeground: false, visibleConversationIds: [])
+    private var visibleOwners: [String: Set<ObjectIdentifier>] = [:]
 
     func get() -> Snapshot {
         lock.lock()
@@ -25,26 +27,30 @@ final class PushRuntimeState {
         snapshot.isForeground = foreground
     }
 
-    func setConversationVisible(_ conversationId: String, visible: Bool) {
+    func setConversationVisible(_ conversationId: String, owner: ObjectIdentifier, visible: Bool) {
         lock.lock()
         defer { lock.unlock() }
         if visible {
-            snapshot.visibleConversationIds.insert(conversationId)
+            visibleOwners[conversationId, default: []].insert(owner)
         } else {
-            snapshot.visibleConversationIds.remove(conversationId)
+            visibleOwners[conversationId]?.remove(owner)
+            if visibleOwners[conversationId]?.isEmpty == true { visibleOwners.removeValue(forKey: conversationId) }
         }
+        snapshot.visibleConversationIds = Set(visibleOwners.keys)
     }
 
     /// Identity switch / reset: visibility is stale, foreground is not.
     func clearVisible() {
         lock.lock()
         defer { lock.unlock() }
+        visibleOwners = [:]
         snapshot.visibleConversationIds = []
     }
 
     func reset() {
         lock.lock()
         defer { lock.unlock() }
+        visibleOwners = [:]
         snapshot = Snapshot(isForeground: false, visibleConversationIds: [])
     }
 }

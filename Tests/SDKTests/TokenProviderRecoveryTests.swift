@@ -35,6 +35,144 @@ final class TokenProviderRecoveryTests: XCTestCase {
         return outcome.value ?? false
     }
 
+    private func awaitIdentityToken() -> Atomic<Result<String, DashXClientError>?> {
+        let outcome = Atomic<Result<String, DashXClientError>?>(nil)
+        client.awaitIdentityToken { outcome.value = $0 }
+        return outcome
+    }
+
+    func testAChatCallDuringTheFirstProviderLoadWaitsForItsToken() {
+        let pending = Atomic<DashXTokenCallback?>(nil)
+        let calls = Atomic<Int>(0)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            _ = calls.increment()
+            pending.value = callback
+        })
+        awaitUntil(what: "provider invoked") { pending.value != nil }
+
+        let outcome = awaitIdentityToken()
+        settle(0.2)
+        XCTAssertNil(outcome.value, "a token on its way is not notIdentified")
+
+        pending.value?.onToken("first-token")
+        awaitUntil(what: "chat call resumes") { outcome.value != nil }
+        XCTAssertEqual(try? outcome.value?.get(), "first-token")
+        XCTAssertEqual(calls.value, 1, "the call joins the registration's load")
+    }
+
+    func testAChatCallAfterAFailedLoadAsksTheProviderAgain() {
+        let calls = Atomic<Int>(0)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            if calls.increment() == 1 {
+                callback.onUnavailable(nil)
+            } else {
+                callback.onToken("retried-token")
+            }
+        })
+        awaitUntil(what: "first load failed") { self.isAuthFailed(self.client.connectionState) }
+        XCTAssertNil(client.account.identityToken)
+
+        let outcome = awaitIdentityToken()
+        awaitUntil(what: "chat call resolves") { outcome.value != nil }
+        XCTAssertEqual(try? outcome.value?.get(), "retried-token")
+        XCTAssertEqual(calls.value, 2)
+        awaitUntil(what: "recovered to idle") { self.client.connectionState == .idle }
+    }
+
+    func testAChatCallWhoseLoadFailsReportsTheProviderNotNotIdentified() {
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            callback.onUnavailable(nil)
+        })
+        awaitUntil(what: "first load failed") { self.isAuthFailed(self.client.connectionState) }
+
+        let outcome = awaitIdentityToken()
+        awaitUntil(what: "chat call resolves") { outcome.value != nil }
+        guard case .failure(let error)? = outcome.value else { return XCTFail("expected a failure") }
+        if case .notIdentified = error { XCTFail("a bound provider is not notIdentified") }
+    }
+
+    func testAFailedLoadSettlesItsOwnWaitersWithoutJoiningALaterLoad() {
+        let callbacks = Atomic<[DashXTokenCallback]>([])
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            callbacks.append(callback)
+        })
+        awaitUntil(what: "first load started") { callbacks.value.count == 1 }
+
+        // The first waiter starts another call the moment the load fails, so a second load is in
+        // flight when the next waiter of the failed load runs.
+        let laterCall = Atomic<Result<String, DashXClientError>?>(nil)
+        client.awaitIdentityToken { _ in
+            self.client.awaitIdentityToken { laterCall.value = $0 }
+        }
+        let original = awaitIdentityToken()
+
+        callbacks.value[0].onUnavailable(nil)
+        awaitUntil(timeout: 1, what: "the original call settles with its own load") { original.value != nil }
+        guard case .failure(let error)? = original.value else { return XCTFail("expected the load's failure") }
+        if case .notIdentified = error { XCTFail("a bound provider is not notIdentified") }
+        awaitUntil(what: "the later call reaches the provider on its own") { callbacks.value.count == 2 }
+
+        callbacks.value[1].onToken("later-token")
+        awaitUntil(what: "later call resolves") { laterCall.value != nil }
+        XCTAssertEqual(try? laterCall.value?.get(), "later-token")
+    }
+
+    func testASendWhoseCallerLeftDuringTheWaitReportsSessionEndedWhateverTheProviderAnswers() {
+        let callbacks = Atomic<[DashXTokenCallback]>([])
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            callbacks.append(callback)
+        })
+        awaitUntil(what: "load started") { callbacks.value.count == 1 }
+
+        let stillOpen = Atomic<Bool>(true)
+        let outcome = Atomic<Result<DashXChatMessage, Error>?>(nil)
+        client.sendInAppChatMessage(
+            conversationId: UUID().uuidString,
+            identityId: UUID().uuidString,
+            content: ["text": "hi"],
+            clientMessageId: "client-1",
+            shouldDispatch: { stillOpen.value },
+            completion: { outcome.value = $0 }
+        )
+        stillOpen.value = false
+        callbacks.value[0].onUnavailable(nil)
+
+        awaitUntil(what: "send completes") { outcome.value != nil }
+        guard case .failure(DashXClientError.sessionEnded)? = outcome.value else {
+            return XCTFail("expected sessionEnded, got \(String(describing: outcome.value))")
+        }
+    }
+
+    func testAChatCallWithNeitherATokenNorAProviderIsNotIdentified() {
+        let outcome = awaitIdentityToken()
+        awaitUntil(what: "chat call resolves") { outcome.value != nil }
+        guard case .failure(.notIdentified)? = outcome.value else { return XCTFail("expected notIdentified, got \(String(describing: outcome.value))") }
+    }
+
+    func testAChatCallWaitingAcrossAnIdentitySwitchEndsTheSession() {
+        let pending = Atomic<DashXTokenCallback?>(nil)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            pending.value = callback
+        })
+        awaitUntil(what: "provider invoked") { pending.value != nil }
+
+        // As the raw operations deliver: gated on the session the call began under.
+        let outcome = Atomic<Result<String, Error>?>(nil)
+        let completion: (Result<String, Error>) -> Void = client.sessionBound { outcome.value = $0 }
+        client.awaitIdentityToken { result in
+            DispatchQueue.main.async { completion(result.mapError { $0 }) }
+        }
+
+        client.setIdentity(uid: "other-\(uid)", token: "other-token")
+        awaitUntil(what: "chat call resolves") { outcome.value != nil }
+        guard case .failure(DashXClientError.sessionEnded)? = outcome.value else {
+            return XCTFail("expected sessionEnded, got \(String(describing: outcome.value))")
+        }
+        pending.value?.onToken("late-token")
+        settle(0.2)
+        XCTAssertEqual(client.account.identityToken, "other-token")
+    }
+
     func testProviderReportingUnavailableClearsTheSingleFlightSlot() {
         client.setIdentity(uid: uid, token: "cached-token")
         let calls = Atomic<Int>(0)
@@ -111,6 +249,59 @@ final class TokenProviderRecoveryTests: XCTestCase {
         settle(0.3)
         XCTAssertEqual(client.account.identityToken, "second-provider-token", "the replaced provider's late result must not install")
         XCTAssertEqual(client.account.uid, uid)
+    }
+
+    func testReRegisteringMidRefreshHandsTheWaitingRetryToTheNewProvider() {
+        client.setIdentity(uid: uid, token: "rejected-token")
+        let first = Atomic<DashXTokenCallback?>(nil)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            first.value = callback
+        })
+        let outcome = Atomic<Bool?>(nil)
+        client.awaitTokenRefresh { outcome.value = $0 }
+        awaitUntil(what: "first provider invoked") { first.value != nil }
+
+        let second = Atomic<DashXTokenCallback?>(nil)
+        let secondForceRefresh = Atomic<Bool?>(nil)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { forceRefresh, callback in
+            secondForceRefresh.value = forceRefresh
+            second.value = callback
+        })
+        awaitUntil(what: "second provider invoked") { second.value != nil }
+        XCTAssertEqual(secondForceRefresh.value, true, "the taken-over load still refreshes past the rejected token")
+
+        first.value?.onUnavailable(nil)
+        settle(0.2)
+        XCTAssertNil(outcome.value, "the replaced provider's failure no longer decides the retry")
+
+        second.value?.onToken("second-token")
+        awaitUntil(what: "retry resolves") { outcome.value != nil }
+        XCTAssertEqual(outcome.value, true)
+        XCTAssertEqual(client.account.identityToken, "second-token")
+    }
+
+    func testAForwardedLoadIgnoresItsOwnProvidersAnswerAndTakesTheSuccessors() {
+        let superseded = TokenLoad(forceRefresh: true)
+        let received = Atomic<[String?]>([])
+        superseded.await { received.append($0) }
+
+        XCTAssertTrue(superseded.beginForwarding())
+        // The replaced provider answers between the locked swap and the hand-off.
+        superseded.complete(nil)
+        XCTAssertTrue(received.value.isEmpty)
+
+        let successor = TokenLoad(forceRefresh: true)
+        superseded.finishForwarding(to: successor)
+        successor.complete("successor-token")
+        XCTAssertEqual(received.value, ["successor-token"])
+        XCTAssertFalse(superseded.beginForwarding(), "a finished load cannot be forwarded again")
+    }
+
+    func testAChatRequestIsRefusedUnderAnotherSessionThanItBeganIn() {
+        let context = DashXSessionRequestContext(sessionGeneration: 4)
+        XCTAssertFalse(AuthRetryInterceptor.isBoundToAnotherSession(context, sessionGeneration: 4))
+        XCTAssertTrue(AuthRetryInterceptor.isBoundToAnotherSession(context, sessionGeneration: 5))
+        XCTAssertFalse(AuthRetryInterceptor.isBoundToAnotherSession(nil, sessionGeneration: 5), "unbound requests are unaffected")
     }
 
     func testProviderInstallAdvancesTheTokenEpoch() {

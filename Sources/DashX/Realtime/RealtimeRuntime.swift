@@ -367,7 +367,8 @@ final class RealtimeRuntime {
         }
         connectingSocket = nil
         socket = opened
-        reconnectAttempts = 0
+        // The backoff is not reset here: a server that accepts the upgrade and drops the socket
+        // before acknowledging anything would otherwise be retried every second.
         // Server subscription state is per connection: every channel re-subscribes.
         for channel in subscriptions.keys.sorted() {
             opened.send(text: DashXRealtimeCodec.encodeChannelFrame(type: DashXRealtimeCodec.typeSubscribe, channelName: channel))
@@ -389,8 +390,10 @@ final class RealtimeRuntime {
             socket?.send(text: DashXRealtimeCodec.encodeBareFrame(type: DashXRealtimeCodec.typePong))
         case .subscriptionSucceeded(let channel):
             pendingAcks.removeValue(forKey: channel)
-            // The token was accepted for real work: a later 4401 earns a fresh refresh cycle.
+            // The token was accepted for real work: a later 4401 earns a fresh refresh cycle, and a
+            // later drop starts the backoff over.
             authRefreshAttempted = false
+            reconnectAttempts = 0
             let first = firstAckGeneration[channel]
             let isResubscribe = first.map { $0 < connectionGeneration } ?? false
             if first == nil { firstAckGeneration[channel] = connectionGeneration }

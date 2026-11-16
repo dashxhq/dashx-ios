@@ -93,7 +93,7 @@ public enum DashXClientError: Error, LocalizedError {
         case .assetIsNotUploaded:
             return "The asset could not be uploaded."
         case .notIdentified:
-            return "No identified user. Call setIdentity() before this operation."
+            return "No identified user. Call setIdentity() or setIdentityTokenProvider() before this operation."
         case .graphQLErrors(let messages):
             return "GraphQL errors: \(messages.joined(separator: "; "))"
         case .networkError(let underlying):
@@ -116,7 +116,7 @@ public enum DashXClientError: Error, LocalizedError {
         case .assetIsNotUploaded:
             return "Check that the file exists, is readable, and that your network connection is stable."
         case .notIdentified:
-            return "Call DashXClient.instance.setIdentity(uid:token:) before performing this operation."
+            return "Call DashXClient.instance.setIdentity(uid:token:) or setIdentityTokenProvider(uid:provider:) before performing this operation."
         case .graphQLErrors:
             return "Check the error messages for details. This may indicate invalid input or a server-side issue."
         case .networkError:

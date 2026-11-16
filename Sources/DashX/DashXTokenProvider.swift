@@ -29,8 +29,10 @@ public final class DashXClosureTokenProvider: DashXTokenProvider {
     }
 }
 
-/// Adapter for an `async` loader: nil or a thrown error reports `onUnavailable`, and a hung loader
-/// is cancelled after `loaderTimeout`.
+/// Adapter for an `async` loader: nil or a thrown error reports `onUnavailable`. After
+/// `loaderTimeout` the loader's task is cancelled, which ends only a loader that observes
+/// cancellation; one that does not (a continuation that never resumes, say) keeps the callback
+/// pending. The SDK does not wait on it: a load unanswered after 30 seconds is reported unavailable.
 public final class DashXAsyncTokenProvider: DashXTokenProvider {
     public typealias Loader = (_ forceRefresh: Bool) async throws -> String?
 

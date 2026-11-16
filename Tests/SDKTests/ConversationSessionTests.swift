@@ -25,6 +25,8 @@ private final class FakeBackend: ChatSessionBackend {
     let after = Atomic<(String) throws -> [DashXChatMessage]>({ _ in [] })
     /// When set, fetchPage suspends until opened — frames arriving meanwhile must buffer.
     let pageGate = Atomic<Gate?>(nil)
+    /// Page → gate: a fetch of that page alone suspends until the gate opens.
+    let gatedPages = Atomic<[Int: Gate]>([:])
     /// When set, fetchAfter suspends until opened — the cursor walk stalls mid-flight.
     let afterGate = Atomic<Gate?>(nil)
     /// Thrown by the next fetchPage calls while positive.
@@ -33,6 +35,8 @@ private final class FakeBackend: ChatSessionBackend {
     let summarizeFailures = Atomic<Int>(0)
     let summarizeFailure = Atomic<Error>(DashXClientError.networkError(underlying: NSError(domain: "boom", code: 1)))
     let foreground = Atomic<Bool>(true)
+    let generation = Atomic<Int>(0)
+    let push = PushRuntimeState()
 
     func subscribe(_ handle: SubscriberHandle) -> DashXRealtimeSubscription {
         handles.append(handle)
@@ -51,6 +55,7 @@ private final class FakeBackend: ChatSessionBackend {
     func fetchPage(conversationId: String, limit: Int, page: Int) async throws -> [DashXChatMessage] {
         fetchPageCalls.append(page)
         if let gate = pageGate.value { await gate.wait() }
+        if let gate = gatedPages.value[page] { await gate.wait() }
         if pageFailures.value > 0 {
             pageFailures.mutate { $0 -= 1 }
             throw DashXClientError.networkError(underlying: NSError(domain: "page", code: 1))
@@ -64,15 +69,33 @@ private final class FakeBackend: ChatSessionBackend {
         return try after.value(afterMessageId)
     }
 
+    /// While set, a send waits, as one behind a first token load does, until `releaseSends()`.
+    let holdSends = Atomic<Bool>(false)
+    private let heldSends = Atomic<[() -> Void]>([])
+
     func send(
         identityId: String,
         conversationId: String,
         content: [String: Any],
         clientMessageId: String,
+        shouldDispatch: @escaping () -> Bool,
         completion: @escaping (Result<DashXChatMessage, Error>) -> Void
     ) {
-        sentClientMessageIds.append(clientMessageId)
-        completion(.success(sendResult.value(clientMessageId)))
+        let dispatch = { [sentClientMessageIds, sendResult] in
+            guard shouldDispatch() else {
+                completion(.failure(DashXClientError.sessionEnded))
+                return
+            }
+            sentClientMessageIds.append(clientMessageId)
+            completion(.success(sendResult.value(clientMessageId)))
+        }
+        if holdSends.value { heldSends.append(dispatch) } else { dispatch() }
+    }
+
+    func releaseSends() {
+        let held = heldSends.value
+        heldSends.value = []
+        held.forEach { $0() }
     }
 
     func markRead(
@@ -85,9 +108,19 @@ private final class FakeBackend: ChatSessionBackend {
         completion(.success(markReadResult.value))
     }
 
-    func setConversationVisible(conversationId: String, visible: Bool) {}
+    /// Runs once, before the next `visible: true` write lands.
+    let beforeVisibleWrite = Atomic<(() -> Void)?>(nil)
+
+    func setConversationVisible(conversationId: String, owner: ObjectIdentifier, visible: Bool) {
+        if visible, let hook = beforeVisibleWrite.value {
+            beforeVisibleWrite.value = nil
+            hook()
+        }
+        push.setConversationVisible(conversationId, owner: owner, visible: visible)
+    }
     func dismissConversationNotifications(conversationId: String) {}
     var isAppForeground: Bool { foreground.value }
+    var sessionGeneration: Int { generation.value }
 }
 
 private final class FakeSocket: RealtimeSocket {
@@ -155,16 +188,25 @@ private final class RuntimeBackedBackend: ChatSessionBackend {
         conversationId: String,
         content: [String: Any],
         clientMessageId: String,
+        shouldDispatch: @escaping () -> Bool,
         completion: @escaping (Result<DashXChatMessage, Error>) -> Void
     ) {
-        data.send(identityId: identityId, conversationId: conversationId, content: content, clientMessageId: clientMessageId, completion: completion)
+        data.send(
+            identityId: identityId,
+            conversationId: conversationId,
+            content: content,
+            clientMessageId: clientMessageId,
+            shouldDispatch: shouldDispatch,
+            completion: completion
+        )
     }
     func markRead(identityId: String, conversationId: String, lastMessageId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         data.markRead(identityId: identityId, conversationId: conversationId, lastMessageId: lastMessageId, completion: completion)
     }
-    func setConversationVisible(conversationId: String, visible: Bool) {}
+    func setConversationVisible(conversationId: String, owner: ObjectIdentifier, visible: Bool) {}
     func dismissConversationNotifications(conversationId: String) {}
     var isAppForeground: Bool { true }
+    var sessionGeneration: Int { data.sessionGeneration }
 }
 
 private final class RecordingListener: DashXConversationStateListener {
@@ -971,5 +1013,148 @@ final class ConversationSessionTests: XCTestCase {
         lease2.close()
         XCTAssertEqual(backend.unsubscribeCount.value, 1)
         XCTAssertNil(session.newLease(), "the torn-down session is not reusable")
+    }
+
+    func testAnOlderPageFetchedAgainstAReplacedSnapshotIsDiscarded() {
+        let backend = FakeBackend()
+        let history = (1...250).map { chatMessage(String(format: "m%03d", $0), seq: $0) }
+        backend.count.value = 200
+        backend.pages.value = Dictionary(uniqueKeysWithValues: (1...5).map { page in
+            (page, Array(history[((page - 1) * 50)..<(page * 50)]))
+        })
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "page 4 ready") { self.readyIds(lease)?.first == "m151" }
+
+        let gate = Gate()
+        backend.gatedPages.value = [3: gate]
+        lease.loadPreviousPage()
+        awaitUntil(what: "page 3 requested") { backend.fetchPageCalls.value == [4, 3] }
+
+        // A reconnect finds the cursor deleted and rebuilds from a grown history: pages 5 and up.
+        backend.after.value = { _ in
+            throw graphQLFailure("`after_message_id` is not a visible message of this conversation.", code: DashXGraphQLErrors.unprocessableEntity)
+        }
+        backend.count.value = 250
+        backend.handles.value[0].onEstablished(true)
+        let rebuilt = (201...250).map { String(format: "m%03d", $0) }
+        awaitUntil(what: "rebuilt from page 5") { self.readyIds(lease) == rebuilt }
+
+        gate.open()
+        settle(0.3)
+        XCTAssertEqual(readyIds(lease), rebuilt, "page 3 would leave page 4 missing between it and page 5")
+        XCTAssertEqual(hasOlder(lease), true)
+
+        lease.loadPreviousPage()
+        awaitUntil(what: "page 4 prepended") { self.readyIds(lease)?.count == 100 }
+        XCTAssertEqual(readyIds(lease)?.first, "m151")
+        XCTAssertEqual(backend.fetchPageCalls.value, [4, 3, 5, 4], "paging resumes from the rebuilt snapshot")
+        session.endSession()
+    }
+
+    private func sendOutcome(_ lease: DashXConversationLease) -> (clientMessageId: String, result: Atomic<Result<DashXChatMessage, Error>?>) {
+        let result = Atomic<Result<DashXChatMessage, Error>?>(nil)
+        let clientMessageId = lease.sendMessage(content: ["text": "hi"]) { result.value = $0 }
+        awaitUntil(what: "send completes") { result.value != nil }
+        return (clientMessageId, result)
+    }
+
+    private func isSessionEnded(_ result: Result<DashXChatMessage, Error>?) -> Bool {
+        if case .failure(DashXClientError.sessionEnded)? = result { return true }
+        return false
+    }
+
+    func testSendFromAClosedLeaseCompletesSessionEndedWithoutSending() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+        let sibling = session.newLease()!
+
+        lease.close()
+        let (clientMessageId, result) = sendOutcome(lease)
+
+        XCTAssertFalse(clientMessageId.isEmpty)
+        XCTAssertTrue(isSessionEnded(result.value))
+        XCTAssertTrue(backend.sentClientMessageIds.value.isEmpty)
+        XCTAssertEqual(readyIds(sibling), ["m1"])
+        session.endSession()
+    }
+
+    func testSendAfterTheSessionEndedCompletesSessionEndedWithoutSending() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        session.endSession()
+        let (_, result) = sendOutcome(lease)
+
+        XCTAssertTrue(isSessionEnded(result.value))
+        XCTAssertTrue(backend.sentClientMessageIds.value.isEmpty)
+    }
+
+    func testSendUnderALaterIdentitySessionCompletesSessionEndedWithoutSending() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        // The identity changed, but this session's teardown has not run yet.
+        backend.generation.value = 1
+        let (_, result) = sendOutcome(lease)
+
+        XCTAssertTrue(isSessionEnded(result.value))
+        XCTAssertTrue(backend.sentClientMessageIds.value.isEmpty)
+        session.endSession()
+    }
+
+    func testOneChatIdentityHidingAConversationKeepsAnothersSuppression() {
+        let backend = FakeBackend()
+        let first = ConversationSession(key: ChatSessionKey(chatIdentityId: "identity-1", conversationId: "c1"), backend: backend)
+        let second = ConversationSession(key: ChatSessionKey(chatIdentityId: "identity-2", conversationId: "c1"), backend: backend)
+        let firstLease = first.newLease()!
+        let secondLease = second.newLease()!
+        firstLease.setVisible(true)
+        secondLease.setVisible(true)
+
+        firstLease.close()
+        XCTAssertEqual(backend.push.get().visibleConversationIds, ["c1"], "the other identity's screen still shows c1")
+
+        secondLease.setVisible(false)
+        XCTAssertTrue(backend.push.get().visibleConversationIds.isEmpty)
+        second.endSession()
+    }
+
+    func testASendHeldForATokenIsDroppedWhenItsLeaseClosesFirst() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+        let sibling = session.newLease()!
+        backend.holdSends.value = true
+
+        let result = Atomic<Result<DashXChatMessage, Error>?>(nil)
+        lease.sendMessage(content: ["text": "hi"]) { result.value = $0 }
+        lease.close()
+        backend.releaseSends()
+
+        awaitUntil(what: "send completes") { result.value != nil }
+        XCTAssertTrue(isSessionEnded(result.value))
+        XCTAssertTrue(backend.sentClientMessageIds.value.isEmpty, "the request must not leave after the close")
+        XCTAssertEqual(readyIds(sibling), ["m1"])
+        session.endSession()
+    }
+
+    func testAVisibilityChangeRacingACloseNeverOutlivesIt() {
+        let backend = FakeBackend()
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        let closeFinished = Atomic<Bool>(false)
+        // The close runs while the visible write is in progress; it must not finish ahead of it.
+        backend.beforeVisibleWrite.value = {
+            DispatchQueue.global().async {
+                lease.close()
+                closeFinished.value = true
+            }
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+
+        lease.setVisible(true)
+        awaitUntil(what: "close finished") { closeFinished.value }
+        XCTAssertTrue(backend.push.get().visibleConversationIds.isEmpty, "the closed lease's visibility outlived its close")
     }
 }

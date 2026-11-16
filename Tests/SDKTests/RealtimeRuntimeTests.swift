@@ -273,6 +273,39 @@ final class RealtimeRuntimeTests: XCTestCase {
         XCTAssertTrue(harness.established.value[1], "an ack under a later generation IS a resubscribe")
     }
 
+    /// Opens socket `index` and drops it before anything is acknowledged.
+    private func openAndDrop(_ harness: Harness, _ index: Int) {
+        awaitUntil(timeout: 5, what: "socket \(index + 1)") { harness.sockets.count == index + 1 }
+        harness.open(index)
+        harness.fail(index)
+    }
+
+    func testBackoffKeepsGrowingWhileSocketsOpenWithoutAnAcknowledgement() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        openAndDrop(harness, 0) // next delay 0.5–1 s
+        openAndDrop(harness, 1) // next delay 1–2 s
+        openAndDrop(harness, 2) // next delay 2–4 s
+
+        settle(1.9)
+        XCTAssertEqual(harness.sockets.count, 3, "an opened socket that acknowledged nothing must not reset the backoff")
+        awaitUntil(timeout: 5, what: "fourth socket") { harness.sockets.count == 4 }
+    }
+
+    func testAnAcknowledgementResetsTheBackoff() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        openAndDrop(harness, 0)
+        openAndDrop(harness, 1)
+        awaitUntil(timeout: 5, what: "socket 3") { harness.sockets.count == 3 }
+        harness.open(2)
+        harness.ack("in_app_chat:conversation:c1", index: 2)
+        awaitUntil(what: "acknowledged") { harness.established.value.count == 1 }
+        harness.fail(2)
+
+        awaitUntil(timeout: 1.3, what: "reconnect at the first backoff step") { harness.sockets.count == 4 }
+    }
+
     func testLastUnsubscribeClosesSocketAndStaleCloseDoesNotReconnect() {
         let harness = Harness()
         let subscription = harness.subscribe("c1")

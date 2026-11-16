@@ -110,7 +110,9 @@ public protocol DashXConversationLease: AnyObject {
 
     /// Sends a visitor message and merges the committed row into `state`. Returns the client message
     /// id synchronously: the idempotency key a retry must reuse via the raw operation, reported back
-    /// as `DashXChatMessage.clientMessageId`. `content` is `{"text": "<1–4096 characters>"}`.
+    /// as `DashXChatMessage.clientMessageId`. `content` is `{"text": "<1–4096 characters>"}`. After
+    /// `close()`, or once the session has ended, nothing is sent and the completion receives
+    /// `.sessionEnded`.
     @discardableResult
     func sendMessage(content: [String: Any], completion: @escaping (Result<DashXChatMessage, Error>) -> Void) -> String
 
@@ -182,11 +184,13 @@ protocol ChatSessionBackend {
     func summarizeMessages(conversationId: String) async throws -> Int
     func fetchPage(conversationId: String, limit: Int, page: Int) async throws -> [DashXChatMessage]
     func fetchAfter(conversationId: String, limit: Int, afterMessageId: String) async throws -> [DashXChatMessage]
+    /// `shouldDispatch` is asked right before the request leaves, which may be after a token load.
     func send(
         identityId: String,
         conversationId: String,
         content: [String: Any],
         clientMessageId: String,
+        shouldDispatch: @escaping () -> Bool,
         completion: @escaping (Result<DashXChatMessage, Error>) -> Void
     )
     func markRead(
@@ -195,10 +199,14 @@ protocol ChatSessionBackend {
         lastMessageId: String,
         completion: @escaping (Result<Bool, Error>) -> Void
     )
-    func setConversationVisible(conversationId: String, visible: Bool)
+    /// `owner` is the session declaring it; a conversation stays visible while any owner shows it.
+    /// Called with the session's lock held, so it must not call back into the session.
+    func setConversationVisible(conversationId: String, owner: ObjectIdentifier, visible: Bool)
     func dismissConversationNotifications(conversationId: String)
     /// Read marking requires a foregrounded process, not just a visible lease.
     var isAppForeground: Bool { get }
+    /// The identity session current now; a session opened under another one must not send.
+    var sessionGeneration: Int { get }
 }
 
 struct DashXChatSessionBackend: ChatSessionBackend {
@@ -225,10 +233,16 @@ struct DashXChatSessionBackend: ChatSessionBackend {
         conversationId: String,
         content: [String: Any],
         clientMessageId: String,
+        shouldDispatch: @escaping () -> Bool,
         completion: @escaping (Result<DashXChatMessage, Error>) -> Void
     ) {
         client.sendInAppChatMessage(
-            conversationId: conversationId, identityId: identityId, content: content, clientMessageId: clientMessageId, completion: completion
+            conversationId: conversationId,
+            identityId: identityId,
+            content: content,
+            clientMessageId: clientMessageId,
+            shouldDispatch: shouldDispatch,
+            completion: completion
         )
     }
 
@@ -243,8 +257,8 @@ struct DashXChatSessionBackend: ChatSessionBackend {
         )
     }
 
-    func setConversationVisible(conversationId: String, visible: Bool) {
-        client.pushRuntime.setConversationVisible(conversationId, visible: visible)
+    func setConversationVisible(conversationId: String, owner: ObjectIdentifier, visible: Bool) {
+        client.pushRuntime.setConversationVisible(conversationId, owner: owner, visible: visible)
     }
 
     func dismissConversationNotifications(conversationId: String) {
@@ -252,6 +266,8 @@ struct DashXChatSessionBackend: ChatSessionBackend {
     }
 
     var isAppForeground: Bool { client.pushRuntime.get().isForeground }
+
+    var sessionGeneration: Int { client.currentSessionGeneration }
 }
 
 /// Shared state for one `(identity, conversation)`: subscription, reconciliation buffer, message
@@ -269,6 +285,8 @@ final class ConversationSession {
 
     let key: ChatSessionKey
     fileprivate let backend: ChatSessionBackend
+    /// The identity session this conversation was opened under.
+    private let identityGeneration: Int
     fileprivate let lane = DispatchQueue(label: "com.dashx.ios.chat.session")
     private let callbackQueue: DispatchQueue
 
@@ -293,6 +311,9 @@ final class ConversationSession {
     /// One older-page fetch at a time: a slow duplicate finishing late would move
     /// `oldestFetchedPage` back to a newer page.
     private var loadingPreviousPage = false
+    /// Advanced each time a snapshot replaces the list: an older page fetched against a replaced
+    /// snapshot would leave a gap between it and the new pages.
+    private var historyGeneration = 0
     /// Newest unconfirmed tail id a resync was already requested for.
     private var resyncRequestedFor: String?
     /// Server-confirmed reconnect cursor, advanced only by fetch results. Frames can arrive out of
@@ -307,6 +328,7 @@ final class ConversationSession {
         self.key = key
         self.backend = backend
         self.callbackQueue = callbackQueue
+        self.identityGeneration = backend.sessionGeneration
     }
 
     var state: DashXConversationState {
@@ -319,6 +341,11 @@ final class ConversationSession {
         lock.lock()
         defer { lock.unlock() }
         return ended
+    }
+
+    /// Not ended, and the identity session it was opened under is still the current one.
+    fileprivate var canSend: Bool {
+        !isEnded && backend.sessionGeneration == identityGeneration
     }
 
     func newLease() -> DashXConversationLease? {
@@ -471,6 +498,7 @@ final class ConversationSession {
                 if overflowed { return false }
                 self.messages = self.mergeInto(candidate, bufferSnapshot)
                 self.snapshotDone = true
+                self.historyGeneration += 1
                 self.oldestFetchedPage = oldestFetched
                 // From the fetched candidate only: a buffered frame is not server-confirmed.
                 self.lastKnownMessageId = candidate.last?.id
@@ -594,11 +622,14 @@ final class ConversationSession {
             let page = self.oldestFetchedPage - 1
             guard self.snapshotDone, page >= 1, !self.loadingPreviousPage else { return }
             self.loadingPreviousPage = true
+            let generation = self.historyGeneration
             Task {
                 do {
                     let rows = try await self.backend.fetchPage(conversationId: self.key.conversationId, limit: Self.pageSize, page: page)
                     await self.onLane {
                         self.loadingPreviousPage = false
+                        // Numbered against the replaced snapshot; the next call pages from the new one.
+                        guard self.historyGeneration == generation else { return }
                         self.oldestFetchedPage = page
                         self.applyMerge(rows)
                     }
@@ -690,10 +721,10 @@ final class ConversationSession {
         subscription = nil
         let terminal = DashXConversationState.error(.sessionEnded)
         currentState = terminal
+        writeVisibilityLocked(false)
         lock.unlock()
 
         departing?.unsubscribe()
-        backend.setConversationVisible(conversationId: key.conversationId, visible: false)
         toNotify.forEach { lease in
             lease.notifyStateListeners(terminal)
             if let callback = lease.terminatedCallback {
@@ -710,10 +741,9 @@ final class ConversationSession {
             return
         }
         leases.remove(at: index)
-        var clearVisibility = false
         if lease.visibleNow {
             lease.visibleNow = false
-            clearVisibility = !leases.contains { $0.visibleNow }
+            if !leases.contains(where: { $0.visibleNow }) { writeVisibilityLocked(false) }
         }
         let teardown = leases.isEmpty && !ended
         if teardown { ended = true }
@@ -721,7 +751,6 @@ final class ConversationSession {
         if teardown { subscription = nil }
         lock.unlock()
 
-        if clearVisibility { backend.setConversationVisible(conversationId: key.conversationId, visible: false) }
         if teardown {
             departing?.unsubscribe()
             ChatCoordinator.shared.remove(key, self)
@@ -730,14 +759,25 @@ final class ConversationSession {
 
     fileprivate func setLeaseVisible(_ lease: Lease, _ visible: Bool) {
         lock.lock()
+        // A lease already closed, or a session already ended, no longer owns visibility: writing
+        // it back would outlive the close that cleared it.
+        guard !ended, leases.contains(where: { $0 === lease }) else {
+            lock.unlock()
+            return
+        }
         lease.visibleNow = visible
-        let anyVisible = leases.contains { $0.visibleNow }
+        writeVisibilityLocked(leases.contains { $0.visibleNow })
         lock.unlock()
-        backend.setConversationVisible(conversationId: key.conversationId, visible: anyVisible)
         if visible {
             backend.dismissConversationNotifications(conversationId: key.conversationId)
             lane.async { self.maybeMarkRead() }
         }
+    }
+
+    /// Call with `lock` held: visibility is written in the hold that decides it, so a close and a
+    /// concurrent visibility change land in the order they were decided.
+    private func writeVisibilityLocked(_ visible: Bool) {
+        backend.setConversationVisible(conversationId: key.conversationId, owner: ObjectIdentifier(self), visible: visible)
     }
 
     fileprivate func deliver(_ block: @escaping () -> Void) {
@@ -802,11 +842,19 @@ final class ConversationSession {
         func sendMessage(content: [String: Any], completion: @escaping (Result<DashXChatMessage, Error>) -> Void) -> String {
             let clientMessageId = UUID().uuidString.lowercased()
             let session = self.session
+            // A retained screen must not post into a conversation its lease or identity has left:
+            // the request would carry the next identity's token. Checked again at dispatch, which
+            // a first token load can delay past a close.
+            guard canSend else {
+                session.deliver { completion(.failure(DashXClientError.sessionEnded)) }
+                return clientMessageId
+            }
             session.backend.send(
                 identityId: session.key.chatIdentityId,
                 conversationId: session.key.conversationId,
                 content: content,
-                clientMessageId: clientMessageId
+                clientMessageId: clientMessageId,
+                shouldDispatch: { [weak self] in self?.canSend ?? false }
             ) { result in
                 // The frame is missed while the socket reconnects, and a retry of a committed send
                 // gets no frame at all; the merge dedupes by id.
@@ -820,6 +868,13 @@ final class ConversationSession {
 
         func loadPreviousPage(onError: ((Error) -> Void)?) {
             session.loadPreviousPageInternal(onError: onError)
+        }
+
+        private var canSend: Bool {
+            lock.lock()
+            let isClosed = closed
+            lock.unlock()
+            return !isClosed && session.canSend
         }
 
         func setVisible(_ visible: Bool) {
