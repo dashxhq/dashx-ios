@@ -21,8 +21,8 @@ server-only: the host's backend creates the conversation and returns the
   `addStateListener(_:)` (replays the current state on add), `sendMessage(content:completion:)`
   (returns the client message id synchronously — the idempotency key a retry must reuse),
   `loadPreviousPage`, `setVisible(_:)` (drives read-marking and push suppression) and `close()`.
-  Missed messages are reconciled after a reconnect; `hasOlderMessages` tells a host when to offer
-  "load older". Also `fetchConversations`, `fetchConversation`, `summarizeConversations`,
+  Missed messages are reconciled after a reconnect; the first load shows at least a full page when
+  the history has one, and `hasOlderMessages` tells a host when to offer "load older". Also `fetchConversations`, `fetchConversation`, `summarizeConversations`,
   `summarizeUnread` and `resolveConversation`, plus the same operations as raw `DashXClient`
   methods (`fetchInAppChatMessages`, `sendInAppChatMessage`, `markInAppChatConversationRead`, …),
   each with a completion and an `async` overload. Results are SDK models (`DashXChatMessage`,
@@ -50,9 +50,10 @@ server-only: the host's backend creates the conversation and returns the
   `case .graphQLErrors(let messages)`, `messages.count` and `messages.joined(...)` compile
   unchanged; code that handed the payload to a `[String]` parameter should use `.messages`.
 - The identity token is attached to every GraphQL request at send time, and a request rejected as
-  `UNAUTHORIZED` before execution is retried once after a token refresh. When no provider can
-  refresh an expired token, the SDK drops it and continues on the public key alone, so
-  `identify` / `track` / `subscribe` keep working as in 1.6.x.
+  `UNAUTHORIZED` before execution is retried once after a token refresh. When no provider is bound
+  and the token has expired, the SDK drops it and continues on the public key alone, so
+  `identify` / `track` / `subscribe` keep working as in 1.6.x; with a provider bound the token is
+  kept and the next rejection asks the provider again.
 - `setIdentity(uid:token:)` with a nil token for the current uid keeps the held token; `reset()`
   clears it. Switching uid and `reset()` end open chat sessions (leases receive
   `.error(.sessionEnded)`) and recycle the realtime connection.

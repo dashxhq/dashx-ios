@@ -13,6 +13,7 @@ private final class FakeBackend: ChatSessionBackend {
     let fetchPageCalls = Atomic<[Int]>([])
     let fetchAfterCursors = Atomic<[String]>([])
     let markReadIds = Atomic<[String]>([])
+    let markReadResult = Atomic<Bool>(true)
     let sentClientMessageIds = Atomic<[String]>([])
     /// The committed row the fake server returns for a send, keyed by the client message id.
     let sendResult = Atomic<(String) -> DashXChatMessage>({ clientMessageId in
@@ -75,7 +76,7 @@ private final class FakeBackend: ChatSessionBackend {
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         markReadIds.append(lastMessageId)
-        completion(.success(true))
+        completion(.success(markReadResult.value))
     }
 
     func setConversationVisible(conversationId: String, visible: Bool) {}
@@ -183,6 +184,22 @@ final class ConversationSessionTests: XCTestCase {
         lease.setVisible(false)
         settle(0.7)
         XCTAssertEqual(backend.markReadIds.value, ["m1"])
+        session.endSession()
+    }
+
+    func testDeclinedMarkReadIsSettledAndTheNextMessageRetries() {
+        let backend = FakeBackend()
+        backend.markReadResult.value = false
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        lease.setVisible(true)
+        awaitUntil(what: "first mark") { backend.markReadIds.value == ["m1"] }
+        settle(1.2) // several debounce periods: a declined mark must not be re-sent
+        XCTAssertEqual(backend.markReadIds.value, ["m1"])
+
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("m2", seq: 2)] : [] }
+        backend.handles.value[0].onFrame(chatFrame("m2", seq: 2))
+        awaitUntil(what: "the newer message is marked") { backend.markReadIds.value == ["m1", "m2"] }
         session.endSession()
     }
 
@@ -452,19 +469,20 @@ final class ConversationSessionTests: XCTestCase {
 
     func testReadyReportsOlderHistoryUntilTheFirstPageIsFetched() {
         let backend = FakeBackend()
-        backend.count.value = 51
+        backend.count.value = 100
         backend.pages.value = [
-            2: [chatMessage("m051", seq: 51)],
+            2: (51...100).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
             1: (1...50).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
         ]
         let session = ConversationSession(key: key, backend: backend)
         let lease = session.newLease()!
         backend.handles.value[0].onEstablished(false)
-        awaitUntil(what: "last page ready") { self.readyIds(lease) == ["m051"] }
-        XCTAssertEqual(hasOlder(lease), true, "one row on screen, fifty behind it")
+        awaitUntil(what: "last page ready") { self.readyIds(lease)?.count == 50 }
+        XCTAssertEqual(hasOlder(lease), true, "a full page on screen, fifty behind it")
+        XCTAssertEqual(backend.fetchPageCalls.value, [2])
 
         lease.loadPreviousPage()
-        awaitUntil(what: "first page prepended") { self.readyIds(lease)?.count == 51 }
+        awaitUntil(what: "first page prepended") { self.readyIds(lease)?.count == 100 }
         XCTAssertEqual(hasOlder(lease), false)
 
         // Nothing left to page: another request is a no-op, not a fetch.
@@ -474,10 +492,47 @@ final class ConversationSessionTests: XCTestCase {
         session.endSession()
     }
 
+    func testShortTailPageIsToppedUpWithThePageBeforeIt() {
+        let backend = FakeBackend()
+        backend.count.value = 51
+        backend.pages.value = [
+            2: [chatMessage("m051", seq: 51)],
+            1: (1...50).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
+        ]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "full first screen") { self.readyIds(lease)?.count == 51 }
+        XCTAssertEqual(readyIds(lease)?.first, "m001")
+        XCTAssertEqual(hasOlder(lease), false, "the top-up reached page 1")
+        XCTAssertEqual(backend.fetchPageCalls.value, [2, 1])
+
+        lease.loadPreviousPage()
+        settle(0.2)
+        XCTAssertEqual(backend.fetchPageCalls.value, [2, 1], "nothing older to fetch")
+        session.endSession()
+    }
+
     func testReadySinglePageConversationHasNoOlderHistory() {
         let backend = FakeBackend()
         let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
         XCTAssertEqual(hasOlder(lease), false)
+        session.endSession()
+    }
+
+    func testTopUpPagesThatOverlapAfterADeletionYieldEachRowOnce() {
+        let backend = FakeBackend()
+        backend.count.value = 51
+        // m001 was deleted between the two fetches: page 1 now ends with the row page 2 returned.
+        backend.pages.value = [
+            2: [chatMessage("m051", seq: 51)],
+            1: (2...51).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
+        ]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "ready") { self.readyIds(lease) != nil }
+        XCTAssertEqual(readyIds(lease), (2...51).map { String(format: "m%03d", $0) })
         session.endSession()
     }
 
@@ -491,10 +546,7 @@ final class ConversationSessionTests: XCTestCase {
         let session = ConversationSession(key: key, backend: backend)
         let lease = session.newLease()!
         backend.handles.value[0].onEstablished(false)
-        awaitUntil(what: "newest page ready") { self.readyIds(lease)?.count == 10 }
-
-        lease.loadPreviousPage()
-        awaitUntil(what: "older page prepended") { self.readyIds(lease)?.count == 60 }
+        awaitUntil(what: "topped-up first screen") { self.readyIds(lease)?.count == 60 }
 
         backend.after.value = { _ in [] }
         backend.handles.value[0].onEstablished(true)

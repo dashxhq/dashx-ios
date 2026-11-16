@@ -404,11 +404,13 @@ final class ConversationSession {
                     try await cursorReconcile(bufferingStarted: bufferingStarted)
                 }
                 bufferingStarted = false
-            } while await onLane({ self.resyncPending })
-            await onLane {
+            } while await onLane({ () -> Bool in
+                // Checked and cleared in one lane hop, or a resync requested in between is orphaned.
+                if self.resyncPending { return true }
                 self.syncAttempts = 0
                 self.syncing = false
-            }
+                return false
+            })
         } catch {
             let failure = DashXClientError.wrap(error)
             await onLane {
@@ -455,14 +457,22 @@ final class ConversationSession {
             bufferingStarted = false
             let count = try await backend.summarizeMessages(conversationId: key.conversationId)
             let lastPage = max(1, (count + Self.pageSize - 1) / Self.pageSize)
-            let candidate = try await backend.fetchPage(conversationId: key.conversationId, limit: Self.pageSize, page: lastPage)
-                .sorted(by: DashXChatMessage.order)
+            var rows = try await backend.fetchPage(conversationId: key.conversationId, limit: Self.pageSize, page: lastPage)
+            var oldestPage = lastPage
+            // A short tail page can be a single row; the page before it fills the first screen.
+            if rows.count < Self.pageSize && lastPage > 1 {
+                rows += try await backend.fetchPage(conversationId: key.conversationId, limit: Self.pageSize, page: lastPage - 1)
+                oldestPage = lastPage - 1
+            }
+            // Keyed by id: a deletion between the two fetches shifts a row across the page boundary.
+            let candidate = mergeInto([], rows)
+            let oldestFetched = oldestPage
             let done: Bool = await onLane {
                 let (bufferSnapshot, overflowed) = self.drainBufferAndResumeLive()
                 if overflowed { return false }
                 self.messages = self.mergeInto(candidate, bufferSnapshot)
                 self.snapshotDone = true
-                self.oldestFetchedPage = lastPage
+                self.oldestFetchedPage = oldestFetched
                 // From the fetched candidate only: a buffered frame is not server-confirmed.
                 self.lastKnownMessageId = candidate.last?.id
                 self.publishReady()
@@ -647,7 +657,11 @@ final class ConversationSession {
                 self.markInFlight = false
                 switch result {
                 case .success(let success):
-                    if success { self.markedMessageId = messageId }
+                    if !success {
+                        DashXLog.d(tag: Self.tag, "Read position of \(self.key.conversationId) not moved to \(messageId); the next message retries")
+                    }
+                    // Settled either way, or a declined id would be re-sent on every debounce.
+                    self.markedMessageId = messageId
                     self.maybeMarkRead()
                 case .failure(let error):
                     // Left unmarked: the next message retries.

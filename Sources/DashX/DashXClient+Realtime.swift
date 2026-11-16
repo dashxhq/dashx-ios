@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 extension DashXClient {
     static let defaultRealtimeBaseURI = "wss://realtime.dashx.com"
@@ -55,6 +54,9 @@ extension DashXClient {
             initialForeground: _lifecycleForeground
         )
         _realtimeRuntime = created
+        if case .authenticationFailed(let cause) = _connectionState {
+            created.onCredentialsUnavailable(cause: cause)
+        }
         return created
     }
 
@@ -92,7 +94,7 @@ extension DashXClient {
 
     private func publishConnectionState(from runtime: RealtimeRuntime, _ state: DashXConnectionState) {
         stateLock.lock()
-        guard _realtimeRuntime === runtime else {
+        guard _realtimeRuntime === runtime, _connectionState != state else {
             stateLock.unlock()
             return
         }
@@ -119,6 +121,37 @@ extension DashXClient {
         publishDirect(.authenticationFailed(cause: cause))
     }
 
+    /// A failed provider load, published only while the load it belongs to is still the current
+    /// one: a token installed meanwhile must not be followed by a stale `authenticationFailed`.
+    /// Once a runtime exists it owns the published state, so the failure goes through it.
+    func reportCredentialsUnavailable(_ cause: Error?, bound: BoundTokenProvider, requestSnapshot: AccountSnapshot) {
+        // Evaluated under `stateLock`.
+        let isCurrent = {
+            self._boundProvider === bound
+                && self._account.sessionGeneration == requestSnapshot.sessionGeneration
+                && self._account.tokenEpoch == requestSnapshot.tokenEpoch
+        }
+        stateLock.lock()
+        if let runtime = _realtimeRuntime {
+            stateLock.unlock()
+            runtime.onCredentialsUnavailable(cause: cause) {
+                self.stateLock.lock()
+                defer { self.stateLock.unlock() }
+                return isCurrent()
+            }
+            return
+        }
+        let state = DashXConnectionState.authenticationFailed(cause: cause)
+        guard isCurrent(), _connectionState != state else {
+            stateLock.unlock()
+            return
+        }
+        _connectionState = state
+        let listeners = _connectionStateListeners
+        stateLock.unlock()
+        notifyConnectionStateListeners(listeners, state)
+    }
+
     private func notifyConnectionStateListeners(_ listeners: [DashXConnectionStateListener], _ state: DashXConnectionState) {
         guard !listeners.isEmpty else { return }
         DispatchQueue.main.async {
@@ -128,37 +161,18 @@ extension DashXClient {
 
     // MARK: - Process lifecycle
 
-    /// The socket is connected only while the app is on screen.
-    func registerLifecycleObserver() {
-        let register = {
-            guard self.lifecycleObservers.isEmpty else { return }
-            self.setLifecycleForeground(UIApplication.shared.applicationState != .background)
-            let center = NotificationCenter.default
-            let toForeground: (Notification) -> Void = { _ in
-                self.setLifecycleForeground(true)
-                self.realtimeRuntime?.onForeground()
-                ChatCoordinator.shared.onAppForegrounded()
-            }
-            self.lifecycleObservers = [
-                center.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: toForeground),
-                center.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main, using: toForeground),
-                center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
-                    self.setLifecycleForeground(false)
-                    self.realtimeRuntime?.onBackground()
-                },
-            ]
-        }
-        if Thread.isMainThread {
-            register()
-        } else {
-            DispatchQueue.main.async(execute: register)
-        }
-    }
-
-    private func setLifecycleForeground(_ foreground: Bool) {
+    /// Fed by `DashXApplicationLifecycleCallbacks`; the socket is connected only while the app is
+    /// on screen.
+    func setLifecycleForeground(_ foreground: Bool) {
         stateLock.lock()
         _lifecycleForeground = foreground
         stateLock.unlock()
         pushRuntime.setForeground(foreground)
+        if foreground {
+            realtimeRuntime?.onForeground()
+            ChatCoordinator.shared.onAppForegrounded()
+        } else {
+            realtimeRuntime?.onBackground()
+        }
     }
 }

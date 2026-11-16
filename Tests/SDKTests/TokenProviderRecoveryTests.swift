@@ -112,6 +112,17 @@ final class TokenProviderRecoveryTests: XCTestCase {
         XCTAssertEqual(client.account.uid, uid)
     }
 
+    func testProviderInstallAdvancesTheTokenEpoch() {
+        let before = client.account.tokenEpoch
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            callback.onToken("provider-token")
+        })
+        awaitUntil(what: "token installed") { self.client.account.identityToken == "provider-token" }
+        XCTAssertGreaterThan(client.account.tokenEpoch, before, "a load begun before the install is stale under the new epoch")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN), "provider-token")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID), uid)
+    }
+
     func testResetEndsTheProviderSessionAndReturnsToIdle() {
         client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
             callback.onToken("provider-token")
@@ -121,6 +132,8 @@ final class TokenProviderRecoveryTests: XCTestCase {
         client.reset()
         XCTAssertNil(client.account.uid)
         XCTAssertFalse(client.hasIdentityToken)
+        XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID), "disk follows memory")
+        XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN))
         XCTAssertEqual(client.connectionState, .idle)
         XCTAssertFalse(refresh(), "no provider is bound after reset")
     }

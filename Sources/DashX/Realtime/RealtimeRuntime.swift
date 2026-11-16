@@ -83,6 +83,10 @@ final class RealtimeRuntime {
     /// One refresh per rejection cycle: set when 4401 fires the hook, re-armed only by an ack or an
     /// external (non-refresh) identity change — a refreshed token that 4401s again stays terminal.
     private var authRefreshAttempted = false
+    /// Reported by the client when no token could be loaded. The socket is left alone (the held
+    /// token may still work) but the published state stays terminal until the next identity change.
+    private var credentialsUnavailable = false
+    private var credentialFailureCause: Error?
     /// Advanced by every identity change; a refresh outcome from before it is stale.
     private var credentialGeneration = 0
     private var reconnectAttempts = 0
@@ -136,6 +140,12 @@ final class RealtimeRuntime {
         enqueue { self.handleIdentityChanged(fromAuthRefresh: fromAuthRefresh) }
     }
 
+    /// A provider load failed: the state is `authenticationFailed` until the identity changes.
+    /// `isCurrent` is asked on the runtime queue, so a token installed meanwhile wins.
+    func onCredentialsUnavailable(cause: Error?, isCurrent: @escaping () -> Bool = { true }) {
+        enqueue { self.handleCredentialsUnavailable(cause: cause, isCurrent: isCurrent) }
+    }
+
     func endSession(completion: (() -> Void)? = nil) {
         queue.async {
             if !self.ended { self.handleEndSession() }
@@ -167,11 +177,16 @@ final class RealtimeRuntime {
             socket.send(text: DashXRealtimeCodec.encodeChannelFrame(
                 type: DashXRealtimeCodec.typeSubscribe, channelName: handle.channelName))
             scheduleAckDeadline(channel: handle.channelName, attempt: beginSubscribeAttempt(handle.channelName))
+        } else if socket != nil, pendingAcks[handle.channelName] == nil, firstAckGeneration[handle.channelName] != nil {
+            // Already acknowledged on this connection: no frame will repeat it for the newcomer.
+            handle.onEstablished(false)
         }
         // connect() refuses to run while auth-failed, so no ack deadline would surface the problem.
         if authFailed {
             handle.onSubscribeError(.subscriptionFailed(
                 "Realtime authentication failed; channel \(handle.channelName) cannot subscribe"))
+        } else if credentialsUnavailable && socket == nil && connectingSocket == nil {
+            handle.onSubscribeError(Self.credentialsUnavailableError)
         }
         publishState()
     }
@@ -207,6 +222,8 @@ final class RealtimeRuntime {
     private func handleIdentityChanged(fromAuthRefresh: Bool) {
         // Any socket, connected or still connecting, carries the old token in its URL.
         authFailed = false
+        credentialsUnavailable = false
+        credentialFailureCause = nil
         credentialGeneration += 1
         if !fromAuthRefresh { authRefreshAttempted = false }
         reconnectAttempts = 0
@@ -289,6 +306,18 @@ final class RealtimeRuntime {
         publishState()
     }
 
+    private func handleCredentialsUnavailable(cause: Error?, isCurrent: () -> Bool) {
+        guard isCurrent() else { return }
+        credentialsUnavailable = true
+        credentialFailureCause = cause
+        // Without a socket no ack or deadline is coming; a live socket's own acks still decide.
+        if socket == nil && connectingSocket == nil { failSubscribers(Self.credentialsUnavailableError) }
+        publishState()
+    }
+
+    private static let credentialsUnavailableError = DashXClientError.subscriptionFailed(
+        "No identity token is available; the channel cannot subscribe until the identity changes")
+
     private func handleAuthRefreshFailed(credentialGeneration: Int) {
         // Only while the rejection that asked for the refresh still stands.
         guard credentialGeneration == self.credentialGeneration, authFailed else { return }
@@ -320,7 +349,10 @@ final class RealtimeRuntime {
 
     /// With the socket gone no ack or deadline is coming, so waiting subscribers are told now.
     private func failSubscribers(code: Int, reason: String) {
-        let error = DashXClientError.subscriptionFailed("Realtime connection closed with code \(code) (\(reason))")
+        failSubscribers(.subscriptionFailed("Realtime connection closed with code \(code) (\(reason))"))
+    }
+
+    private func failSubscribers(_ error: DashXClientError) {
         subscriptions.values.forEach { handles in handles.forEach { $0.onSubscribeError(error) } }
     }
 
@@ -372,8 +404,8 @@ final class RealtimeRuntime {
 
     private func publishState() {
         let state: DashXConnectionState
-        if authFailed {
-            state = .authenticationFailed(cause: nil)
+        if authFailed || credentialsUnavailable {
+            state = .authenticationFailed(cause: credentialFailureCause)
         } else if socket != nil {
             state = .connected
         } else if connectingSocket != nil {

@@ -40,6 +40,8 @@ final class DashXPushTests: XCTestCase {
         let promo = try payload()
         XCTAssertFalse(DashXPush.shouldDisplay(promo, snapshot: snapshot(foreground: true, visible: []), decider: { _ in false }))
         XCTAssertTrue(DashXPush.shouldDisplay(promo, snapshot: snapshot(foreground: true, visible: []), decider: { _ in true }))
+        XCTAssertTrue(DashXPush.shouldDisplay(promo, snapshot: snapshot(foreground: false, visible: []), decider: { _ in false }),
+                      "backgrounded: the decider is a foreground decision, a silent push still schedules its notification")
     }
 
     func testUnparseablePayloadsAreDisplayed() {

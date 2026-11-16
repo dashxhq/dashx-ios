@@ -285,7 +285,7 @@ extension DashXClient {
         completion: @escaping (Result<Value, Error>) -> Void,
         map: @escaping (Query.Data) -> Value
     ) {
-        Network.shared.apollo.fetch(query: query, cachePolicy: .fetchIgnoringCacheData) { result in
+        Network.shared.apollo.fetch(query: query, cachePolicy: .fetchIgnoringCacheCompletely) { result in
             completion(Self.mapChatResult(result, map: map))
         }
     }

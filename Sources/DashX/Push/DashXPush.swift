@@ -29,8 +29,9 @@ public enum DashXPush {
     }
 
     /// Whether a notification arriving in the foreground should be presented: a chat push for a
-    /// conversation currently on screen is suppressed, then the host decider decides. Non-DashX or
-    /// unparseable payloads are displayed.
+    /// conversation currently on screen is suppressed, then the host decider decides. Backgrounded,
+    /// everything is displayed: the decider is a foreground decision. Non-DashX or unparseable
+    /// payloads are displayed.
     public static func shouldDisplay(_ userInfo: [AnyHashable: Any]) -> Bool {
         guard let payload = userInfo.dashxNotificationData() else { return true }
         return shouldDisplay(payload)
@@ -45,10 +46,8 @@ public enum DashXPush {
         snapshot: PushRuntimeState.Snapshot,
         decider: DashXNotificationDisplayDecider?
     ) -> Bool {
-        if let conversationId = chatConversationId(in: payload),
-           snapshot.isForeground,
-           snapshot.visibleConversationIds.contains(conversationId)
-        {
+        guard snapshot.isForeground else { return true }
+        if let conversationId = chatConversationId(in: payload), snapshot.visibleConversationIds.contains(conversationId) {
             DashXLog.d(tag: tag, "Suppressing chat push: conversation \(conversationId) is visible")
             return false
         }

@@ -20,8 +20,9 @@ private final class FakeSocket: RealtimeSocket {
 private final class Harness {
     let states = Atomic<[DashXConnectionState]>([])
     let authRejections = Atomic<Int>(0)
-    let sockets = Atomic<[FakeSocket]>([])
-    let listeners = Atomic<[RealtimeSocketListener]>([])
+    /// One entry per connection, recorded in a single write: a test that sees the socket can
+    /// index its listener.
+    let connections = Atomic<[(socket: FakeSocket, listener: RealtimeSocketListener)]>([])
     let established = Atomic<[Bool]>([])
     let subscribeErrors = Atomic<[DashXClientError]>([])
     /// What the 4401 hook reports when no custom hook is installed.
@@ -52,8 +53,7 @@ private final class Harness {
             initialForeground: initialForeground,
             socketFactory: { url, listener in
                 let socket = FakeSocket(url: url)
-                harnessBox.value?.sockets.append(socket)
-                harnessBox.value?.listeners.append(listener)
+                harnessBox.value?.connections.append((socket, listener))
                 return socket
             },
             ackTimeout: ackTimeout
@@ -74,16 +74,18 @@ private final class Harness {
         ))
     }
 
-    func socket(_ index: Int) -> FakeSocket { sockets.value[index] }
-    func listener(_ index: Int) -> RealtimeSocketListener { listeners.value[index] }
+    var sockets: [FakeSocket] { connections.value.map(\.socket) }
+
+    func socket(_ index: Int) -> FakeSocket { connections.value[index].socket }
+    func listener(_ index: Int) -> RealtimeSocketListener { connections.value[index].listener }
 
     func open(_ index: Int? = nil) {
-        let i = index ?? (sockets.value.count - 1)
+        let i = index ?? (connections.value.count - 1)
         listener(i).socketDidOpen(socket(i))
     }
 
     func ack(_ channel: String, index: Int? = nil) {
-        let i = index ?? (listeners.value.count - 1)
+        let i = index ?? (connections.value.count - 1)
         listener(i).socket(socket(i), didReceiveText: #"{"type":"SUBSCRIPTION_SUCCEEDED","data":{"channel":"\#(channel)"}}"#)
     }
 
@@ -112,14 +114,14 @@ final class RealtimeRuntimeTests: XCTestCase {
         let harness = Harness(url: nil)
         harness.subscribe()
         settle(0.3)
-        XCTAssertTrue(harness.sockets.value.isEmpty, "no speculative connect without an identity token")
+        XCTAssertTrue(harness.sockets.isEmpty, "no speculative connect without an identity token")
         XCTAssertEqual(harness.lastState ?? .idle, .idle)
     }
 
     func testSubscribeConnectsAndSendsChannelSubscribeOnOpen() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open()
         awaitUntil(what: "connected") { harness.lastState == .connected }
         awaitUntil(what: "SUBSCRIBE frame") {
@@ -130,7 +132,7 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testReconnectAckReportsResubscribeButFirstAckDoesNot() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
         harness.ack("in_app_chat:conversation:c1", index: 0)
         awaitUntil(what: "first ack") { harness.established.value.count == 1 }
@@ -138,7 +140,7 @@ final class RealtimeRuntimeTests: XCTestCase {
 
         // Connection failure → backoff → a NEW socket under a new generation.
         harness.fail(0)
-        awaitUntil(what: "reconnect socket") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "reconnect socket") { harness.sockets.count == 2 }
         harness.open(1)
         harness.ack("in_app_chat:conversation:c1", index: 1)
         awaitUntil(what: "second ack") { harness.established.value.count == 2 }
@@ -148,7 +150,7 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testLastUnsubscribeClosesSocketAndStaleCloseDoesNotReconnect() {
         let harness = Harness()
         let subscription = harness.subscribe("c1")
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open()
         awaitUntil(what: "connected") { harness.lastState == .connected }
 
@@ -157,13 +159,13 @@ final class RealtimeRuntimeTests: XCTestCase {
         // The socket's own close arrives late, stamped with the departed generation.
         harness.close(0, code: 1000, reason: "")
         settle(1.6) // longer than the first backoff step
-        XCTAssertEqual(harness.sockets.value.count, 1, "a deliberate disconnect must not reconnect")
+        XCTAssertEqual(harness.sockets.count, 1, "a deliberate disconnect must not reconnect")
     }
 
     func testBackgroundCancelsConnectingSocketAndStaleOpenIsNotInstalled() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "connecting socket") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "connecting socket") { harness.sockets.count == 1 }
 
         harness.runtime.onBackground()
         awaitUntil(what: "connecting socket cancelled") { harness.socket(0).cancelled.value }
@@ -178,7 +180,7 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testTerminalClosePublishesAuthFailedFiresHookNoRetryAndIdentityChangeRevives() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
         awaitUntil(what: "connected") { harness.lastState == .connected }
 
@@ -186,17 +188,17 @@ final class RealtimeRuntimeTests: XCTestCase {
         awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
         awaitUntil(what: "auth hook") { harness.authRejections.value == 1 }
         settle(1.6)
-        XCTAssertEqual(harness.sockets.value.count, 1, "terminal close must not retry")
+        XCTAssertEqual(harness.sockets.count, 1, "terminal close must not retry")
 
         // A fresh identity revives even a terminally-closed runtime.
         harness.runtime.onIdentityChanged()
-        awaitUntil(what: "revived socket") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "revived socket") { harness.sockets.count == 2 }
     }
 
     func testTerminal4401RefreshesOnceAndSecondRejectionStaysTerminal() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
 
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
@@ -205,20 +207,20 @@ final class RealtimeRuntimeTests: XCTestCase {
         // The refresh installs a token; a refresh-driven identity change earns one reconnect but
         // must not re-arm the hook.
         harness.runtime.onIdentityChanged(fromAuthRefresh: true)
-        awaitUntil(what: "reconnect socket") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "reconnect socket") { harness.sockets.count == 2 }
         harness.open(1)
         harness.close(1, code: 4401, reason: "UNAUTHORIZED")
 
         awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
         settle(0.4)
         XCTAssertEqual(harness.authRejections.value, 1, "the second 4401 must not refresh again")
-        XCTAssertEqual(harness.sockets.value.count, 2, "no further reconnects")
+        XCTAssertEqual(harness.sockets.count, 2, "no further reconnects")
     }
 
     func testTerminal4403NeverRefreshesAndFailsWaitingSubscribersImmediately() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
 
         // No refresh fixes a permission problem; without this, the conversation stays loading.
@@ -228,13 +230,13 @@ final class RealtimeRuntimeTests: XCTestCase {
         XCTAssertTrue(isSubscriptionFailed(harness.subscribeErrors.value[0]))
         settle(0.4)
         XCTAssertEqual(harness.authRejections.value, 0, "a permission problem must not burn a token refresh")
-        XCTAssertEqual(harness.sockets.value.count, 1)
+        XCTAssertEqual(harness.sockets.count, 1)
     }
 
     func testTerminal4401FailedRefreshFailsWaitingSubscribers() {
         let harness = Harness() // the hook reports no new token
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
 
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
@@ -251,11 +253,11 @@ final class RealtimeRuntimeTests: XCTestCase {
             completion(true)
         }
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
 
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
-        awaitUntil(what: "reconnect under the refreshed token") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "reconnect under the refreshed token") { harness.sockets.count == 2 }
         settle(0.3)
         XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "a refresh that installs a token is not a failure")
 
@@ -271,7 +273,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         let pendingCompletion = Atomic<((Bool) -> Void)?>(nil)
         harness.onAuthRejectedHook.value = { completion in pendingCompletion.value = completion }
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
 
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
@@ -280,7 +282,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         harness.runtime.onBackground()
         harness.runtime.onForeground()
         settle(0.2)
-        XCTAssertEqual(harness.sockets.value.count, 1, "no reconnect while auth-failed")
+        XCTAssertEqual(harness.sockets.count, 1, "no reconnect while auth-failed")
 
         pendingCompletion.value?(false) // refresh reports no new token
         awaitUntil(what: "subscribe error survives the background cycle") { harness.subscribeErrors.value.count == 1 }
@@ -291,14 +293,14 @@ final class RealtimeRuntimeTests: XCTestCase {
         let pendingCompletion = Atomic<((Bool) -> Void)?>(nil)
         harness.onAuthRejectedHook.value = { completion in pendingCompletion.value = completion }
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
 
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
         awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
         // The old refresh's failure must not fail the new identity's subscribers.
         harness.runtime.onIdentityChanged()
-        awaitUntil(what: "socket 2") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
         harness.open(1)
         pendingCompletion.value?(false)
         settle(0.3)
@@ -308,13 +310,13 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testAcknowledgementReArmsTheRefreshHook() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket 1") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
         harness.open(0)
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
         awaitUntil(what: "first refresh") { harness.authRejections.value == 1 }
 
         harness.runtime.onIdentityChanged(fromAuthRefresh: true)
-        awaitUntil(what: "socket 2") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
         harness.open(1)
         // The server accepts the refreshed token for real work…
         harness.ack("in_app_chat:conversation:c1", index: 1)
@@ -328,7 +330,7 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testUnacknowledgedSubscriptionTimesOutAndAnAckPreventsIt() {
         let harness = Harness(ackTimeout: 1)
         harness.subscribe("c1")
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open(0)
         awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
         XCTAssertTrue(isSubscriptionFailed(harness.subscribeErrors.value[0]))
@@ -347,14 +349,14 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testSocketLostBeforeAckIsAReconnectNotASubscribeError() {
         let harness = Harness(ackTimeout: 1)
         harness.subscribe("c1")
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open(0)
         awaitUntil(what: "SUBSCRIBE sent") { harness.socket(0).sent.value.contains { $0.contains("SUBSCRIBE") } }
 
         // The connection drops before the server can acknowledge; the reconnect proves the close was
         // processed, and the deadline left pending must then elapse as a no-op.
         harness.close(0, code: 1006, reason: "network lost")
-        awaitUntil(what: "reconnect socket") { harness.sockets.value.count == 2 }
+        awaitUntil(what: "reconnect socket") { harness.sockets.count == 2 }
         settle(1.2)
         XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "a socket lost mid-subscribe must not be reported as a rejected channel")
     }
@@ -363,7 +365,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         let harness = Harness(ackTimeout: 0.15)
         let first = harness.subscribe("c1")
         harness.subscribe("c2") // keeps the socket alive across c1's close
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open(0)
         harness.ack("in_app_chat:conversation:c1", index: 0)
         harness.ack("in_app_chat:conversation:c2", index: 0)
@@ -389,7 +391,7 @@ final class RealtimeRuntimeTests: XCTestCase {
     func testEndSessionCompletesAndClosesEverything() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open()
 
         let ended = Atomic<Bool>(false)
@@ -401,13 +403,13 @@ final class RealtimeRuntimeTests: XCTestCase {
         // Late ingress must be a silent no-op, not a crash or a new socket.
         harness.subscribe("c2")
         settle(0.2)
-        XCTAssertEqual(harness.sockets.value.count, 1)
+        XCTAssertEqual(harness.sockets.count, 1)
     }
 
     func testSubscribeAfterTerminalAuthCloseSurfacesSubscriptionErrorImmediately() {
         let harness = Harness()
         harness.subscribe("c1")
-        awaitUntil(what: "socket created") { harness.sockets.value.count == 1 }
+        awaitUntil(what: "socket created") { harness.sockets.count == 1 }
         harness.open()
         harness.close(0, code: 4403, reason: "forbidden")
         awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
@@ -421,7 +423,77 @@ final class RealtimeRuntimeTests: XCTestCase {
                 return false
             }
         }
-        XCTAssertEqual(harness.sockets.value.count, 1, "no new socket while auth-failed")
+        XCTAssertEqual(harness.sockets.count, 1, "no new socket while auth-failed")
+    }
+
+    func testLateSubscriberOnAnAcknowledgedChannelIsEstablishedWithoutASecondSubscribe() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        harness.ack("in_app_chat:conversation:c1")
+        awaitUntil(what: "first ack") { harness.established.value == [false] }
+
+        harness.subscribe("c1")
+        awaitUntil(what: "newcomer established") { harness.established.value == [false, false] }
+        let subscribeFrames = harness.socket(0).sent.value.filter { $0.contains("SUBSCRIBE") && !$0.contains("UNSUBSCRIBE") }
+        XCTAssertEqual(subscribeFrames.count, 1, "the channel is subscribed once per connection")
+    }
+
+    func testCredentialsUnavailableStaysPublishedAcrossRuntimeEventsUntilIdentityChanges() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        let cause = NSError(domain: "provider", code: 7)
+        harness.runtime.onCredentialsUnavailable(cause: cause)
+        awaitUntil(what: "authenticationFailed") { harness.lastState == .authenticationFailed(cause: cause) }
+
+        harness.subscribe("c2")
+        settle(0.3)
+        XCTAssertEqual(harness.lastState, .authenticationFailed(cause: cause), "a runtime publish must not mask the credential failure")
+        XCTAssertEqual(harness.sockets.count, 1, "the held token may still work: the socket is left alone")
+
+        harness.runtime.onIdentityChanged()
+        awaitUntil(what: "recovered") { harness.lastState == .connecting }
+    }
+
+    func testCredentialsUnavailableThatIsNoLongerCurrentIsIgnored() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        harness.runtime.onCredentialsUnavailable(cause: nil, isCurrent: { false })
+        settle(0.3)
+        XCTAssertEqual(harness.lastState, .connected, "a failure superseded by a newer token must not be published")
+    }
+
+    func testCredentialsUnavailableWithoutASocketFailsWaitingAndNewSubscribersUntilIdentityChanges() {
+        let harness = Harness(url: nil)
+        harness.subscribe("c1")
+        settle(0.2)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "waiting for a token is not an error")
+
+        harness.runtime.onCredentialsUnavailable(cause: nil)
+        // The error is delivered before the state is published; a poll can land between them.
+        awaitUntil(what: "waiting subscriber failed and state published") {
+            harness.subscribeErrors.value.count == 1 && isAuthFailed(harness.lastState)
+        }
+
+        harness.subscribe("c2")
+        awaitUntil(what: "new subscriber failed at once") { harness.subscribeErrors.value.count == 2 }
+        XCTAssertTrue(harness.subscribeErrors.value.allSatisfy(isSubscriptionFailed))
+
+        harness.url.value = URL(string: "wss://realtime.test/socket")
+        harness.runtime.onIdentityChanged()
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        harness.ack("in_app_chat:conversation:c1")
+        awaitUntil(what: "recovered") { harness.established.value == [false] }
     }
 
     func testChatChannelNameAndTerminalCodeRange() {

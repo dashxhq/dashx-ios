@@ -194,8 +194,6 @@ public class DashXClient {
     var _connectionState: DashXConnectionState = .idle
     var _connectionStateListeners: [DashXConnectionStateListener] = []
     var _lifecycleForeground = false
-    /// Main-thread only.
-    var lifecycleObservers: [NSObjectProtocol] = []
     let pushRuntime = PushRuntimeState()
     let tokenQueue = DispatchQueue(label: "com.dashx.ios.tokenProvider", qos: .utility)
 
@@ -356,7 +354,7 @@ public class DashXClient {
         // would linger until the FCM token rotates.
         refreshSubscriptionDeviceInfo()
 
-        registerLifecycleObserver()
+        DashXApplicationLifecycleCallbacks.instance.observeForeground()
     }
 
     /// Drains the pre-configure trackMessage buffer. Called from `configure()`
@@ -451,7 +449,6 @@ public class DashXClient {
         let isActivation = current.uid == nil && current.identityToken == nil && uid != nil
         let isRefresh = current.uid != nil && current.uid == uid
 
-        let snapshot: AccountSnapshot
         if isActivation || isRefresh {
             // Same identity: the session generation is unchanged so in-flight work survives.
             stateLock.lock()
@@ -461,12 +458,12 @@ public class DashXClient {
             // Awaiting retries get this token; the in-flight load is stale under the new epoch.
             let superseded = _tokenLoadInFlight
             _tokenLoadInFlight = nil
-            snapshot = _account
+            persistIdentityLocked()
             stateLock.unlock()
             superseded?.complete(token)
         } else {
             endIdentitySession()
-            snapshot = updateAccount {
+            commitAccount {
                 $0.uid = uid
                 $0.identityToken = token
                 $0.sessionGeneration += 1
@@ -474,18 +471,29 @@ public class DashXClient {
             }
         }
 
-        persistIdentity(snapshot)
         notifyIdentityChanged()
     }
 
-    func persistIdentity(_ snapshot: AccountSnapshot) {
+    /// Mutates and persists the identity under one lock hold, so disk order matches memory order.
+    @discardableResult
+    func commitAccount(_ transform: (inout AccountSnapshot) -> Void) -> AccountSnapshot {
+        stateLock.lock(); defer { stateLock.unlock() }
+        transform(&_account)
+        persistIdentityLocked()
+        return _account
+    }
+
+    /// Writes uid and token to disk. Call with `stateLock` held: a writer that persists after
+    /// releasing it can land an older identity behind a newer one, such as a provider install
+    /// landing behind `reset()`.
+    func persistIdentityLocked() {
         let preferences = UserDefaults.standard
-        if let uid = snapshot.uid {
+        if let uid = _account.uid {
             preferences.set(uid, forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         } else {
             preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         }
-        if let token = snapshot.identityToken {
+        if let token = _account.identityToken {
             preferences.set(token, forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         } else {
             preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
@@ -553,14 +561,12 @@ public class DashXClient {
 
         let preferences = UserDefaults.standard
 
-        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
-        preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_FCM_TOKEN)
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION)
 
         let anonymousUid = self.generateAnonymousUid(withRegenerate: true)
-        updateAccount {
+        commitAccount {
             $0.uid = nil
             $0.identityToken = nil
             $0.anonymousUid = anonymousUid

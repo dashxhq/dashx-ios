@@ -99,9 +99,8 @@ extension DashXClient {
             _boundProvider = bound
             _account.uid = uid
             _account.identityToken = nil
-            let snapshot = _account
+            persistIdentityLocked()
             stateLock.unlock()
-            persistIdentity(snapshot)
             publishDirect(.connecting)
             requestTokenLoad(forceRefresh: false)
         } else if current.uid == uid {
@@ -125,9 +124,8 @@ extension DashXClient {
             _account.uid = uid
             _account.identityToken = nil
             _account.sessionGeneration += 1
-            let snapshot = _account
+            persistIdentityLocked()
             stateLock.unlock()
-            persistIdentity(snapshot)
             publishDirect(.connecting)
             requestTokenLoad(forceRefresh: false)
         }
@@ -146,8 +144,9 @@ extension DashXClient {
         pushRuntime.clearVisible()
     }
 
-    /// Drops the held token when no provider can refresh it, so requests fall back to the public
-    /// key. A newer token is never cleared by an old rejection.
+    /// Drops the held token when no provider is bound to refresh it, so requests fall back to the
+    /// public key; with a provider bound the retry path refreshes instead. A newer token is never
+    /// cleared by an old rejection.
     func dropUnrefreshableIdentityToken(rejected: String?) -> Bool {
         guard let rejected else { return false }
         stateLock.lock()
@@ -157,10 +156,9 @@ extension DashXClient {
         }
         _account.identityToken = nil
         _account.tokenEpoch += 1
-        let snapshot = _account
+        persistIdentityLocked()
         stateLock.unlock()
         DashXLog.i(tag: #function, "Identity token expired with no provider bound; continuing unauthenticated")
-        persistIdentity(snapshot)
         realtimeRuntime?.onIdentityChanged()
         return true
     }
@@ -240,17 +238,17 @@ extension DashXClient {
         var installed = false
         if let token, providerStillBound, matchesRequest {
             _account.identityToken = token
+            _account.tokenEpoch += 1
+            persistIdentityLocked()
             installed = true
         }
         let stale = !installed && (!providerStillBound || !matchesRequest)
         // Release the slot before completing: a waiter may request another load at once, and must
         // reach the provider rather than join this finished one.
         if _tokenLoadInFlight === load { _tokenLoadInFlight = nil }
-        let snapshot = _account
         stateLock.unlock()
 
         if installed {
-            persistIdentity(snapshot)
             if let runtime = realtimeRuntime {
                 runtime.onIdentityChanged(fromAuthRefresh: true)
             } else {
@@ -259,7 +257,7 @@ extension DashXClient {
             }
             load.complete(token)
         } else {
-            if !stale { publishAuthFailed(cause) }
+            if !stale { reportCredentialsUnavailable(cause, bound: bound, requestSnapshot: requestSnapshot) }
             load.complete(nil)
         }
     }
