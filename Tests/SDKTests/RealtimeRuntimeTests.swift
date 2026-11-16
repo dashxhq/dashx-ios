@@ -16,6 +16,22 @@ private final class FakeSocket: RealtimeSocket {
     func cancel() { cancelled.value = true }
 }
 
+/// Held only by the socket under test; records when it is released.
+private final class RetainedListener: RealtimeSocketListener {
+    private let released: Atomic<Bool>
+
+    init(released: Atomic<Bool>) {
+        self.released = released
+    }
+
+    deinit { released.value = true }
+
+    func socketDidOpen(_ socket: RealtimeSocket) {}
+    func socket(_ socket: RealtimeSocket, didReceiveText text: String) {}
+    func socket(_ socket: RealtimeSocket, didCloseWithCode code: Int, reason: String) {}
+    func socket(_ socket: RealtimeSocket, didFailWithError error: Error) {}
+}
+
 /// Drives the actor through the socket-factory seam; no network.
 private final class Harness {
     let states = Atomic<[DashXConnectionState]>([])
@@ -494,6 +510,22 @@ final class RealtimeRuntimeTests: XCTestCase {
         harness.open()
         harness.ack("in_app_chat:conversation:c1")
         awaitUntil(what: "recovered") { harness.established.value == [false] }
+    }
+
+    /// `connect()` hands the socket the only reference to its listener; a socket that does not
+    /// retain it drops every open, frame and close callback on a real connection.
+    func testURLSessionSocketRetainsItsListener() {
+        let released = Atomic<Bool>(false)
+        // One pool per block, as the runtime queue has: the autoreleased session must not pin the socket.
+        autoreleasepool {
+            let socket: URLSessionRealtimeSocket = {
+                let listener = RetainedListener(released: released)
+                return URLSessionRealtimeSocket(url: URL(string: "ws://127.0.0.1:1")!, listener: listener, pingInterval: 60)
+            }()
+            XCTAssertFalse(released.value, "the listener must outlive connect()")
+            socket.cancel()
+        }
+        awaitUntil(what: "listener released with the socket") { released.value }
     }
 
     func testChatChannelNameAndTerminalCodeRange() {

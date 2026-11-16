@@ -447,12 +447,13 @@ final class RealtimeRuntime {
     }
 }
 
-/// Delivers exactly one terminal event. A server close observed through the receive loop is
+/// Owns its listener, which the runtime holds nowhere else. Delivers exactly one terminal event.
+/// A server close observed through the receive loop is
 /// reported with its close code, never as a generic failure, so 44xx rejections stay terminal.
 final class URLSessionRealtimeSocket: NSObject, RealtimeSocket, URLSessionWebSocketDelegate {
     private var session: URLSession!
     private var task: URLSessionWebSocketTask!
-    private weak var listener: RealtimeSocketListener?
+    private let listener: RealtimeSocketListener
     private let lock = NSLock()
     private var terminated = false
     private var pingTimer: DispatchSourceTimer?
@@ -490,7 +491,7 @@ final class URLSessionRealtimeSocket: NSObject, RealtimeSocket, URLSessionWebSoc
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        listener?.socketDidOpen(self)
+        listener.socketDidOpen(self)
         startPinging()
     }
 
@@ -513,11 +514,11 @@ final class URLSessionRealtimeSocket: NSObject, RealtimeSocket, URLSessionWebSoc
             guard let self else { return }
             switch result {
             case .success(.string(let text)):
-                self.listener?.socket(self, didReceiveText: text)
+                self.listener.socket(self, didReceiveText: text)
                 self.receiveNext()
             case .success(.data(let bytes)):
                 if let text = String(data: bytes, encoding: .utf8) {
-                    self.listener?.socket(self, didReceiveText: text)
+                    self.listener.socket(self, didReceiveText: text)
                 }
                 self.receiveNext()
             case .success:
@@ -553,9 +554,9 @@ final class URLSessionRealtimeSocket: NSObject, RealtimeSocket, URLSessionWebSoc
         guard markTerminated() else { return }
         switch terminal {
         case .closed(let code, let reason):
-            listener?.socket(self, didCloseWithCode: code, reason: reason)
+            listener.socket(self, didCloseWithCode: code, reason: reason)
         case .failed(let error):
-            listener?.socket(self, didFailWithError: error)
+            listener.socket(self, didFailWithError: error)
         }
         session.invalidateAndCancel()
     }
