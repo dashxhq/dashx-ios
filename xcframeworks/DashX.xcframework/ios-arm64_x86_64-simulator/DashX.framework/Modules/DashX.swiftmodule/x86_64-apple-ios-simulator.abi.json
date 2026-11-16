@@ -582,6 +582,53 @@
           },
           {
             "kind": "Var",
+            "name": "USER_PREFERENCES_KEY_VERSION",
+            "printedName": "USER_PREFERENCES_KEY_VERSION",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:5DashX9ConstantsV28USER_PREFERENCES_KEY_VERSIONSSvpZ",
+            "mangledName": "$s5DashX9ConstantsV28USER_PREFERENCES_KEY_VERSIONSSvpZ",
+            "moduleName": "DashX",
+            "static": true,
+            "declAttributes": [
+              "HasInitialValue",
+              "HasStorage",
+              "AccessControl"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:5DashX9ConstantsV28USER_PREFERENCES_KEY_VERSIONSSvgZ",
+                "mangledName": "$s5DashX9ConstantsV28USER_PREFERENCES_KEY_VERSIONSSvgZ",
+                "moduleName": "DashX",
+                "static": true,
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
             "name": "INTERNAL_EVENT_APP_INSTALLED",
             "printedName": "INTERNAL_EVENT_APP_INSTALLED",
             "children": [
@@ -8703,7 +8750,29 @@
             "mangledName": "$s5DashX0A7XClientC23enableLifecycleTrackingyyF",
             "moduleName": "DashX",
             "declAttributes": [
-              "AccessControl"
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "enableScreenTracking",
+            "printedName": "enableScreenTracking()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Void",
+                "printedName": "()"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:5DashX0A7XClientC20enableScreenTrackingyyF",
+            "mangledName": "$s5DashX0A7XClientC20enableScreenTrackingyyF",
+            "moduleName": "DashX",
+            "declAttributes": [
+              "AccessControl",
+              "RawDocComment"
             ],
             "funcSelfKind": "NonMutating"
           },
@@ -14040,15 +14109,30 @@
                 "usr": "s:SS"
               },
               {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "() -> Swift.String",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Void",
+                    "printedName": "()"
+                  }
+                ],
+                "typeAttributes": [
+                  "noescape"
+                ]
               }
             ],
             "declKind": "Func",
-            "usr": "s:5DashX0A4XLogC1d3tag_ySS_SStFZ",
-            "mangledName": "$s5DashX0A4XLogC1d3tag_ySS_SStFZ",
+            "usr": "s:5DashX0A4XLogC1d3tag_ySS_SSyXKtFZ",
+            "mangledName": "$s5DashX0A4XLogC1d3tag_ySS_SSyXKtFZ",
             "moduleName": "DashX",
             "static": true,
             "declAttributes": [
@@ -14074,15 +14158,30 @@
                 "usr": "s:SS"
               },
               {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "() -> Swift.String",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Void",
+                    "printedName": "()"
+                  }
+                ],
+                "typeAttributes": [
+                  "noescape"
+                ]
               }
             ],
             "declKind": "Func",
-            "usr": "s:5DashX0A4XLogC1i3tag_ySS_SStFZ",
-            "mangledName": "$s5DashX0A4XLogC1i3tag_ySS_SStFZ",
+            "usr": "s:5DashX0A4XLogC1i3tag_ySS_SSyXKtFZ",
+            "mangledName": "$s5DashX0A4XLogC1i3tag_ySS_SSyXKtFZ",
             "moduleName": "DashX",
             "static": true,
             "declAttributes": [
@@ -14108,15 +14207,30 @@
                 "usr": "s:SS"
               },
               {
-                "kind": "TypeNominal",
-                "name": "String",
-                "printedName": "Swift.String",
-                "usr": "s:SS"
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "() -> Swift.String",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Void",
+                    "printedName": "()"
+                  }
+                ],
+                "typeAttributes": [
+                  "noescape"
+                ]
               }
             ],
             "declKind": "Func",
-            "usr": "s:5DashX0A4XLogC1e3tag_ySS_SStFZ",
-            "mangledName": "$s5DashX0A4XLogC1e3tag_ySS_SStFZ",
+            "usr": "s:5DashX0A4XLogC1e3tag_ySS_SSyXKtFZ",
+            "mangledName": "$s5DashX0A4XLogC1e3tag_ySS_SSyXKtFZ",
             "moduleName": "DashX",
             "static": true,
             "declAttributes": [
@@ -22528,7 +22642,7 @@
       "kind": "StringLiteral",
       "offset": 759,
       "length": 7,
-      "value": "\"1.6.0\""
+      "value": "\"1.7.0\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
@@ -22646,167 +22760,181 @@
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
       "offset": 1787,
+      "length": 25,
+      "value": "\"\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
+      "kind": "StringLiteral",
+      "offset": 1803,
+      "length": 1,
+      "value": "\".version\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
+      "kind": "StringLiteral",
+      "offset": 1866,
       "length": 23,
       "value": "\"Application Installed\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 1862,
+      "offset": 1941,
       "length": 21,
       "value": "\"Application Updated\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 1934,
+      "offset": 2013,
       "length": 20,
       "value": "\"Application Opened\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2011,
+      "offset": 2090,
       "length": 26,
       "value": "\"Application Backgrounded\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2089,
+      "offset": 2168,
       "length": 21,
       "value": "\"Application Crashed\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2168,
-      "length": 15,
-      "value": "\"Screen Viewed\""
+      "offset": 2247,
+      "length": 9,
+      "value": "\"$screen\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2326,
-      "length": 21,
-      "value": "\"dx_deep_link_opened\""
+      "offset": 2399,
+      "length": 18,
+      "value": "\"Deep Link Opened\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2514,
-      "length": 27,
-      "value": "\"dx_notification_navigated\""
+      "offset": 2584,
+      "length": 26,
+      "value": "\"Push Notification Tapped\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2579,
+      "offset": 2648,
       "length": 14,
       "value": "\"Content-Type\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2646,
+      "offset": 2715,
       "length": 23,
       "value": "\"x-goog-meta-origin-id\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2722,
+      "offset": 2791,
       "length": 7,
       "value": "\"dashx\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2793,
+      "offset": 2862,
       "length": 20,
       "value": "\"DASHX_NOTIFICATION\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2874,
+      "offset": 2943,
       "length": 5,
       "value": "\"uid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2918,
+      "offset": 2987,
       "length": 14,
       "value": "\"anonymousUid\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 2963,
+      "offset": 3032,
       "length": 7,
       "value": "\"email\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3001,
+      "offset": 3070,
       "length": 7,
       "value": "\"phone\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3038,
+      "offset": 3107,
       "length": 6,
       "value": "\"name\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3080,
+      "offset": 3149,
       "length": 11,
       "value": "\"firstName\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3126,
+      "offset": 3195,
       "length": 10,
       "value": "\"lastName\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3188,
+      "offset": 3257,
       "length": 5,
       "value": "\"GET\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3210,
+      "offset": 3279,
       "length": 6,
       "value": "\"POST\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3232,
+      "offset": 3301,
       "length": 5,
       "value": "\"PUT\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3255,
+      "offset": 3324,
       "length": 7,
       "value": "\"PATCH\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Constants.swift",
       "kind": "StringLiteral",
-      "offset": 3281,
+      "offset": 3350,
       "length": 8,
       "value": "\"DELETE\""
     },
@@ -22865,6 +22993,41 @@
       "offset": 322,
       "length": 10,
       "value": "\"WHATSAPP\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXApplicationLifecycleCallbacks.swift",
+      "kind": "StringLiteral",
+      "offset": 369,
+      "length": 11,
+      "value": "\"exception\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXApplicationLifecycleCallbacks.swift",
+      "kind": "StringLiteral",
+      "offset": 402,
+      "length": 9,
+      "value": "\"unknown\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXApplicationLifecycleCallbacks.swift",
+      "kind": "BooleanLiteral",
+      "offset": 1275,
+      "length": 5,
+      "value": "false"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXApplicationLifecycleCallbacks.swift",
+      "kind": "BooleanLiteral",
+      "offset": 1315,
+      "length": 5,
+      "value": "false"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXApplicationLifecycleCallbacks.swift",
+      "kind": "BooleanLiteral",
+      "offset": 1608,
+      "length": 4,
+      "value": "true"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
@@ -23134,134 +23297,141 @@
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
+      "kind": "StringLiteral",
+      "offset": 6319,
+      "length": 21,
+      "value": "\"com.dashx.ios.track\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 6806,
+      "offset": 6966,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 6934,
+      "offset": 7094,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Array",
-      "offset": 7780,
+      "offset": 7940,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 7814,
+      "offset": 7974,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Array",
-      "offset": 7895,
+      "offset": 8055,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "StringLiteral",
-      "offset": 7981,
+      "offset": 8141,
       "length": 29,
       "value": "\"com.dashx.ios.tokenProvider\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 8559,
+      "offset": 8719,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 8833,
+      "offset": 8993,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 9519,
+      "offset": 9679,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 10114,
+      "offset": 10274,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 10782,
+      "offset": 10942,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 11148,
+      "offset": 11308,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "Array",
-      "offset": 13032,
+      "offset": 13192,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 16861,
+      "offset": 17406,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 62187,
+      "offset": 64301,
       "length": 1,
       "value": "5"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "FloatLiteral",
-      "offset": 62249,
+      "offset": 64363,
       "length": 3,
       "value": "2.0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 66676,
+      "offset": 68790,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 70393,
+      "offset": 72504,
       "length": 4,
       "value": "true"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 73575,
+      "offset": 75685,
       "length": 5,
       "value": "false"
     },
@@ -23427,58 +23597,72 @@
       "value": "35"
     },
     {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXUIViewController.swift",
+      "kind": "Array",
+      "offset": 440,
+      "length": 481,
+      "value": "[\"UINavigationController\", \"UITabBarController\", \"UISplitViewController\", \"UIPageViewController\", \"UIAlertController\", \"UIInputWindowController\", \"UICompatibilityInputViewController\", \"UIEditingOverlayViewController\", \"UISystemKeyboardDockController\", \"UIPredictionViewController\", \"UIApplicationRotationFollowingController\", \"UIApplicationRotationFollowingControllerNoTouches\"]"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXUIViewController.swift",
+      "kind": "BooleanLiteral",
+      "offset": 1262,
+      "length": 5,
+      "value": "false"
+    },
+    {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "StringLiteral",
-      "offset": 515,
+      "offset": 617,
       "length": 6,
       "value": "\"data\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "StringLiteral",
-      "offset": 3093,
+      "offset": 3652,
       "length": 22,
       "value": "\"com.dashx.eventqueue\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "StringLiteral",
-      "offset": 3146,
+      "offset": 3705,
       "length": 27,
       "value": "\"com.dashx.ios.event_queue\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "IntegerLiteral",
-      "offset": 3205,
+      "offset": 3764,
       "length": 4,
       "value": "1000"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "IntegerLiteral",
-      "offset": 3239,
+      "offset": 3798,
       "length": 2,
       "value": "10"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "FloatLiteral",
-      "offset": 3292,
+      "offset": 3851,
       "length": 3,
       "value": "2.0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "Array",
-      "offset": 3344,
+      "offset": 3903,
       "length": 2,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/EventQueue.swift",
       "kind": "BooleanLiteral",
-      "offset": 3376,
+      "offset": 3935,
       "length": 5,
       "value": "false"
     },
@@ -24174,6 +24358,13 @@
       "offset": 281,
       "length": 2,
       "value": "[]"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Utils.swift",
+      "kind": "Array",
+      "offset": 1941,
+      "length": 72,
+      "value": "[\"en0\", \"en2\", \"en3\", \"en4\", \"pdp_ip0\", \"pdp_ip1\", \"pdp_ip2\", \"pdp_ip3\"]"
     }
   ]
 }
