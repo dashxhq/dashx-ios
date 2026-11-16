@@ -165,10 +165,6 @@ final class ChatCoordinator {
         open.forEach { $0.endSession() }
     }
 
-    func onIdentityAvailable() {
-        DashXClient.instance.realtimeRuntime?.onIdentityChanged()
-    }
-
     func onAppForegrounded() {
         lock.lock()
         let open = Array(sessions.values)
@@ -294,6 +290,9 @@ final class ConversationSession {
     /// Consecutive transient sync failures; a completed cycle or a fresh acknowledgement resets it.
     private var syncAttempts = 0
     private var oldestFetchedPage = Int.max
+    /// One older-page fetch at a time: a slow duplicate finishing late would move
+    /// `oldestFetchedPage` back to a newer page.
+    private var loadingPreviousPage = false
     /// Newest unconfirmed tail id a resync was already requested for.
     private var resyncRequestedFor: String?
     /// Server-confirmed reconnect cursor, advanced only by fetch results. Frames can arrive out of
@@ -593,15 +592,18 @@ final class ConversationSession {
     fileprivate func loadPreviousPageInternal(onError: ((Error) -> Void)?) {
         lane.async {
             let page = self.oldestFetchedPage - 1
-            guard self.snapshotDone, page >= 1 else { return }
+            guard self.snapshotDone, page >= 1, !self.loadingPreviousPage else { return }
+            self.loadingPreviousPage = true
             Task {
                 do {
                     let rows = try await self.backend.fetchPage(conversationId: self.key.conversationId, limit: Self.pageSize, page: page)
                     await self.onLane {
+                        self.loadingPreviousPage = false
                         self.oldestFetchedPage = page
                         self.applyMerge(rows)
                     }
                 } catch {
+                    await self.onLane { self.loadingPreviousPage = false }
                     guard let onError else { return }
                     let failure = DashXClientError.wrap(error)
                     self.callbackQueue.async { onError(failure) }

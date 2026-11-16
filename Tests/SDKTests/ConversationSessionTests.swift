@@ -27,6 +27,8 @@ private final class FakeBackend: ChatSessionBackend {
     let pageGate = Atomic<Gate?>(nil)
     /// When set, fetchAfter suspends until opened — the cursor walk stalls mid-flight.
     let afterGate = Atomic<Gate?>(nil)
+    /// Thrown by the next fetchPage calls while positive.
+    let pageFailures = Atomic<Int>(0)
     /// Thrown by the next summarizeMessages calls while positive; models a failing initial load.
     let summarizeFailures = Atomic<Int>(0)
     let summarizeFailure = Atomic<Error>(DashXClientError.networkError(underlying: NSError(domain: "boom", code: 1)))
@@ -49,6 +51,10 @@ private final class FakeBackend: ChatSessionBackend {
     func fetchPage(conversationId: String, limit: Int, page: Int) async throws -> [DashXChatMessage] {
         fetchPageCalls.append(page)
         if let gate = pageGate.value { await gate.wait() }
+        if pageFailures.value > 0 {
+            pageFailures.mutate { $0 -= 1 }
+            throw DashXClientError.networkError(underlying: NSError(domain: "page", code: 1))
+        }
         return pages.value[page] ?? []
     }
 
@@ -82,6 +88,83 @@ private final class FakeBackend: ChatSessionBackend {
     func setConversationVisible(conversationId: String, visible: Bool) {}
     func dismissConversationNotifications(conversationId: String) {}
     var isAppForeground: Bool { foreground.value }
+}
+
+private final class FakeSocket: RealtimeSocket {
+    func send(text: String) {}
+    func close(code: Int, reason: String?) {}
+    func cancel() {}
+}
+
+/// Data from a `FakeBackend`, subscriptions through a real `RealtimeRuntime` over fake sockets.
+private final class RuntimeBackedBackend: ChatSessionBackend {
+    let data = FakeBackend()
+    let url = Atomic<URL?>(nil)
+    let unmet = Atomic<DashXClientError?>(nil)
+    let states = Atomic<[DashXConnectionState]>([])
+    let connections = Atomic<[(socket: FakeSocket, listener: RealtimeSocketListener)]>([])
+    let credentials = Atomic(CredentialVersion(sessionGeneration: 0, tokenEpoch: 0))
+    /// Answers a 4401's refresh request; fails by default.
+    let authRejected = Atomic<(@escaping (AuthRefreshOutcome) -> Void) -> Void>({ $0(.failed) })
+    private(set) var runtime: RealtimeRuntime!
+
+    init(ackTimeout: TimeInterval = RealtimeRuntime.ackTimeout) {
+        runtime = RealtimeRuntime(
+            endpointProvider: { [url, credentials] in url.value.map { RealtimeEndpoint(url: $0, credentials: credentials.value) } },
+            unmetPrerequisite: { [unmet] in unmet.value },
+            currentCredentials: { [credentials] in credentials.value },
+            onAnyFrame: { _ in },
+            onAuthRejected: { [authRejected] _, completion in authRejected.value(completion) },
+            publishState: { [states, url, unmet, credentials] status in
+                let endpointAvailable = url.value != nil
+                if let state = status.resolve(
+                    endpointAvailable: endpointAvailable,
+                    awaitingToken: !endpointAvailable && unmet.value == nil,
+                    current: credentials.value
+                ) {
+                    states.append(state)
+                }
+            },
+            initialForeground: true,
+            socketFactory: { [connections] _, listener in
+                let socket = FakeSocket()
+                connections.append((socket, listener))
+                return socket
+            },
+            ackTimeout: ackTimeout
+        )
+    }
+
+    func openAndAck(_ conversationId: String) {
+        guard let (socket, listener) = connections.value.last else { return }
+        listener.socketDidOpen(socket)
+        let channel = RealtimeRuntime.chatChannelName(conversationId: conversationId)
+        listener.socket(socket, didReceiveText: #"{"type":"SUBSCRIPTION_SUCCEEDED","data":{"channel":"\#(channel)"}}"#)
+    }
+
+    func subscribe(_ handle: SubscriberHandle) -> DashXRealtimeSubscription { runtime.subscribe(handle) }
+    func summarizeMessages(conversationId: String) async throws -> Int { try await data.summarizeMessages(conversationId: conversationId) }
+    func fetchPage(conversationId: String, limit: Int, page: Int) async throws -> [DashXChatMessage] {
+        try await data.fetchPage(conversationId: conversationId, limit: limit, page: page)
+    }
+    func fetchAfter(conversationId: String, limit: Int, afterMessageId: String) async throws -> [DashXChatMessage] {
+        try await data.fetchAfter(conversationId: conversationId, limit: limit, afterMessageId: afterMessageId)
+    }
+    func send(
+        identityId: String,
+        conversationId: String,
+        content: [String: Any],
+        clientMessageId: String,
+        completion: @escaping (Result<DashXChatMessage, Error>) -> Void
+    ) {
+        data.send(identityId: identityId, conversationId: conversationId, content: content, clientMessageId: clientMessageId, completion: completion)
+    }
+    func markRead(identityId: String, conversationId: String, lastMessageId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        data.markRead(identityId: identityId, conversationId: conversationId, lastMessageId: lastMessageId, completion: completion)
+    }
+    func setConversationVisible(conversationId: String, visible: Bool) {}
+    func dismissConversationNotifications(conversationId: String) {}
+    var isAppForeground: Bool { true }
 }
 
 private final class RecordingListener: DashXConversationStateListener {
@@ -489,6 +572,210 @@ final class ConversationSessionTests: XCTestCase {
         lease.loadPreviousPage()
         settle(0.2)
         XCTAssertEqual(backend.fetchPageCalls.value, [2, 1])
+        session.endSession()
+    }
+
+    func testLoadPreviousPageRunsOneFetchAtATimeAndAFailureReleasesTheGuard() {
+        let backend = FakeBackend()
+        backend.count.value = 150
+        backend.pages.value = [
+            3: (101...150).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
+            2: (51...100).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
+            1: (1...50).map { chatMessage(String(format: "m%03d", $0), seq: $0) },
+        ]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "last page ready") { self.readyIds(lease)?.count == 50 }
+
+        let gate = Gate()
+        backend.pageGate.value = gate
+        lease.loadPreviousPage()
+        lease.loadPreviousPage()
+        lease.loadPreviousPage()
+        awaitUntil(what: "older fetch started") { backend.fetchPageCalls.value == [3, 2] }
+        settle(0.2)
+        XCTAssertEqual(backend.fetchPageCalls.value, [3, 2], "duplicates while a fetch is in flight are dropped")
+        backend.pageGate.value = nil
+        gate.open()
+        awaitUntil(what: "page 2 prepended") { self.readyIds(lease)?.count == 100 }
+
+        backend.pageFailures.value = 1
+        let failed = Atomic<Bool>(false)
+        lease.loadPreviousPage(onError: { _ in failed.value = true })
+        awaitUntil(what: "page 1 failed") { failed.value }
+        XCTAssertEqual(hasOlder(lease), true, "a failure leaves the paging position alone")
+
+        lease.loadPreviousPage()
+        awaitUntil(what: "page 1 prepended after the failure") { self.readyIds(lease)?.count == 150 }
+        XCTAssertEqual(backend.fetchPageCalls.value, [3, 2, 1, 1])
+        XCTAssertEqual(hasOlder(lease), false)
+        session.endSession()
+    }
+
+    func testLeaseWithoutCredentialsReportsNotIdentifiedAndRecoversWhenATokenArrives() {
+        let backend = RuntimeBackedBackend()
+        backend.unmet.value = .notIdentified
+        backend.data.count.value = 1
+        backend.data.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+
+        awaitUntil(what: "missing token surfaces") {
+            if case .notIdentified? = self.errorOf(lease) { return true }
+            return false
+        }
+        XCTAssertTrue(backend.connections.value.isEmpty)
+
+        backend.url.value = URL(string: "wss://realtime.test/socket")
+        backend.unmet.value = nil
+        backend.runtime.onIdentityChanged(credentials: CredentialVersion(sessionGeneration: 0, tokenEpoch: 0))
+        awaitUntil(what: "socket") { backend.connections.value.count == 1 }
+        backend.openAndAck("c1")
+        awaitUntil(what: "recovered to ready") { self.readyIds(lease) == ["m1"] }
+        session.endSession()
+    }
+
+    func testAnObsoleteRefreshFailureNeverReachesALeaseAwaitingItsFirstSnapshot() {
+        let backend = RuntimeBackedBackend()
+        backend.url.value = URL(string: "wss://realtime.test/socket")
+        backend.data.count.value = 1
+        backend.data.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        // The refresh fails, and a new token is installed before the runtime handles the failure.
+        backend.authRejected.value = { completion in
+            backend.credentials.value = CredentialVersion(sessionGeneration: 0, tokenEpoch: 1)
+            completion(.failed)
+        }
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        awaitUntil(what: "socket") { backend.connections.value.count == 1 }
+        let (socket, listener) = backend.connections.value[0]
+        listener.socketDidOpen(socket)
+        listener.socket(socket, didCloseWithCode: 4401, reason: "UNAUTHORIZED")
+        settle(0.3)
+        XCTAssertTrue(isLoading(lease), "the old token's failure is not the new token's")
+
+        backend.runtime.onIdentityChanged(fromAuthRefresh: true, credentials: backend.credentials.value)
+        awaitUntil(what: "socket under the new token") { backend.connections.value.count == 2 }
+        backend.openAndAck("c1")
+        awaitUntil(what: "ready") { self.readyIds(lease) == ["m1"] }
+        session.endSession()
+    }
+
+    func testANewLeaseNeverReceivesTheReplacedTokensAuthFailure() {
+        let backend = RuntimeBackedBackend()
+        backend.url.value = URL(string: "wss://realtime.test/socket")
+        backend.data.count.value = 1
+        backend.data.pages.value = [1: [chatMessage("m1", seq: 1, conversationId: "c2")]]
+        let first = ConversationSession(key: key, backend: backend)
+        let firstLease = first.newLease()!
+        awaitUntil(what: "socket") { backend.connections.value.count == 1 }
+        let (socket, listener) = backend.connections.value[0]
+        listener.socketDidOpen(socket)
+        listener.socket(socket, didCloseWithCode: 4403, reason: "FORBIDDEN")
+        awaitUntil(what: "first lease failed") {
+            if case .subscriptionFailed? = self.errorOf(firstLease) { return true }
+            return false
+        }
+
+        // A new token is installed; a lease opens before the runtime runs the reconnect.
+        backend.credentials.value = CredentialVersion(sessionGeneration: 0, tokenEpoch: 1)
+        let second = ConversationSession(key: ChatSessionKey(chatIdentityId: "identity-1", conversationId: "c2"), backend: backend)
+        let secondLease = second.newLease()!
+        settle(0.3)
+        XCTAssertTrue(isLoading(secondLease), "the replaced token's failure is not this lease's")
+
+        backend.runtime.onIdentityChanged(credentials: backend.credentials.value)
+        awaitUntil(what: "socket under the new token") { backend.connections.value.count == 2 }
+        backend.openAndAck("c2")
+        awaitUntil(what: "ready") { self.readyIds(secondLease) == ["m1"] }
+        first.endSession()
+        second.endSession()
+    }
+
+    func testAReplacedTokensAcknowledgementTimeoutNeverReachesALease() {
+        let backend = RuntimeBackedBackend(ackTimeout: 0.4)
+        backend.url.value = URL(string: "wss://realtime.test/socket")
+        backend.data.count.value = 1
+        backend.data.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        awaitUntil(what: "socket") { backend.connections.value.count == 1 }
+        let (socket, listener) = backend.connections.value[0]
+        listener.socketDidOpen(socket)
+
+        // A new token is installed; the old socket's deadline elapses before the reconnect runs.
+        backend.credentials.value = CredentialVersion(sessionGeneration: 0, tokenEpoch: 1)
+        settle(0.8)
+        XCTAssertTrue(isLoading(lease), "the old socket's timeout is not this lease's")
+
+        backend.runtime.onIdentityChanged(credentials: backend.credentials.value)
+        awaitUntil(what: "socket under the new token") { backend.connections.value.count == 2 }
+        backend.openAndAck("c1")
+        awaitUntil(what: "ready") { self.readyIds(lease) == ["m1"] }
+        session.endSession()
+    }
+
+    func testAReplacedTokensAcknowledgementStartsNoSync() {
+        let backend = RuntimeBackedBackend()
+        backend.url.value = URL(string: "wss://realtime.test/socket")
+        backend.data.count.value = 1
+        backend.data.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        awaitUntil(what: "socket") { backend.connections.value.count == 1 }
+
+        // A new token is installed; the old socket acknowledges before the reconnect runs.
+        backend.credentials.value = CredentialVersion(sessionGeneration: 0, tokenEpoch: 1)
+        backend.openAndAck("c1")
+        settle(0.3)
+        XCTAssertEqual(backend.data.summarizeCalls.value, 0, "no history sync on the old socket's acknowledgement")
+        XCTAssertTrue(isLoading(lease))
+
+        backend.runtime.onIdentityChanged(credentials: backend.credentials.value)
+        awaitUntil(what: "socket under the new token") { backend.connections.value.count == 2 }
+        backend.openAndAck("c1")
+        awaitUntil(what: "ready") { self.readyIds(lease) == ["m1"] }
+        XCTAssertEqual(backend.data.summarizeCalls.value, 1)
+        session.endSession()
+    }
+
+    func testALateLeaseNeverReusesAReplacedTokensAcknowledgement() {
+        let backend = RuntimeBackedBackend()
+        backend.url.value = URL(string: "wss://realtime.test/socket")
+        backend.data.count.value = 1
+        backend.data.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        let first = ConversationSession(key: key, backend: backend)
+        let firstLease = first.newLease()!
+        awaitUntil(what: "socket") { backend.connections.value.count == 1 }
+        backend.openAndAck("c1")
+        awaitUntil(what: "first ready") { self.readyIds(firstLease) == ["m1"] }
+        XCTAssertEqual(backend.data.summarizeCalls.value, 1)
+
+        // A new token is installed; another identity's lease on the same channel opens before the
+        // reconnect runs.
+        backend.credentials.value = CredentialVersion(sessionGeneration: 0, tokenEpoch: 1)
+        let second = ConversationSession(key: ChatSessionKey(chatIdentityId: "identity-2", conversationId: "c1"), backend: backend)
+        let secondLease = second.newLease()!
+        settle(0.3)
+        XCTAssertEqual(backend.data.summarizeCalls.value, 1, "no history sync on the old socket's acknowledgement")
+        XCTAssertTrue(isLoading(secondLease))
+
+        backend.runtime.onIdentityChanged(credentials: backend.credentials.value)
+        awaitUntil(what: "socket under the new token") { backend.connections.value.count == 2 }
+        backend.openAndAck("c1")
+        awaitUntil(what: "second ready") { self.readyIds(secondLease) == ["m1"] }
+        first.endSession()
+        second.endSession()
+    }
+
+    func testLeaseAwaitingAProviderLoadStaysLoading() {
+        let backend = RuntimeBackedBackend()
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        settle(0.3)
+        XCTAssertTrue(isLoading(lease), "a token on its way is not an error")
+        XCTAssertEqual(backend.states.value.last, .connecting)
         session.endSession()
     }
 

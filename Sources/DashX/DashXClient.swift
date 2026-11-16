@@ -29,8 +29,9 @@ public typealias SuccessCallback = (Any?) -> ()
 @available(*, deprecated, message: "Use Result-based or async/await overloads instead")
 public typealias FailureCallback = (Error) -> ()
 
-/// The GraphQL errors of one response. Iterates as the error messages, so
-/// `case .graphQLErrors(let messages)` call sites keep working.
+/// The GraphQL errors of one response. Iterates as the error messages and compares by them alone,
+/// so 1.6.x call sites such as `case .graphQLErrors(let messages)`, `messages == ["…"]` and
+/// `case .graphQLErrors(["…"])` keep their meaning. Check `code` explicitly when it matters.
 public struct DashXGraphQLErrors: Equatable, ExpressibleByArrayLiteral, RandomAccessCollection, CustomStringConvertible {
     public static let unauthorized = "UNAUTHORIZED"
     public static let forbidden = "FORBIDDEN"
@@ -49,6 +50,10 @@ public struct DashXGraphQLErrors: Equatable, ExpressibleByArrayLiteral, RandomAc
 
     public init(arrayLiteral elements: String...) {
         self.init(messages: elements)
+    }
+
+    public static func == (lhs: DashXGraphQLErrors, rhs: DashXGraphQLErrors) -> Bool {
+        lhs.messages == rhs.messages
     }
 
     public var startIndex: Int { messages.startIndex }
@@ -167,6 +172,10 @@ public class DashXClient {
         var sessionGeneration: Int = 0
         /// Bumped by every explicit token write; a provider load from an older epoch is stale.
         var tokenEpoch: Int = 0
+
+        var credentialVersion: CredentialVersion {
+            CredentialVersion(sessionGeneration: sessionGeneration, tokenEpoch: tokenEpoch)
+        }
     }
 
     var _account = AccountSnapshot()
@@ -191,6 +200,8 @@ public class DashXClient {
     var _tokenLoadInFlight: TokenLoad?
     var _realtimeBaseURI: String?
     var _realtimeRuntime: RealtimeRuntime?
+    /// Test seam; nil uses the URLSession socket.
+    var _realtimeSocketFactory: RealtimeSocketFactory?
     var _connectionState: DashXConnectionState = .idle
     var _connectionStateListeners: [DashXConnectionStateListener] = []
     var _lifecycleForeground = false
@@ -449,6 +460,7 @@ public class DashXClient {
         let isActivation = current.uid == nil && current.identityToken == nil && uid != nil
         let isRefresh = current.uid != nil && current.uid == uid
 
+        let committed: AccountSnapshot
         if isActivation || isRefresh {
             // Same identity: the session generation is unchanged so in-flight work survives.
             stateLock.lock()
@@ -459,11 +471,12 @@ public class DashXClient {
             let superseded = _tokenLoadInFlight
             _tokenLoadInFlight = nil
             persistIdentityLocked()
+            committed = _account
             stateLock.unlock()
             superseded?.complete(token)
         } else {
             endIdentitySession()
-            commitAccount {
+            committed = commitAccount {
                 $0.uid = uid
                 $0.identityToken = token
                 $0.sessionGeneration += 1
@@ -471,7 +484,7 @@ public class DashXClient {
             }
         }
 
-        notifyIdentityChanged()
+        notifyIdentityChanged(committed: committed)
     }
 
     /// Mutates and persists the identity under one lock hold, so disk order matches memory order.
@@ -566,7 +579,7 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION)
 
         let anonymousUid = self.generateAnonymousUid(withRegenerate: true)
-        commitAccount {
+        let committed = commitAccount {
             $0.uid = nil
             $0.identityToken = nil
             $0.anonymousUid = anonymousUid
@@ -574,8 +587,8 @@ public class DashXClient {
         }
         self.isAdTrackingRequested = false
 
-        realtimeRuntime?.onIdentityChanged()
-        publishDirect(.idle)
+        realtimeRuntime?.onIdentityChanged(credentials: committed.credentialVersion)
+        publishIdle(ifCurrent: committed)
     }
 
     // MARK: - Analytics

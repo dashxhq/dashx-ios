@@ -46,9 +46,11 @@ server-only: the host's backend creates the conversation and returns the
 ### Changed
 
 - **`DashXClientError.graphQLErrors` now carries `DashXGraphQLErrors`** instead of `[String]`.
-  It iterates as the messages and is array-literal-expressible, so
-  `case .graphQLErrors(let messages)`, `messages.count` and `messages.joined(...)` compile
-  unchanged; code that handed the payload to a `[String]` parameter should use `.messages`.
+  It iterates as the messages, is array-literal-expressible and compares by the messages alone,
+  so `case .graphQLErrors(let messages)`, `messages.count`, `messages.joined(...)`,
+  `messages == ["…"]` and `case .graphQLErrors(["…"])` behave as in 1.6.x; compare `code`
+  explicitly to match on it. Code that handed the payload to a `[String]` parameter should use
+  `.messages`.
 - The identity token is attached to every GraphQL request at send time, and a request rejected as
   `UNAUTHORIZED` before execution is retried once after a token refresh. When no provider is bound
   and the token has expired, the SDK drops it and continues on the public key alone, so

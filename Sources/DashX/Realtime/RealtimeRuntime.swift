@@ -41,6 +41,68 @@ protocol RealtimeSocketListener: AnyObject {
     func socket(_ socket: RealtimeSocket, didFailWithError error: Error)
 }
 
+/// A socket URL and the credentials it carries, read from one account snapshot so the stamp
+/// always matches the token in the URL.
+struct RealtimeEndpoint {
+    let url: URL
+    let credentials: CredentialVersion
+}
+
+/// The client's answer to a 4401's refresh request.
+enum AuthRefreshOutcome: Equatable {
+    /// A new token is installed; its identity change reconnects.
+    case refreshed
+    /// No token could be loaded.
+    case failed
+    /// The rejected credentials were already replaced, so no refresh was attempted; the attempt
+    /// spent on them belongs to the replacement.
+    case superseded
+}
+
+/// The credentials an identity command was issued for: an identity session and its token epoch.
+struct CredentialVersion: Equatable {
+    let sessionGeneration: Int
+    let tokenEpoch: Int
+}
+
+/// The runtime's side of the published connection state. Whatever depends on credentials is
+/// resolved by the client under its own lock, so a published state never pairs one identity's
+/// runtime facts with another identity's credentials.
+enum RealtimeStatus {
+    /// `credentials` were rejected or could not be loaded.
+    case authenticationFailed(cause: Error?, credentials: CredentialVersion)
+    /// A socket carrying `credentials`.
+    case connected(credentials: CredentialVersion)
+    case connecting(credentials: CredentialVersion)
+    case suspended
+    /// No socket, and either foregrounded or unsubscribed.
+    case disconnected(hasSubscriptions: Bool)
+    case ended
+
+    /// Nil drops a verdict or socket for credentials other than `current`, whether an earlier
+    /// identity's or an older token of this one: the change that replaced them is queued and
+    /// publishes in its turn.
+    func resolve(endpointAvailable: Bool, awaitingToken: Bool, current: CredentialVersion) -> DashXConnectionState? {
+        switch self {
+        case .authenticationFailed(let cause, let credentials):
+            return credentials == current ? .authenticationFailed(cause: cause) : nil
+        case .connected(let credentials):
+            return credentials == current ? .connected : nil
+        case .connecting(let credentials):
+            return credentials == current ? .connecting : nil
+        case .suspended:
+            return .suspended
+        case .disconnected(let hasSubscriptions):
+            // A provider load bringing the token is `.connecting`, as the client publishes it when
+            // no runtime exists.
+            if endpointAvailable { return hasSubscriptions ? .connecting : .idle }
+            return awaitingToken ? .connecting : .idle
+        case .ended:
+            return .idle
+        }
+    }
+}
+
 /// Creates a socket that starts connecting immediately.
 typealias RealtimeSocketFactory = (URL, RealtimeSocketListener) -> RealtimeSocket
 
@@ -66,11 +128,18 @@ final class RealtimeRuntime {
     }
 
     private let queue = DispatchQueue(label: "com.dashx.ios.realtime")
-    private let urlProvider: () -> URL?
+    private let endpointProvider: () -> RealtimeEndpoint?
+    /// Asked only when `endpointProvider` has none: nil while credentials are on their way (a
+    /// provider load is in flight), otherwise why none will arrive without the host's help.
+    private let unmetPrerequisite: () -> DashXClientError?
+    /// The credentials current now. A socket stamped with an older session carries a departed
+    /// identity's credentials; an identity command for older credentials is superseded.
+    private let currentCredentials: () -> CredentialVersion
     private let onAnyFrame: (DashXRealtimeMessage) -> Void
-    /// 4401 close: asks for a fresh token once; reports whether one was installed.
-    private let onAuthRejected: (_ completion: @escaping (Bool) -> Void) -> Void
-    private let publishStateSink: (DashXConnectionState) -> Void
+    /// 4401 close: asks for a fresh token once for the credentials the socket was opened with;
+    /// reports whether one was installed.
+    private let onAuthRejected: (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void
+    private let publishStateSink: (RealtimeStatus) -> Void
     private let socketFactory: RealtimeSocketFactory
     private let ackTimeout: TimeInterval
 
@@ -78,15 +147,21 @@ final class RealtimeRuntime {
     private var connectionGeneration = 0
     private var socket: RealtimeSocket?
     private var connectingSocket: RealtimeSocket?
+    /// Credentials the current socket's URL carries.
+    private var socketCredentials = CredentialVersion(sessionGeneration: 0, tokenEpoch: 0)
     private var isForeground: Bool
     private var authFailed = false
     /// One refresh per rejection cycle: set when 4401 fires the hook, re-armed only by an ack or an
     /// external (non-refresh) identity change — a refreshed token that 4401s again stays terminal.
     private var authRefreshAttempted = false
+    /// Credentials of the socket whose 4401 spent the current attempt.
+    private var refreshAttemptCredentials: CredentialVersion?
     /// Reported by the client when no token could be loaded. The socket is left alone (the held
     /// token may still work) but the published state stays terminal until the next identity change.
     private var credentialsUnavailable = false
     private var credentialFailureCause: Error?
+    /// Identity session the current auth failure belongs to.
+    private var authVerdictCredentials = CredentialVersion(sessionGeneration: 0, tokenEpoch: 0)
     /// Advanced by every identity change; a refresh outcome from before it is stale.
     private var credentialGeneration = 0
     private var reconnectAttempts = 0
@@ -100,15 +175,19 @@ final class RealtimeRuntime {
     private var firstAckGeneration: [String: Int] = [:]
 
     init(
-        urlProvider: @escaping () -> URL?,
+        endpointProvider: @escaping () -> RealtimeEndpoint?,
+        unmetPrerequisite: @escaping () -> DashXClientError?,
+        currentCredentials: @escaping () -> CredentialVersion,
         onAnyFrame: @escaping (DashXRealtimeMessage) -> Void,
-        onAuthRejected: @escaping (_ completion: @escaping (Bool) -> Void) -> Void,
-        publishState: @escaping (DashXConnectionState) -> Void,
+        onAuthRejected: @escaping (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void,
+        publishState: @escaping (RealtimeStatus) -> Void,
         initialForeground: Bool,
         socketFactory: RealtimeSocketFactory? = nil,
         ackTimeout: TimeInterval = RealtimeRuntime.ackTimeout
     ) {
-        self.urlProvider = urlProvider
+        self.endpointProvider = endpointProvider
+        self.unmetPrerequisite = unmetPrerequisite
+        self.currentCredentials = currentCredentials
         self.onAnyFrame = onAnyFrame
         self.onAuthRejected = onAuthRejected
         self.publishStateSink = publishState
@@ -135,15 +214,24 @@ final class RealtimeRuntime {
     }
 
     /// Recycles the socket under the new credentials. `fromAuthRefresh` marks a token minted after a
-    /// rejection: it earns one reconnect but does not re-arm the 4401 refresh hook.
-    func onIdentityChanged(fromAuthRefresh: Bool = false) {
-        enqueue { self.handleIdentityChanged(fromAuthRefresh: fromAuthRefresh) }
+    /// rejection: it earns one reconnect but does not re-arm the 4401 refresh hook. `credentials`
+    /// are the ones the change installed; once they have moved on, a later change has queued its own
+    /// command or verdict, and this one is dropped rather than clear that change's state.
+    func onIdentityChanged(fromAuthRefresh: Bool = false, credentials: CredentialVersion) {
+        enqueue { self.handleIdentityChanged(fromAuthRefresh: fromAuthRefresh, credentials: credentials) }
+    }
+
+    /// The identity ended (uid switch or reset): drops the socket and every auth verdict reached
+    /// under it, so neither a stale failure nor a spent refresh carries over to the next identity.
+    /// Reconnecting is left to the identity change that follows.
+    func onIdentityEnded() {
+        enqueue { self.handleIdentityEnded() }
     }
 
     /// A provider load failed: the state is `authenticationFailed` until the identity changes.
     /// `isCurrent` is asked on the runtime queue, so a token installed meanwhile wins.
-    func onCredentialsUnavailable(cause: Error?, isCurrent: @escaping () -> Bool = { true }) {
-        enqueue { self.handleCredentialsUnavailable(cause: cause, isCurrent: isCurrent) }
+    func onCredentialsUnavailable(cause: Error?, credentials: CredentialVersion, isCurrent: @escaping () -> Bool = { true }) {
+        enqueue { self.handleCredentialsUnavailable(cause: cause, credentials: credentials, isCurrent: isCurrent) }
     }
 
     func endSession(completion: (() -> Void)? = nil) {
@@ -170,23 +258,34 @@ final class RealtimeRuntime {
         handles.append(handle)
         subscriptions[handle.channelName] = handles
         let isFirstForChannel = handles.count == 1
+        // A socket whose credentials were replaced neither subscribes nor vouches for an earlier
+        // acknowledgement: the newcomer stays registered, and the replacement's queued reconnect
+        // subscribes every channel and acknowledges it.
+        let socketIsCurrent = socketCredentials == currentCredentials()
 
         if socket == nil && connectingSocket == nil {
             connect()
-        } else if let socket, isFirstForChannel {
+        } else if let socket, socketIsCurrent, isFirstForChannel {
             socket.send(text: DashXRealtimeCodec.encodeChannelFrame(
                 type: DashXRealtimeCodec.typeSubscribe, channelName: handle.channelName))
             scheduleAckDeadline(channel: handle.channelName, attempt: beginSubscribeAttempt(handle.channelName))
-        } else if socket != nil, pendingAcks[handle.channelName] == nil, firstAckGeneration[handle.channelName] != nil {
+        } else if socket != nil, socketIsCurrent, pendingAcks[handle.channelName] == nil,
+                  firstAckGeneration[handle.channelName] != nil {
             // Already acknowledged on this connection: no frame will repeat it for the newcomer.
             handle.onEstablished(false)
         }
         // connect() refuses to run while auth-failed, so no ack deadline would surface the problem.
+        // A stored verdict is replayed only for the credentials that earned it: once they are
+        // replaced, the replacement's queued change clears it and connects, and the newcomer waits.
         if authFailed {
-            handle.onSubscribeError(.subscriptionFailed(
-                "Realtime authentication failed; channel \(handle.channelName) cannot subscribe"))
+            if isAuthVerdictCurrent {
+                handle.onSubscribeError(.subscriptionFailed(
+                    "Realtime authentication failed; channel \(handle.channelName) cannot subscribe"))
+            }
         } else if credentialsUnavailable && socket == nil && connectingSocket == nil {
-            handle.onSubscribeError(Self.credentialsUnavailableError)
+            if isAuthVerdictCurrent { handle.onSubscribeError(Self.credentialsUnavailableError) }
+        } else if let unmet = unmetPrerequisiteWhileDisconnected() {
+            handle.onSubscribeError(unmet)
         }
         publishState()
     }
@@ -219,7 +318,18 @@ final class RealtimeRuntime {
         publishState()
     }
 
-    private func handleIdentityChanged(fromAuthRefresh: Bool) {
+    private func handleIdentityChanged(fromAuthRefresh: Bool, credentials: CredentialVersion) {
+        let current = currentCredentials()
+        guard credentials == current else {
+            // The token it installed is gone, so no reconnect for it. An explicit change still
+            // re-arms the 4401 refresh for its session: a provider install that superseded it
+            // reconnects with `fromAuthRefresh`, which would otherwise keep the spent attempt.
+            if !fromAuthRefresh && credentials.sessionGeneration == current.sessionGeneration {
+                authRefreshAttempted = false
+            }
+            DashXLog.d(tag: Self.tag, "Dropping an identity change for superseded credentials")
+            return
+        }
         // Any socket, connected or still connecting, carries the old token in its URL.
         authFailed = false
         credentialsUnavailable = false
@@ -229,12 +339,30 @@ final class RealtimeRuntime {
         reconnectAttempts = 0
         closeSocket()
         connect()
+        failSubscribersOnUnmetPrerequisite()
         publishState()
+    }
+
+    private func handleIdentityEnded() {
+        authFailed = false
+        authRefreshAttempted = false
+        credentialsUnavailable = false
+        credentialFailureCause = nil
+        credentialGeneration += 1
+        reconnectAttempts = 0
+        closeSocket()
     }
 
     private func handleSocketOpened(generation: Int, socket opened: RealtimeSocket) {
         guard generation == connectionGeneration else {
             opened.close(code: Self.normalClosure, reason: nil)
+            return
+        }
+        // Its credentials were replaced while it connected: subscribing would only spend the old
+        // token. The replacement's queued change connects under the new one.
+        guard socketCredentials == currentCredentials() else {
+            closeSocket()
+            publishState()
             return
         }
         connectingSocket = nil
@@ -249,7 +377,13 @@ final class RealtimeRuntime {
     }
 
     private func handleFrameReceived(generation: Int, text: String) {
-        guard generation == connectionGeneration, let frame = DashXRealtimeCodec.decode(text) else { return }
+        guard generation == connectionGeneration else { return }
+        // The connection generation moves only when the replacement's queued reconnect runs. Until
+        // then a socket carrying replaced credentials still delivers frames; an acknowledgement
+        // from it would start a history sync, and re-arm the refresh, before the replacement socket
+        // has acknowledged anything. The replacement re-subscribes and its frames take over.
+        guard socketCredentials == currentCredentials() else { return }
+        guard let frame = DashXRealtimeCodec.decode(text) else { return }
         switch frame {
         case .ping:
             socket?.send(text: DashXRealtimeCodec.encodeBareFrame(type: DashXRealtimeCodec.typePong))
@@ -277,15 +411,33 @@ final class RealtimeRuntime {
         // rejected subscription; the reconnect re-sends under fresh attempts.
         pendingAcks.removeAll()
         if Self.isTerminalCloseCode(code) {
+            // A rejection of replaced credentials, whether a departed identity's or an older token
+            // of this one, says nothing about the current ones, whose change has queued its own
+            // reset or reconnect.
+            guard socketCredentials == currentCredentials() else {
+                DashXLog.d(tag: Self.tag, "Ignoring terminal code \(code) from a socket with replaced credentials")
+                publishState()
+                return
+            }
             authFailed = true
+            authVerdictCredentials = socketCredentials
             DashXLog.e(tag: Self.tag, "Realtime closed with terminal code \(code) (\(reason))")
             // Only 4401 can be fixed by a fresh token, and only once per cycle.
             if code == Self.closeCodeUnauthorized && !authRefreshAttempted {
                 authRefreshAttempted = true
+                refreshAttemptCredentials = socketCredentials
                 let credentials = credentialGeneration
-                onAuthRejected { [weak self] refreshed in
-                    guard let self, !refreshed else { return }
-                    self.enqueue { self.handleAuthRefreshFailed(credentialGeneration: credentials) }
+                let rejected = socketCredentials
+                onAuthRejected(rejected) { [weak self] outcome in
+                    guard let self else { return }
+                    switch outcome {
+                    case .refreshed:
+                        break
+                    case .failed:
+                        self.enqueue { self.handleAuthRefreshFailed(credentialGeneration: credentials, rejected: rejected) }
+                    case .superseded:
+                        self.enqueue { self.handleAuthRefreshSkipped(rejected: rejected) }
+                    }
                 }
             } else {
                 failSubscribers(code: code, reason: reason)
@@ -306,10 +458,11 @@ final class RealtimeRuntime {
         publishState()
     }
 
-    private func handleCredentialsUnavailable(cause: Error?, isCurrent: () -> Bool) {
+    private func handleCredentialsUnavailable(cause: Error?, credentials: CredentialVersion, isCurrent: () -> Bool) {
         guard isCurrent() else { return }
         credentialsUnavailable = true
         credentialFailureCause = cause
+        authVerdictCredentials = credentials
         // Without a socket no ack or deadline is coming; a live socket's own acks still decide.
         if socket == nil && connectingSocket == nil { failSubscribers(Self.credentialsUnavailableError) }
         publishState()
@@ -318,10 +471,24 @@ final class RealtimeRuntime {
     private static let credentialsUnavailableError = DashXClientError.subscriptionFailed(
         "No identity token is available; the channel cannot subscribe until the identity changes")
 
-    private func handleAuthRefreshFailed(credentialGeneration: Int) {
-        // Only while the rejection that asked for the refresh still stands.
-        guard credentialGeneration == self.credentialGeneration, authFailed else { return }
+    private func handleAuthRefreshFailed(credentialGeneration: Int, rejected: CredentialVersion) {
+        // Only while the rejection that asked for the refresh still stands. The runtime's own
+        // generation moves only when a queued identity change runs, so the rejected credentials are
+        // checked too: a token installed after this failure was queued makes it obsolete, and a
+        // lease still awaiting its first snapshot must not show it.
+        guard credentialGeneration == self.credentialGeneration, authFailed,
+              rejected == currentCredentials()
+        else { return }
         failSubscribers(code: Self.closeCodeUnauthorized, reason: "token refresh did not recover")
+    }
+
+    /// The credentials were replaced before the client could refresh them, so nothing was spent:
+    /// the replacement keeps its attempt. Only an attempt spent on `rejected` is returned, never
+    /// one the replacement's own 4401 has spent since.
+    private func handleAuthRefreshSkipped(rejected: CredentialVersion) {
+        guard authRefreshAttempted, refreshAttemptCredentials == rejected else { return }
+        authRefreshAttempted = false
+        refreshAttemptCredentials = nil
     }
 
     private func handleRetryConnect(generation: Int) {
@@ -332,6 +499,10 @@ final class RealtimeRuntime {
     private func handleAckDeadline(generation: Int, channel: String, attempt: Int) {
         guard generation == connectionGeneration else { return }
         guard pendingAcks[channel] == attempt else { return }
+        // The socket generation moves only when the replacement's queued reconnect runs. Until then
+        // a socket carrying replaced credentials can time out, which says nothing about the
+        // replacement: it re-subscribes under a deadline of its own.
+        guard socketCredentials == currentCredentials() else { return }
         let timeoutMs = Int(ackTimeout * 1000)
         subscriptions[channel]?.forEach {
             $0.onSubscribeError(.subscriptionFailed("Channel \(channel) was not acknowledged within \(timeoutMs)ms"))
@@ -344,7 +515,26 @@ final class RealtimeRuntime {
         subscriptions.removeAll()
         firstAckGeneration.removeAll()
         pendingAcks.removeAll()
-        publishStateSink(.idle)
+        publishStateSink(.ended)
+    }
+
+    /// Whether the stored auth verdict belongs to the credentials current now.
+    private var isAuthVerdictCurrent: Bool {
+        authVerdictCredentials == currentCredentials()
+    }
+
+    /// Not auth-failed and without a socket because there is no endpoint and nothing is coming to
+    /// supply one: no ack or deadline will ever answer a subscriber. Foreground is irrelevant, as
+    /// is lifecycle observation, which a skipped `configure()` never starts.
+    private func unmetPrerequisiteWhileDisconnected() -> DashXClientError? {
+        guard socket == nil, connectingSocket == nil, !authFailed, !credentialsUnavailable,
+              !subscriptions.isEmpty, endpointProvider() == nil
+        else { return nil }
+        return unmetPrerequisite()
+    }
+
+    private func failSubscribersOnUnmetPrerequisite() {
+        if let unmet = unmetPrerequisiteWhileDisconnected() { failSubscribers(unmet) }
     }
 
     /// With the socket gone no ack or deadline is coming, so waiting subscribers are told now.
@@ -367,11 +557,12 @@ final class RealtimeRuntime {
 
     private func connect() {
         if authFailed || !isForeground || subscriptions.isEmpty { return }
-        guard let url = urlProvider() else { return }
+        guard let endpoint = endpointProvider() else { return }
 
         connectionGeneration += 1
+        socketCredentials = endpoint.credentials
         let listener = ConnectionListener(runtime: self, generation: connectionGeneration)
-        connectingSocket = socketFactory(url, listener)
+        connectingSocket = socketFactory(endpoint.url, listener)
         publishState()
     }
 
@@ -403,21 +594,19 @@ final class RealtimeRuntime {
     }
 
     private func publishState() {
-        let state: DashXConnectionState
+        let status: RealtimeStatus
         if authFailed || credentialsUnavailable {
-            state = .authenticationFailed(cause: credentialFailureCause)
+            status = .authenticationFailed(cause: credentialFailureCause, credentials: authVerdictCredentials)
         } else if socket != nil {
-            state = .connected
+            status = .connected(credentials: socketCredentials)
         } else if connectingSocket != nil {
-            state = .connecting
+            status = .connecting(credentials: socketCredentials)
         } else if !isForeground && !subscriptions.isEmpty {
-            state = .suspended
-        } else if !subscriptions.isEmpty && isForeground && urlProvider() != nil {
-            state = .connecting
+            status = .suspended
         } else {
-            state = .idle
+            status = .disconnected(hasSubscriptions: !subscriptions.isEmpty)
         }
-        publishStateSink(state)
+        publishStateSink(status)
     }
 
     private final class ConnectionListener: RealtimeSocketListener {

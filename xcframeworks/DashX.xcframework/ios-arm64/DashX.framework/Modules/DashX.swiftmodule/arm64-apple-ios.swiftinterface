@@ -230,6 +230,7 @@ public struct DashXGraphQLErrors : Swift::Equatable, Swift::ExpressibleByArrayLi
   public let code: Swift::String?
   public init(messages: [Swift::String], code: Swift::String? = nil)
   public init(arrayLiteral elements: Swift::String...)
+  public static func == (lhs: DashX::DashXGraphQLErrors, rhs: DashX::DashXGraphQLErrors) -> Swift::Bool
   public var startIndex: Swift::Int {
     get
   }
@@ -244,7 +245,6 @@ public struct DashXGraphQLErrors : Swift::Equatable, Swift::ExpressibleByArrayLi
   public var description: Swift::String {
     get
   }
-  public static func == (a: DashX::DashXGraphQLErrors, b: DashX::DashXGraphQLErrors) -> Swift::Bool
   public typealias ArrayLiteralElement = Swift::String
   public typealias Element = Swift::String
   public typealias Index = Swift::Int

@@ -59,8 +59,10 @@ enum AuthRetryPolicy {
 /// the chain and observes the final result through the completion it passes down. Dropping an
 /// expired token is value-guarded: only the exact rejected token is cleared.
 final class AuthRetryInterceptor: ApolloInterceptor {
-    typealias RefreshToken = (_ completion: @escaping (Bool) -> Void) -> Void
-    typealias Credentials = (token: String?, generation: Int)
+    /// Refreshes for the credentials the request carried; another session's provider is never
+    /// asked, and a token already replaced is not refreshed again.
+    typealias RefreshToken = (_ credentials: CredentialVersion, _ completion: @escaping (Bool) -> Void) -> Void
+    typealias Credentials = (token: String?, version: CredentialVersion)
 
     static let identityTokenHeader = "X-IDENTITY-TOKEN"
 
@@ -68,19 +70,22 @@ final class AuthRetryInterceptor: ApolloInterceptor {
 
     private let refreshToken: RefreshToken
     private let credentials: () -> Credentials
-    /// Clears the rejected token when nothing can refresh it and it is still the one held.
-    private let dropExpiredToken: (_ rejected: String?) -> Bool
+    /// Clears the rejected token when nothing can refresh it and it is still the one held by the
+    /// request's identity session.
+    private let dropExpiredToken: (_ rejected: String?, _ identityGeneration: Int) -> Bool
     private let lock = NSLock()
     private var attempted = false
     private var firstPassGeneration = 0
 
     init(
-        refreshToken: @escaping RefreshToken = { DashXClient.instance.awaitTokenRefresh(completion: $0) },
+        refreshToken: @escaping RefreshToken = { DashXClient.instance.awaitTokenRefresh(expected: $0, completion: $1) },
         credentials: @escaping () -> Credentials = {
             let account = DashXClient.instance.account
-            return (account.identityToken, account.sessionGeneration)
+            return (account.identityToken, account.credentialVersion)
         },
-        dropExpiredToken: @escaping (_ rejected: String?) -> Bool = { DashXClient.instance.dropUnrefreshableIdentityToken(rejected: $0) }
+        dropExpiredToken: @escaping (_ rejected: String?, _ identityGeneration: Int) -> Bool = {
+            DashXClient.instance.dropUnrefreshableIdentityToken(rejected: $0, identityGeneration: $1)
+        }
     ) {
         self.refreshToken = refreshToken
         self.credentials = credentials
@@ -93,7 +98,8 @@ final class AuthRetryInterceptor: ApolloInterceptor {
         response: HTTPResponse<Operation>?,
         completion: @escaping (Result<GraphQLResult<Operation.Data>, any Error>) -> Void
     ) {
-        let (tokenAtStart, generationAtStart) = credentials()
+        let (tokenAtStart, versionAtStart) = credentials()
+        let generationAtStart = versionAtStart.sessionGeneration
         // Set per pass: a retry carries the refreshed token, and a dropped token leaves with it.
         if let tokenAtStart {
             request.addHeader(name: Self.identityTokenHeader, value: tokenAtStart)
@@ -124,24 +130,24 @@ final class AuthRetryInterceptor: ApolloInterceptor {
                 completion(result)
                 return
             }
-            guard self.credentials().generation == generationAtStart else {
+            guard self.credentials().version.sessionGeneration == generationAtStart else {
                 completion(result)
                 return
             }
             // Completes only after the new token is installed, so the retry picks it up.
-            self.refreshToken { refreshed in
+            self.refreshToken(versionAtStart) { refreshed in
                 if !refreshed {
                     // With no provider bound an expired token would fail every call, so drop it and
                     // retry once on the public key alone. A bound provider that failed keeps the
                     // token: the next rejection asks it again.
-                    if AuthRetryPolicy.isExpired(errors: errors), self.dropExpiredToken(tokenAtStart) {
+                    if AuthRetryPolicy.isExpired(errors: errors), self.dropExpiredToken(tokenAtStart, generationAtStart) {
                         chain.retry(request: request, completion: completion)
                     } else {
                         completion(result)
                     }
                     return
                 }
-                guard self.credentials().generation == generationAtStart else {
+                guard self.credentials().version.sessionGeneration == generationAtStart else {
                     completion(result)
                     return
                 }

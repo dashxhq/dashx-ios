@@ -40,12 +40,18 @@ private final class Harness {
     /// index its listener.
     let connections = Atomic<[(socket: FakeSocket, listener: RealtimeSocketListener)]>([])
     let established = Atomic<[Bool]>([])
+    let frames = Atomic<Int>(0)
     let subscribeErrors = Atomic<[DashXClientError]>([])
     /// What the 4401 hook reports when no custom hook is installed.
     let authRefreshSucceeds = Atomic<Bool>(false)
     /// Custom hook: receives the completion and decides when (and what) to answer.
-    let onAuthRejectedHook = Atomic<((@escaping (Bool) -> Void) -> Void)?>(nil)
+    let onAuthRejectedHook = Atomic<((@escaping (AuthRefreshOutcome) -> Void) -> Void)?>(nil)
     let url = Atomic<URL?>(URL(string: "wss://realtime.test/socket"))
+    /// What the client reports when there is no URL; nil models a provider load in flight.
+    let unmet = Atomic<DashXClientError?>(nil)
+    /// The client's identity session; sockets are stamped with it when they connect.
+    let identity = Atomic<Int>(0)
+    let epoch = Atomic<Int>(0)
 
     let runtime: RealtimeRuntime
 
@@ -54,18 +60,34 @@ private final class Harness {
         var runtime: RealtimeRuntime!
         let harnessBox = Atomic<Harness?>(nil)
         runtime = RealtimeRuntime(
-            urlProvider: { harnessBox.value?.url.value },
+            endpointProvider: {
+                guard let harness = harnessBox.value, let url = harness.url.value else { return nil }
+                return RealtimeEndpoint(url: url, credentials: harness.credentials)
+            },
+            unmetPrerequisite: { harnessBox.value?.unmet.value },
+            currentCredentials: { harnessBox.value?.credentials ?? CredentialVersion(sessionGeneration: 0, tokenEpoch: 0) },
             onAnyFrame: { _ in },
-            onAuthRejected: { completion in
-                guard let harness = harnessBox.value else { return completion(false) }
+            onAuthRejected: { _, completion in
+                guard let harness = harnessBox.value else { return completion(.failed) }
                 _ = harness.authRejections.increment()
                 if let hook = harness.onAuthRejectedHook.value {
                     hook(completion)
                 } else {
-                    completion(harness.authRefreshSucceeds.value)
+                    completion(harness.authRefreshSucceeds.value ? .refreshed : .failed)
                 }
             },
-            publishState: { state in harnessBox.value?.states.append(state) },
+            publishState: { status in
+                // Resolved as the client does, against the harness's credentials.
+                guard let harness = harnessBox.value else { return }
+                let endpointAvailable = harness.url.value != nil
+                if let state = status.resolve(
+                    endpointAvailable: endpointAvailable,
+                    awaitingToken: !endpointAvailable && harness.unmet.value == nil,
+                    current: harness.credentials
+                ) {
+                    harness.states.append(state)
+                }
+            },
             initialForeground: initialForeground,
             socketFactory: { url, listener in
                 let socket = FakeSocket(url: url)
@@ -80,11 +102,20 @@ private final class Harness {
 
     var lastState: DashXConnectionState? { states.value.last }
 
+    var credentials: CredentialVersion {
+        CredentialVersion(sessionGeneration: identity.value, tokenEpoch: epoch.value)
+    }
+
+    /// An identity change for the credentials current now, as the client issues it.
+    func identityChanged(fromAuthRefresh: Bool = false) {
+        runtime.onIdentityChanged(fromAuthRefresh: fromAuthRefresh, credentials: credentials)
+    }
+
     @discardableResult
     func subscribe(_ conversationId: String = "c1") -> DashXRealtimeSubscription {
         runtime.subscribe(SubscriberHandle(
             channelName: RealtimeRuntime.chatChannelName(conversationId: conversationId),
-            onFrame: { _ in },
+            onFrame: { [frames] _ in _ = frames.increment() },
             onEstablished: { [established] in established.append($0) },
             onSubscribeError: { [subscribeErrors] in subscribeErrors.append($0) }
         ))
@@ -126,12 +157,91 @@ private func isSubscriptionFailed(_ error: DashXClientError) -> Bool {
 
 final class RealtimeRuntimeTests: XCTestCase {
 
-    func testSubscribeWithoutIdentityOpensNoSocketStaysIdle() {
+    func testSubscribeWhileATokenLoadIsPendingOpensNoSocketAndReportsConnecting() {
         let harness = Harness(url: nil)
         harness.subscribe()
-        settle(0.3)
+        awaitUntil(what: "connecting") { harness.lastState == .connecting }
+        settle(0.2)
         XCTAssertTrue(harness.sockets.isEmpty, "no speculative connect without an identity token")
-        XCTAssertEqual(harness.lastState ?? .idle, .idle)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "a token on its way is not an error")
+        XCTAssertEqual(harness.lastState, .connecting)
+    }
+
+    func testTerminalCloseFromAPreviousIdentitysSocketIsIgnored() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        // The identity moved on before the runtime processed the old socket's rejection.
+        harness.identity.value = 1
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "close processed") { harness.lastState != .connected }
+        settle(0.2)
+        XCTAssertEqual(harness.authRejections.value, 0, "the new identity's refresh must not be spent")
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed))
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty)
+    }
+
+    func testUnmetPrerequisiteFailsWaitingAndNewSubscribersAndCredentialsRecover() {
+        let harness = Harness(url: nil)
+        harness.unmet.value = .notIdentified
+        harness.subscribe("c1")
+        awaitUntil(what: "waiting subscriber failed") { harness.subscribeErrors.value.count == 1 }
+        harness.subscribe("c2")
+        awaitUntil(what: "new subscriber failed at once") { harness.subscribeErrors.value.count == 2 }
+        XCTAssertTrue(harness.subscribeErrors.value.allSatisfy {
+            if case .notIdentified = $0 { return true }
+            return false
+        })
+        XCTAssertTrue(harness.sockets.isEmpty)
+        XCTAssertEqual(harness.lastState, .idle)
+
+        harness.url.value = URL(string: "wss://realtime.test/socket")
+        harness.unmet.value = nil
+        harness.identityChanged()
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        harness.ack("in_app_chat:conversation:c1")
+        awaitUntil(what: "recovered") { harness.established.value == [false] }
+        XCTAssertEqual(harness.subscribeErrors.value.count, 2)
+    }
+
+    func testUnmetPrerequisiteIsReportedWithoutWaitingForTheForeground() {
+        let harness = Harness(initialForeground: false, url: nil)
+        harness.unmet.value = .notIdentified
+        harness.subscribe("c1")
+        awaitUntil(what: "reported while backgrounded") { harness.subscribeErrors.value.count == 1 }
+
+        harness.runtime.onForeground()
+        settle(0.2)
+        XCTAssertEqual(harness.subscribeErrors.value.count, 1, "foregrounding changes nothing a host must fix")
+    }
+
+    func testIdentityEndedClearsAuthVerdictsWithoutReconnecting() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "spent refresh") { harness.authRejections.value == 1 }
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+
+        harness.runtime.onIdentityEnded()
+        settle(0.2)
+        XCTAssertEqual(harness.sockets.count, 1, "reconnecting is left to the identity change that follows")
+        harness.subscribe("c2")
+        awaitUntil(what: "no stale failure") { harness.lastState == .connecting }
+        XCTAssertEqual(harness.sockets.count, 2, "the next subscription connects under the new identity")
+
+        // The next identity's first token arrives as a refresh-driven install; its 4401 must still
+        // earn a refresh of its own.
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "socket 3") { harness.sockets.count == 3 }
+        harness.open(2)
+        harness.close(2, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "fresh refresh") { harness.authRejections.value == 2 }
     }
 
     func testSubscribeConnectsAndSendsChannelSubscribeOnOpen() {
@@ -207,7 +317,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         XCTAssertEqual(harness.sockets.count, 1, "terminal close must not retry")
 
         // A fresh identity revives even a terminally-closed runtime.
-        harness.runtime.onIdentityChanged()
+        harness.identityChanged()
         awaitUntil(what: "revived socket") { harness.sockets.count == 2 }
     }
 
@@ -222,7 +332,7 @@ final class RealtimeRuntimeTests: XCTestCase {
 
         // The refresh installs a token; a refresh-driven identity change earns one reconnect but
         // must not re-arm the hook.
-        harness.runtime.onIdentityChanged(fromAuthRefresh: true)
+        harness.identityChanged(fromAuthRefresh: true)
         awaitUntil(what: "reconnect socket") { harness.sockets.count == 2 }
         harness.open(1)
         harness.close(1, code: 4401, reason: "UNAUTHORIZED")
@@ -265,8 +375,8 @@ final class RealtimeRuntimeTests: XCTestCase {
         let harness = Harness()
         // The client installs the token and recycles the socket before the hook answers.
         harness.onAuthRejectedHook.value = { completion in
-            harness.runtime.onIdentityChanged(fromAuthRefresh: true)
-            completion(true)
+            harness.identityChanged(fromAuthRefresh: true)
+            completion(.refreshed)
         }
         harness.subscribe("c1")
         awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
@@ -286,7 +396,7 @@ final class RealtimeRuntimeTests: XCTestCase {
 
     func testTerminal4401RefreshFailingAfterBackgroundingStillFailsWaitingSubscribers() {
         let harness = Harness()
-        let pendingCompletion = Atomic<((Bool) -> Void)?>(nil)
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
         harness.onAuthRejectedHook.value = { completion in pendingCompletion.value = completion }
         harness.subscribe("c1")
         awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
@@ -300,13 +410,13 @@ final class RealtimeRuntimeTests: XCTestCase {
         settle(0.2)
         XCTAssertEqual(harness.sockets.count, 1, "no reconnect while auth-failed")
 
-        pendingCompletion.value?(false) // refresh reports no new token
+        pendingCompletion.value?(.failed) // refresh reports no new token
         awaitUntil(what: "subscribe error survives the background cycle") { harness.subscribeErrors.value.count == 1 }
     }
 
     func testTerminal4401RefreshFailingAfterIdentitySwitchIsStale() {
         let harness = Harness()
-        let pendingCompletion = Atomic<((Bool) -> Void)?>(nil)
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
         harness.onAuthRejectedHook.value = { completion in pendingCompletion.value = completion }
         harness.subscribe("c1")
         awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
@@ -315,10 +425,10 @@ final class RealtimeRuntimeTests: XCTestCase {
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
         awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
         // The old refresh's failure must not fail the new identity's subscribers.
-        harness.runtime.onIdentityChanged()
+        harness.identityChanged()
         awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
         harness.open(1)
-        pendingCompletion.value?(false)
+        pendingCompletion.value?(.failed)
         settle(0.3)
         XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "a stale refresh outcome is ignored")
     }
@@ -331,7 +441,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         harness.close(0, code: 4401, reason: "UNAUTHORIZED")
         awaitUntil(what: "first refresh") { harness.authRejections.value == 1 }
 
-        harness.runtime.onIdentityChanged(fromAuthRefresh: true)
+        harness.identityChanged(fromAuthRefresh: true)
         awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
         harness.open(1)
         // The server accepts the refreshed token for real work…
@@ -464,7 +574,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         awaitUntil(what: "connected") { harness.lastState == .connected }
 
         let cause = NSError(domain: "provider", code: 7)
-        harness.runtime.onCredentialsUnavailable(cause: cause)
+        harness.runtime.onCredentialsUnavailable(cause: cause, credentials: harness.credentials)
         awaitUntil(what: "authenticationFailed") { harness.lastState == .authenticationFailed(cause: cause) }
 
         harness.subscribe("c2")
@@ -472,7 +582,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         XCTAssertEqual(harness.lastState, .authenticationFailed(cause: cause), "a runtime publish must not mask the credential failure")
         XCTAssertEqual(harness.sockets.count, 1, "the held token may still work: the socket is left alone")
 
-        harness.runtime.onIdentityChanged()
+        harness.identityChanged()
         awaitUntil(what: "recovered") { harness.lastState == .connecting }
     }
 
@@ -483,7 +593,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         harness.open()
         awaitUntil(what: "connected") { harness.lastState == .connected }
 
-        harness.runtime.onCredentialsUnavailable(cause: nil, isCurrent: { false })
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials, isCurrent: { false })
         settle(0.3)
         XCTAssertEqual(harness.lastState, .connected, "a failure superseded by a newer token must not be published")
     }
@@ -494,7 +604,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         settle(0.2)
         XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "waiting for a token is not an error")
 
-        harness.runtime.onCredentialsUnavailable(cause: nil)
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
         // The error is delivered before the state is published; a poll can land between them.
         awaitUntil(what: "waiting subscriber failed and state published") {
             harness.subscribeErrors.value.count == 1 && isAuthFailed(harness.lastState)
@@ -505,7 +615,7 @@ final class RealtimeRuntimeTests: XCTestCase {
         XCTAssertTrue(harness.subscribeErrors.value.allSatisfy(isSubscriptionFailed))
 
         harness.url.value = URL(string: "wss://realtime.test/socket")
-        harness.runtime.onIdentityChanged()
+        harness.identityChanged()
         awaitUntil(what: "socket") { harness.sockets.count == 1 }
         harness.open()
         harness.ack("in_app_chat:conversation:c1")
@@ -526,6 +636,322 @@ final class RealtimeRuntimeTests: XCTestCase {
             socket.cancel()
         }
         awaitUntil(what: "listener released with the socket") { released.value }
+    }
+
+    func testStatusResolutionDropsVerdictsAndSocketsOfReplacedCredentials() {
+        let current = CredentialVersion(sessionGeneration: 2, tokenEpoch: 5)
+        let olderToken = CredentialVersion(sessionGeneration: 2, tokenEpoch: 4)
+        let olderIdentity = CredentialVersion(sessionGeneration: 1, tokenEpoch: 5)
+        for replaced in [olderToken, olderIdentity] {
+            XCTAssertNil(RealtimeStatus.authenticationFailed(cause: nil, credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, current: current))
+            XCTAssertNil(RealtimeStatus.connected(credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, current: current))
+            XCTAssertNil(RealtimeStatus.connecting(credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, current: current))
+        }
+        XCTAssertEqual(RealtimeStatus.authenticationFailed(cause: nil, credentials: current).resolve(endpointAvailable: true, awaitingToken: false, current: current), .authenticationFailed(cause: nil))
+        XCTAssertEqual(RealtimeStatus.connected(credentials: current).resolve(endpointAvailable: true, awaitingToken: false, current: current), .connected)
+
+        let waiting = RealtimeStatus.disconnected(hasSubscriptions: true)
+        XCTAssertEqual(waiting.resolve(endpointAvailable: true, awaitingToken: false, current: current), .connecting)
+        XCTAssertEqual(waiting.resolve(endpointAvailable: false, awaitingToken: true, current: current), .connecting)
+        XCTAssertEqual(waiting.resolve(endpointAvailable: false, awaitingToken: false, current: current), .idle)
+        XCTAssertEqual(
+            RealtimeStatus.disconnected(hasSubscriptions: false).resolve(endpointAvailable: true, awaitingToken: false, current: current),
+            .idle
+        )
+    }
+
+    func testAnIdentityChangeForSupersededCredentialsIsDropped() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        let installed = harness.credentials
+
+        // A later change moves the credentials on and its verdict lands first.
+        harness.epoch.value = 1
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+
+        harness.runtime.onIdentityChanged(fromAuthRefresh: true, credentials: installed)
+        settle(0.2)
+        XCTAssertTrue(isAuthFailed(harness.lastState), "a superseded install must not clear the later verdict")
+        XCTAssertEqual(harness.sockets.count, 1)
+
+        harness.identityChanged()
+        awaitUntil(what: "the current change still recovers") { harness.sockets.count == 2 }
+    }
+
+    func testASupersededExplicitChangeStillReArmsTheRefreshWithoutReconnecting() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "refresh spent") { harness.authRejections.value == 1 }
+
+        // The host sets a fresh token for the same user, then a provider refresh triggered over HTTP
+        // installs another before the runtime gets to the host's command.
+        harness.epoch.value = 1
+        let explicit = harness.credentials
+        harness.epoch.value = 2
+        harness.identityChanged(fromAuthRefresh: true)
+        harness.runtime.onIdentityChanged(credentials: explicit)
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        settle(0.2)
+        XCTAssertEqual(harness.sockets.count, 2, "the superseded token earns no reconnect")
+
+        harness.open(1)
+        harness.close(1, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "the host's change re-armed the refresh") { harness.authRejections.value == 2 }
+    }
+
+    func testTerminalCloseFromAnOlderTokenOfTheSameIdentityIsIgnored() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        // The same user's newer token was installed before the runtime processed this rejection.
+        harness.epoch.value = 1
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "close processed") { harness.lastState != .connected }
+        settle(0.2)
+        XCTAssertEqual(harness.authRejections.value, 0, "a replaced token is not refreshed")
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed))
+    }
+
+    func testARefreshSkippedForReplacedCredentialsLeavesTheAttemptToTheReplacement() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in pendingCompletion.value = completion }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+
+        // An HTTP refresh installed a token between the runtime's check and the client's: the
+        // client skips the provider and the install's change reconnects.
+        harness.epoch.value = 1
+        pendingCompletion.value?(.superseded)
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "replacement socket") { harness.sockets.count == 2 }
+
+        harness.onAuthRejectedHook.value = nil
+        harness.open(1)
+        harness.close(1, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "the replacement's own refresh") { harness.authRejections.value == 2 }
+    }
+
+    func testALateSkipNeverReturnsAnAttemptTheReplacementSpent() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in
+            if pendingCompletion.value == nil { pendingCompletion.value = completion } else { completion(.failed) }
+        }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+
+        // The replacement's change runs first, re-arms, and its own 4401 spends the attempt.
+        harness.epoch.value = 1
+        harness.identityChanged()
+        awaitUntil(what: "replacement socket") { harness.sockets.count == 2 }
+        harness.open(1)
+        harness.close(1, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "replacement spent its attempt") { harness.authRejections.value == 2 }
+
+        // The obsolete socket's answer arrives late; it must not hand out a third attempt.
+        pendingCompletion.value?(.superseded)
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "socket 3") { harness.sockets.count == 3 }
+        harness.open(2)
+        harness.close(2, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "terminal") { isAuthFailed(harness.lastState) }
+        settle(0.3)
+        XCTAssertEqual(harness.authRejections.value, 2, "a refresh-installed token that 4401s again stays terminal")
+    }
+
+    func testARejectionSupersededAfterTheRuntimesCheckIsNeverPublished() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        // The token changes between the runtime's credential check and the client's: the client
+        // sees the replacement and answers `.superseded`.
+        harness.onAuthRejectedHook.value = { completion in
+            harness.epoch.value = 1
+            pendingCompletion.value = completion
+        }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+        pendingCompletion.value?(.superseded)
+        settle(0.3)
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed), "the old token's failure is not the replacement's")
+
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "replacement socket") { harness.sockets.count == 2 }
+        awaitUntil(what: "replacement connecting") { harness.lastState == .connecting }
+    }
+
+    func testARefreshFailureObsoletedByANewTokenFailsNoSubscriber() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in pendingCompletion.value = completion }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+
+        // The refresh failed, but a new token was installed before the runtime handled that.
+        harness.epoch.value = 1
+        pendingCompletion.value?(.failed)
+        settle(0.3)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty)
+
+        // The same failure while the rejected token is still current does reach subscribers.
+        harness.identityChanged()
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        harness.open(1)
+        pendingCompletion.value = nil
+        harness.close(1, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered again") { pendingCompletion.value != nil }
+        pendingCompletion.value?(.failed)
+        awaitUntil(what: "current failure reported") { harness.subscribeErrors.value.count == 1 }
+    }
+
+    func testANewSubscriberNeverHearsAReplacedTokensStoredVerdict() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4403, reason: "FORBIDDEN")
+        awaitUntil(what: "c1 failed") { harness.subscribeErrors.value.count == 1 }
+
+        // A new token is installed; a subscription runs before its reconnect command.
+        harness.epoch.value = 1
+        harness.subscribe("c2")
+        settle(0.3)
+        XCTAssertEqual(harness.subscribeErrors.value.count, 1, "the replaced token's rejection is not c2's")
+
+        harness.identityChanged()
+        awaitUntil(what: "socket under the new token") { harness.sockets.count == 2 }
+    }
+
+    func testANewSubscriberNeverHearsAReplacedTokensCredentialFailure() {
+        let harness = Harness(url: nil)
+        harness.subscribe("c1")
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "c1 failed") { harness.subscribeErrors.value.count == 1 }
+
+        harness.epoch.value = 1
+        harness.subscribe("c2")
+        settle(0.3)
+        XCTAssertEqual(harness.subscribeErrors.value.count, 1, "the failed load belonged to the replaced credentials")
+
+        // While the verdict is current, a newcomer does hear it.
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        harness.subscribe("c3")
+        awaitUntil(what: "c1, c2 and c3 failed under the current credentials") { harness.subscribeErrors.value.count == 4 }
+    }
+
+    func testAnAcknowledgementDeadlineOfAReplacedTokensSocketReportsNothing() {
+        let harness = Harness(ackTimeout: 0.4)
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "SUBSCRIBE sent") { harness.socket(0).sent.value.contains { $0.contains("SUBSCRIBE") } }
+
+        // A new token is installed; its reconnect has not run when the old deadline elapses.
+        harness.epoch.value = 1
+        settle(0.8)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "the old socket's timeout is not the replacement's")
+
+        // The replacement socket gets its own deadline, which does report.
+        harness.identityChanged()
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        harness.open(1)
+        awaitUntil(what: "the replacement's own deadline") { harness.subscribeErrors.value.count == 1 }
+    }
+
+    func testASocketThatOpensAfterItsTokenWasReplacedIsClosedWithoutSubscribing() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "connecting socket") { harness.sockets.count == 1 }
+
+        harness.epoch.value = 1
+        harness.open(0)
+        awaitUntil(what: "stale socket dropped") { harness.socket(0).cancelled.value }
+        XCTAssertFalse(harness.socket(0).sent.value.contains { $0.contains("SUBSCRIBE") }, "the old token is not spent on a subscription")
+        XCTAssertNotEqual(harness.lastState, .connected)
+
+        harness.identityChanged()
+        awaitUntil(what: "socket under the new token") { harness.sockets.count == 2 }
+        harness.open(1)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+    }
+
+    func testALateSubscriberNeverUsesAReplacedTokensSocket() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.ack("in_app_chat:conversation:c1", index: 0)
+        awaitUntil(what: "first ack") { harness.established.value == [false] }
+
+        // A new token is installed; subscriptions run before its reconnect.
+        harness.epoch.value = 1
+        harness.subscribe("c1")
+        harness.subscribe("c2")
+        settle(0.3)
+        XCTAssertEqual(harness.established.value, [false], "the old socket's acknowledgement is not reused")
+        XCTAssertFalse(harness.socket(0).sent.value.contains { $0.contains("conversation:c2") }, "no SUBSCRIBE over the old token")
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty)
+
+        // Both newcomers stay registered: the replacement subscribes and acknowledges them.
+        harness.identityChanged()
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        harness.open(1)
+        awaitUntil(what: "both channels subscribed on the replacement") {
+            let sent = harness.socket(1).sent.value
+            return sent.contains { $0.contains("conversation:c1") } && sent.contains { $0.contains("conversation:c2") }
+        }
+        harness.ack("in_app_chat:conversation:c1", index: 1)
+        harness.ack("in_app_chat:conversation:c2", index: 1)
+        awaitUntil(what: "every handle established on the replacement") { harness.established.value.count == 4 }
+    }
+
+    func testFramesFromAReplacedTokensSocketAreNotDispatched() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "SUBSCRIBE sent") { harness.socket(0).sent.value.contains { $0.contains("SUBSCRIBE") } }
+
+        // A new token is installed; the old socket keeps talking before the reconnect runs.
+        harness.epoch.value = 1
+        harness.ack("in_app_chat:conversation:c1", index: 0)
+        harness.listener(0).socket(harness.socket(0), didReceiveText:
+            #"{"type":"IN_APP_CHAT_MESSAGE","data":{"id":"m1","externalUid":"e1","conversationId":"c1"}}"#)
+        settle(0.3)
+        XCTAssertTrue(harness.established.value.isEmpty, "the old socket's acknowledgement is not the replacement's")
+        XCTAssertEqual(harness.frames.value, 0)
+
+        harness.identityChanged()
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        harness.open(1)
+        harness.ack("in_app_chat:conversation:c1", index: 1)
+        awaitUntil(what: "the replacement's acknowledgement") { harness.established.value == [false] }
+        harness.listener(1).socket(harness.socket(1), didReceiveText:
+            #"{"type":"IN_APP_CHAT_MESSAGE","data":{"id":"m1","externalUid":"e1","conversationId":"c1"}}"#)
+        awaitUntil(what: "the replacement's frame") { harness.frames.value == 1 }
     }
 
     func testChatChannelNameAndTerminalCodeRange() {

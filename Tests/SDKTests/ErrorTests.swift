@@ -117,6 +117,16 @@ final class DashXClientErrorTests: XCTestCase {
         XCTAssertEqual(DashXGraphQLErrors.unprocessableEntity, "UNPROCESSABLE_ENTITY")
     }
 
+    func testGraphQLErrorLiteralsMatchByMessagesWhateverTheCode() {
+        let errors = DashXGraphQLErrors(messages: ["Not found"], code: DashXGraphQLErrors.notFound)
+        XCTAssertTrue(errors == ["Not found"])
+        XCTAssertFalse(errors == ["Gone"])
+        if case .graphQLErrors(["Not found"]) = DashXClientError.graphQLErrors(errors) {} else {
+            XCTFail("a 1.6.x literal pattern must still match")
+        }
+        XCTAssertEqual(errors.code, DashXGraphQLErrors.notFound, "the code stays available for explicit checks")
+    }
+
     // MARK: - localizedDescription via Error protocol
 
     func testLocalizedDescriptionViaErrorProtocol() {
