@@ -341,6 +341,9 @@ final class ConversationSession {
     private var rebuildUsed = false
     /// Consecutive transient sync failures; a completed cycle or a fresh acknowledgement resets it.
     private var syncAttempts = 0
+    /// The initial history load gave up and published `.error`; no sync is running. A reused lease
+    /// retries it, since a healthy socket sends no new acknowledgement to do so.
+    private var initialSyncFailed = false
     private var oldestFetchedPage = Int.max
     /// One older-page fetch at a time: a slow duplicate finishing late would move
     /// `oldestFetchedPage` back to a newer page.
@@ -401,8 +404,19 @@ final class ConversationSession {
             subscription = backend.subscribe(handle)
         }
         lock.unlock()
-        if reused { backend.subscriberReturned() }
+        if reused {
+            backend.subscriberReturned()
+            lane.async { self.retryFailedInitialSync() }
+        }
         return lease
+    }
+
+    /// Only after the initial load failed: a session still awaiting its first acknowledgement, or
+    /// one whose subscription was not acknowledged, has nothing to fetch yet.
+    private func retryFailedInitialSync() {
+        guard initialSyncFailed, !isEnded else { return }
+        DashXLog.d(tag: Self.tag, "Retrying the failed initial load of \(key.conversationId) for a reopened lease")
+        startSync()
     }
 
     private func onFrame(_ frame: DashXRealtimeMessage) {
@@ -449,6 +463,7 @@ final class ConversationSession {
     /// must land in the buffer, not in the displayed list.
     private func startSync() {
         syncing = true
+        initialSyncFailed = false
         rebuildUsed = false
         resyncPending = false
         startBuffering()
@@ -491,6 +506,7 @@ final class ConversationSession {
                         self.startSync()
                     }
                 } else {
+                    if !self.snapshotDone { self.initialSyncFailed = true }
                     self.publishState(.error(failure))
                 }
                 // Buffering stays on: a partial live list must not follow the error.

@@ -181,14 +181,16 @@ final class LifecycleTrackingTests: XCTestCase {
         XCTAssertEqual(seen.value, [false], "the current state is reported on registration")
 
         center.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        XCTAssertEqual(seen.value, [false], "activation without leaving the background is not a foreground transition")
         center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
         center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
-        XCTAssertEqual(seen.value, [false, true, false, true])
+        XCTAssertEqual(seen.value, [false, false, true])
         XCTAssertTrue(events.isEmpty, "observation alone sends no lifecycle events")
 
         callbacks.enable()
+        center.post(name: UIApplication.didBecomeActiveNotification, object: nil)
         center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
-        XCTAssertEqual(seen.value, [false, true, false, true, false], "one registration serves both consumers")
+        XCTAssertEqual(seen.value, [false, false, true, false], "one registration serves both consumers")
     }
 
     func testLaunchKindDecision() {

@@ -22,7 +22,8 @@ server-only: the host's backend creates the conversation and returns the
   (returns the client message id synchronously — the idempotency key a retry must reuse),
   `loadPreviousPage`, `setVisible(_:)` (drives read-marking and push suppression) and `close()`.
   A lease that is closed, or whose session has ended, sends nothing and completes with
-  `.sessionEnded`.
+  `.sessionEnded`. Opening a conversation again after its first history load failed retries
+  that load.
   Missed messages are reconciled after a reconnect; the first load shows at least a full page when
   the history has one, and `hasOlderMessages` tells a host when to offer "load older". Also `fetchConversations`, `fetchConversation`, `summarizeConversations`,
   `summarizeUnread` and `resolveConversation`, plus the same operations as raw `DashXClient`

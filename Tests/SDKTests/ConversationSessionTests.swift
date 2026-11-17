@@ -290,6 +290,51 @@ final class ConversationSessionTests: XCTestCase {
         session.endSession()
     }
 
+    func testReplacementLeaseRetriesAFailedInitialLoad() {
+        let backend = FakeBackend()
+        backend.count.value = 1
+        backend.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        backend.summarizeFailures.value = 1
+        backend.summarizeFailure.value = graphQLFailure("temporarily unavailable", code: "SERVICE_UNAVAILABLE")
+
+        let session = ConversationSession(key: key, backend: backend)
+        let original = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "initial load error") { self.errorOf(original) != nil }
+
+        let replacement = session.newLease()!
+        original.close()
+        awaitUntil(what: "replacement ready") { self.readyIds(replacement) == ["m1"] }
+        XCTAssertEqual(backend.summarizeCalls.value, 2)
+        XCTAssertEqual(backend.handles.value.count, 1, "the healthy subscription is reused")
+        session.endSession()
+    }
+
+    func testReplacementLeaseAwaitingTheFirstAcknowledgementFetchesNothing() {
+        let backend = FakeBackend()
+        let session = ConversationSession(key: key, backend: backend)
+        let original = session.newLease()!
+        backend.handles.value[0].onSubscribeError(.subscriptionFailed("not acknowledged"))
+        awaitUntil(what: "subscription error") { self.errorOf(original) != nil }
+
+        _ = session.newLease()!
+        settle(0.3)
+        XCTAssertEqual(backend.summarizeCalls.value, 0, "only an acknowledgement starts the first load")
+        session.endSession()
+    }
+
+    func testReplacementLeaseOnALoadedConversationFetchesNothing() {
+        let backend = FakeBackend()
+        let (session, _) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+        let callsWhenReady = backend.summarizeCalls.value
+
+        let replacement = session.newLease()!
+        settle(0.3)
+        XCTAssertEqual(backend.summarizeCalls.value, callsWhenReady)
+        XCTAssertEqual(readyIds(replacement), ["m1"])
+        session.endSession()
+    }
+
     func testMarkReadRequiresForegroundAndVisibilityAtMarkTime() {
         let backend = FakeBackend()
         let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])

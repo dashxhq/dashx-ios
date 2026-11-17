@@ -189,7 +189,8 @@ class DashXApplicationLifecycleCallbacks: NSObject {
 
     @objc
     func appBecameActive() {
-        foregroundSink(true)
+        // Not a foreground signal: activation also follows interruptions (Control Center, system
+        // alerts) that never left the foreground. `configure()` reports the cold-launch state.
         guard isTrackingEnabled else { return }
         launchIfPending()
     }

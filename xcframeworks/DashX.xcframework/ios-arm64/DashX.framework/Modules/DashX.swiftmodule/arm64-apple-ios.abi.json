@@ -23195,63 +23195,70 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 14581,
+      "offset": 14584,
+      "length": 5,
+      "value": "false"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
+      "kind": "BooleanLiteral",
+      "offset": 14805,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "IntegerLiteral",
-      "offset": 14786,
+      "offset": 15010,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 15216,
+      "offset": 15440,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "IntegerLiteral",
-      "offset": 15257,
+      "offset": 15481,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 21405,
+      "offset": 22239,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 23247,
+      "offset": 24081,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 35093,
+      "offset": 35927,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 35164,
+      "offset": 35998,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "Array",
-      "offset": 35241,
+      "offset": 36075,
       "length": 2,
       "value": "[]"
     },
