@@ -201,7 +201,6 @@ final public class DashXConversationStateObserver : DashX::DashXConversationStat
 }
 public enum DashXSubscriptionEnd {
   case sessionEnded
-  case unsubscribed
   public static func == (a: DashX::DashXSubscriptionEnd, b: DashX::DashXSubscriptionEnd) -> Swift::Bool
   public func hash(into hasher: inout Swift::Hasher)
   public var hashValue: Swift::Int {

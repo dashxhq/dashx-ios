@@ -227,7 +227,6 @@ public final class DashXConversationStateObserver: DashXConversationStateListene
 
 public enum DashXSubscriptionEnd {
     case sessionEnded
-    case unsubscribed
 }
 
 /// The identity is part of the key: the same conversation id under another chat identity is a

@@ -6554,43 +6554,6 @@
             "moduleName": "DashX"
           },
           {
-            "kind": "Var",
-            "name": "unsubscribed",
-            "printedName": "unsubscribed",
-            "children": [
-              {
-                "kind": "TypeFunc",
-                "name": "Function",
-                "printedName": "(DashX.DashXSubscriptionEnd.Type) -> DashX.DashXSubscriptionEnd",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "DashXSubscriptionEnd",
-                    "printedName": "DashX.DashXSubscriptionEnd",
-                    "usr": "s:5DashX0A16XSubscriptionEndO"
-                  },
-                  {
-                    "kind": "TypeNominal",
-                    "name": "Metatype",
-                    "printedName": "DashX.DashXSubscriptionEnd.Type",
-                    "children": [
-                      {
-                        "kind": "TypeNominal",
-                        "name": "DashXSubscriptionEnd",
-                        "printedName": "DashX.DashXSubscriptionEnd",
-                        "usr": "s:5DashX0A16XSubscriptionEndO"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ],
-            "declKind": "EnumElement",
-            "usr": "s:5DashX0A16XSubscriptionEndO12unsubscribedyA2CmF",
-            "mangledName": "$s5DashX0A16XSubscriptionEndO12unsubscribedyA2CmF",
-            "moduleName": "DashX"
-          },
-          {
             "kind": "Function",
             "name": "==",
             "printedName": "==(_:_:)",
