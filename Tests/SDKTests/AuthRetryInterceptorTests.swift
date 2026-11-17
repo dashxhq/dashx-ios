@@ -165,4 +165,33 @@ final class AuthRetryInterceptorTests: XCTestCase {
         XCTAssertEqual(outcome.messages, [Self.expiredMessage])
         XCTAssertTrue(outcome.onMain)
     }
+
+    /// Another request's rejection dropped the token first: the refresh reports the credentials
+    /// replaced, as the client does once the token epoch has moved.
+    private func tokenAlreadyDropped(_ account: Account) -> Bool {
+        account.set(token: nil, version: CredentialVersion(sessionGeneration: 1, tokenEpoch: 2))
+        return true
+    }
+
+    func testChatRequestRejectedAfterAnotherRequestDroppedTheTokenIsNotRetried() {
+        let drops = Atomic<Int>(0)
+        let outcome = runRejectedRequest(
+            account: Account(),
+            context: DashXSessionRequestContext(sessionGeneration: 1),
+            refresh: tokenAlreadyDropped,
+            dropExpiredToken: dropToken(drops)
+        )
+
+        XCTAssertEqual(drops.value, 0, "the first rejection already dropped it")
+        XCTAssertEqual(outcome.passes, 1, "a chat operation with no token left to carry is not sent again")
+        XCTAssertEqual(outcome.messages, [Self.expiredMessage], "the caller hears the expiry")
+        XCTAssertTrue(outcome.onMain, "the retry pass runs inline on the provider's thread")
+    }
+
+    func testOtherRequestRejectedAfterAnotherRequestDroppedTheTokenRetriesOnThePublicKey() {
+        let outcome = runRejectedRequest(account: Account(), refresh: tokenAlreadyDropped)
+
+        XCTAssertEqual(outcome.passes, 2, "the public key alone still carries it")
+        XCTAssertTrue(outcome.onMain)
+    }
 }

@@ -59,7 +59,8 @@ struct AuthRetryAdmission {
         case proceed
         /// The identity session changed since the first pass.
         case sessionEnded
-        /// The public-key fallback lost the account the drop left; the rejection stands.
+        /// The public-key fallback lost the account the drop left, or a chat request has no token
+        /// left to carry; the rejection stands.
         case rejectionStands
     }
 
@@ -71,11 +72,14 @@ struct AuthRetryAdmission {
     /// previous identity's request.
     var fallbackCredentials: CredentialVersion?
 
-    func verdict(token: String?, version: CredentialVersion) -> Verdict {
+    /// `requiresToken` marks a chat request, which the server refuses without an identity token:
+    /// when another request's rejection dropped the token meanwhile, the retry has nothing to carry.
+    func verdict(token: String?, version: CredentialVersion, requiresToken: Bool = false) -> Verdict {
         if let fallbackCredentials {
             return token == nil && version == fallbackCredentials ? .proceed : .rejectionStands
         }
-        return version.sessionGeneration == firstPassGeneration ? .proceed : .sessionEnded
+        guard version.sessionGeneration == firstPassGeneration else { return .sessionEnded }
+        return requiresToken && token == nil ? .rejectionStands : .proceed
     }
 }
 
@@ -102,8 +106,8 @@ final class AuthRetryInterceptor: ApolloInterceptor {
     private let lock = NSLock()
     private var attempted = false
     private var admission = AuthRetryAdmission()
-    /// The first pass's rejection, answered when the fallback retry may not go out.
-    private var fallbackRejection: Any?
+    /// The first pass's rejection, answered when the retry may not go out.
+    private var firstRejection: Any?
 
     init(
         refreshToken: @escaping RefreshToken = { DashXClient.instance.awaitTokenRefresh(expected: $0, completion: $1) },
@@ -144,8 +148,12 @@ final class AuthRetryInterceptor: ApolloInterceptor {
         lock.lock()
         let isRetryPass = attempted
         if !isRetryPass { admission.firstPassGeneration = generationAtStart }
-        let verdict = isRetryPass ? admission.verdict(token: tokenAtStart, version: versionAtStart) : .proceed
-        let rejection = fallbackRejection
+        let verdict = isRetryPass
+            ? admission.verdict(
+                token: tokenAtStart, version: versionAtStart,
+                requiresToken: request.context is DashXSessionRequestContext)
+            : .proceed
+        let rejection = firstRejection
         lock.unlock()
         switch verdict {
         case .proceed:
@@ -169,7 +177,7 @@ final class AuthRetryInterceptor: ApolloInterceptor {
             }
             let errors = (graphQLResult.errors ?? []).map(AuthRetryPolicy.ErrorInfo.init)
             guard AuthRetryPolicy.isPreExecutionUnauthorized(hasData: graphQLResult.data != nil, errors: errors),
-                  self.claimAttempt()
+                  self.claimAttempt(rejection: graphQLResult)
             else {
                 completion(result)
                 return
@@ -195,7 +203,7 @@ final class AuthRetryInterceptor: ApolloInterceptor {
                     if AuthRetryPolicy.isExpired(errors: errors),
                        let dropped = self.dropExpiredToken(tokenAtStart, generationAtStart),
                        !(request.context is DashXSessionRequestContext) {
-                        self.armFallback(dropped, rejection: graphQLResult)
+                        self.armFallback(dropped)
                         chain.retry(request: request, completion: completion)
                     } else {
                         returnRejection()
@@ -217,19 +225,19 @@ final class AuthRetryInterceptor: ApolloInterceptor {
         return bound.sessionGeneration != sessionGeneration
     }
 
-    private func armFallback(_ credentials: CredentialVersion, rejection: Any) {
+    private func armFallback(_ credentials: CredentialVersion) {
         lock.lock()
         defer { lock.unlock() }
         admission.fallbackCredentials = credentials
-        fallbackRejection = rejection
     }
 
     /// One retry per request chain; the retried pass must pass its own result through.
-    private func claimAttempt() -> Bool {
+    private func claimAttempt(rejection: Any) -> Bool {
         lock.lock()
         defer { lock.unlock() }
         if attempted { return false }
         attempted = true
+        firstRejection = rejection
         return true
     }
 }

@@ -431,6 +431,7 @@ final class ConversationSession {
     private func retryFailedInitialSync() {
         guard initialSyncFailed, !isEnded else { return }
         DashXLog.d(tag: Self.tag, "Retrying the failed initial load of \(key.conversationId) for a reopened lease")
+        syncAttempts = 0
         startSync()
     }
 

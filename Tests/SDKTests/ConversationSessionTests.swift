@@ -314,6 +314,26 @@ final class ConversationSessionTests: XCTestCase {
         session.endSession()
     }
 
+    func testReplacementLeaseAfterExhaustedRetriesRetriesATransientFailureAgain() {
+        let backend = FakeBackend()
+        backend.count.value = 1
+        backend.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        // Four exhaust the first load's retries; the fifth meets the reopened load.
+        backend.summarizeFailures.value = 5
+
+        let session = ConversationSession(key: key, backend: backend)
+        let original = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(timeout: 12, what: "initial load gave up") { self.errorOf(original) != nil }
+        XCTAssertEqual(backend.summarizeCalls.value, 4)
+
+        let replacement = session.newLease()!
+        original.close()
+        awaitUntil(what: "ready after the reopened load's retry") { self.readyIds(replacement) == ["m1"] }
+        XCTAssertEqual(backend.summarizeCalls.value, 6, "the transient failure after reopening was retried")
+        session.endSession()
+    }
+
     func testReplacementLeaseAwaitingTheFirstAcknowledgementFetchesNothing() {
         let backend = FakeBackend()
         let session = ConversationSession(key: key, backend: backend)

@@ -72,6 +72,18 @@ final class AuthRetryPolicyTests: XCTestCase {
         XCTAssertEqual(admission.verdict(token: "next-user", version: CredentialVersion(sessionGeneration: 4, tokenEpoch: 0)), .sessionEnded)
     }
 
+    func testAChatRetryNeedsATokenToCarry() {
+        let admission = AuthRetryAdmission(firstPassGeneration: 3)
+        let dropped = CredentialVersion(sessionGeneration: 3, tokenEpoch: 9)
+        XCTAssertEqual(admission.verdict(token: nil, version: dropped, requiresToken: true), .rejectionStands)
+        XCTAssertEqual(admission.verdict(token: "refreshed", version: dropped, requiresToken: true), .proceed)
+        XCTAssertEqual(admission.verdict(token: nil, version: dropped), .proceed, "other requests fall back to the public key")
+        XCTAssertEqual(
+            admission.verdict(token: nil, version: CredentialVersion(sessionGeneration: 4, tokenEpoch: 0), requiresToken: true),
+            .sessionEnded
+        )
+    }
+
     func testThePublicKeyFallbackRunsOnlyOnTheAccountTheDropLeft() {
         let dropped = CredentialVersion(sessionGeneration: 4, tokenEpoch: 2)
         let admission = AuthRetryAdmission(firstPassGeneration: 3, fallbackCredentials: dropped)
