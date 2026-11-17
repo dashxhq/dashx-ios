@@ -156,8 +156,16 @@ extension DashXClient {
             _boundProvider = bound
             let superseded = _tokenLoadInFlight
             _tokenLoadInFlight = nil
+            // The rejection is read from the record of it as well as the published state: a
+            // failure is published as `.connecting` while a load is in flight, and stays so until
+            // the runtime publishes again, so a registration landing then must still ask this
+            // provider.
             let authFailed: Bool
-            if case .authenticationFailed = _connectionState { authFailed = true } else { authFailed = false }
+            if case .authenticationFailed = _connectionState {
+                authFailed = true
+            } else {
+                authFailed = _realtimeRejectedCredentials == _account.credentialVersion
+            }
             let hasToken = _account.identityToken != nil
             let awaitingToken = !hasToken || authFailed
             // A cached token under authenticationFailed IS the rejected token. A load the previous
@@ -346,6 +354,7 @@ extension DashXClient {
             completion(.superseded)
             return
         }
+        _realtimeRejectedCredentials = credentials
         guard let bound = _boundProvider, bound.uid == _account.uid else {
             setConnectionStateLocked(.authenticationFailed(cause: nil))
             stateLock.unlock()

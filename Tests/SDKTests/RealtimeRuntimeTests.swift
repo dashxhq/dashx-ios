@@ -46,6 +46,8 @@ private final class Harness {
     let authRefreshSucceeds = Atomic<Bool>(false)
     /// Custom hook: receives the completion and decides when (and what) to answer.
     let onAuthRejectedHook = Atomic<((@escaping (AuthRefreshOutcome) -> Void) -> Void)?>(nil)
+    /// Whether the client has a token load in flight for the current credentials.
+    let refreshInFlight = Atomic<Bool>(false)
     let url = Atomic<URL?>(URL(string: "wss://realtime.test/socket"))
     /// What the client reports when there is no URL; nil models a provider load in flight.
     let unmet = Atomic<DashXClientError?>(nil)
@@ -85,15 +87,16 @@ private final class Harness {
             },
             publishState: { status in
                 // Resolved as the client does, against the harness's credentials.
-                guard let harness = harnessBox.value else { return }
+                guard let harness = harnessBox.value else { return nil }
                 let endpointAvailable = harness.url.value != nil
-                if let state = status.resolve(
+                let state = status.resolve(
                     endpointAvailable: endpointAvailable,
                     awaitingToken: !endpointAvailable && harness.unmet.value == nil,
+                    tokenLoadInFlight: harness.refreshInFlight.value,
                     current: harness.credentials
-                ) {
-                    harness.states.append(state)
-                }
+                )
+                if let state { harness.states.append(state) }
+                return state
             },
             initialForeground: initialForeground,
             socketFactory: { url, listener in
@@ -434,6 +437,180 @@ final class RealtimeRuntimeTests: XCTestCase {
         XCTAssertEqual(harness.authRejections.value, 1, "no second refresh")
     }
 
+    func testTerminal4401PublishesConnectingWhileItsRefreshIsPending() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in
+            harness.refreshInFlight.value = true // the client claimed a load for the refresh
+            pendingCompletion.value = completion
+        }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+        awaitUntil(what: "connecting") { harness.lastState == .connecting }
+
+        // The client installs the token and recycles the socket before the hook answers.
+        harness.refreshInFlight.value = false
+        harness.epoch.value += 1
+        harness.identityChanged(fromAuthRefresh: true)
+        pendingCompletion.value?(.refreshed)
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        harness.open(1)
+        awaitUntil(what: "connected again") { harness.lastState == .connected }
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed), "a recovered expiry is never an authentication failure")
+    }
+
+    func testTerminal4401PublishesAuthenticationFailedOnceItsRefreshFails() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in
+            harness.refreshInFlight.value = true
+            pendingCompletion.value = completion
+        }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+        awaitUntil(what: "connecting") { harness.lastState == .connecting }
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed))
+
+        harness.refreshInFlight.value = false // the load released its slot before answering
+        pendingCompletion.value?(.failed)
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+    }
+
+    func testTerminal4401WithNoRefreshToStartNeverPublishesConnecting() {
+        let harness = Harness()
+        // No provider bound: the hook answers `.failed` at once and no load is ever in flight.
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+        settle(0.2)
+        let afterConnected = harness.states.value.drop { $0 != .connected }.dropFirst()
+        XCTAssertFalse(afterConnected.isEmpty)
+        XCTAssertTrue(afterConnected.allSatisfy(isAuthFailed), "no recovery was under way: \(Array(afterConnected))")
+    }
+
+    func testTerminal4401FailedRefreshDefersToTheLoadThatReplacedIt() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in
+            harness.refreshInFlight.value = true
+            pendingCompletion.value = completion
+        }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+
+        // The provider's load failed, and a provider registered since is already refreshing the
+        // same credentials when that failure reaches the runtime: the slot is still taken.
+        pendingCompletion.value?(.failed)
+        settle(0.3)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "the replacement load decides")
+        XCTAssertEqual(harness.lastState, .connecting)
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed))
+
+        // The replacement fails too: that is the terminal outcome.
+        harness.refreshInFlight.value = false
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+    }
+
+    func testAFailureQueuedBeforeAReplacementLoadNeverPublishesOverIt() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED") // the default hook answers `.failed`
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+
+        // A provider registers and claims a load. Whatever the runtime publishes next, a new
+        // subscriber's state among it, is resolved in the hold that claimed the load.
+        harness.refreshInFlight.value = true
+        harness.recoveryStarts.value = true
+        harness.subscribe("c2")
+        awaitUntil(what: "connecting") { harness.lastState == .connecting }
+        settle(0.2)
+        XCTAssertEqual(harness.lastState, .connecting, "the stored failure does not come back over the refresh")
+    }
+
+    func testTerminal4403DuringATokenLoadIsFinalForStateAndSubscribersAlike() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        // A request elsewhere is refreshing the token; no token fixes a permission problem.
+        harness.refreshInFlight.value = true
+        harness.close(0, code: 4403, reason: "FORBIDDEN")
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+        settle(0.2)
+        let afterConnected = harness.states.value.drop { $0 != .connected }.dropFirst()
+        XCTAssertTrue(afterConnected.allSatisfy(isAuthFailed), "never connecting: \(Array(afterConnected))")
+    }
+
+    func testASpent4401WithALoadInFlightWaitsForThatLoad() {
+        let harness = Harness()
+        harness.authRefreshSucceeds.value = true
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "refresh hook") { harness.authRejections.value == 1 }
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "socket 2") { harness.sockets.count == 2 }
+        harness.open(1)
+
+        // The refreshed token is rejected too, while another load is already under way.
+        harness.refreshInFlight.value = true
+        harness.close(1, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "connecting") { harness.lastState == .connecting }
+        settle(0.3)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "the load in flight decides")
+        XCTAssertEqual(harness.authRejections.value, 1, "the spent attempt asks for no second refresh")
+
+        harness.refreshInFlight.value = false
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+    }
+
+    func testAProviderFailureWithAnotherLoadInFlightFailsNoSubscriber() {
+        let harness = Harness(url: nil) // no token yet: the first load is bringing it
+        harness.subscribe("c1")
+        settle(0.2)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty)
+
+        // The first load failed, and a chat call has already started the next one.
+        harness.refreshInFlight.value = true
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        settle(0.3)
+        XCTAssertTrue(harness.subscribeErrors.value.isEmpty, "the load in flight decides")
+        XCTAssertFalse(harness.states.value.contains(where: isAuthFailed))
+
+        harness.refreshInFlight.value = false
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+    }
+
     func testTerminal4401RefreshFailingAfterBackgroundingStillFailsWaitingSubscribers() {
         let harness = Harness()
         let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
@@ -769,19 +946,29 @@ final class RealtimeRuntimeTests: XCTestCase {
         let olderToken = CredentialVersion(sessionGeneration: 2, tokenEpoch: 4)
         let olderIdentity = CredentialVersion(sessionGeneration: 1, tokenEpoch: 5)
         for replaced in [olderToken, olderIdentity] {
-            XCTAssertNil(RealtimeStatus.authenticationFailed(cause: nil, credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, current: current))
-            XCTAssertNil(RealtimeStatus.connected(credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, current: current))
-            XCTAssertNil(RealtimeStatus.connecting(credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, current: current))
+            XCTAssertNil(RealtimeStatus.authenticationFailed(cause: nil, credentials: replaced, tokenCanRecover: true).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current))
+            XCTAssertNil(RealtimeStatus.connected(credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current))
+            XCTAssertNil(RealtimeStatus.connecting(credentials: replaced).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current))
         }
-        XCTAssertEqual(RealtimeStatus.authenticationFailed(cause: nil, credentials: current).resolve(endpointAvailable: true, awaitingToken: false, current: current), .authenticationFailed(cause: nil))
-        XCTAssertEqual(RealtimeStatus.connected(credentials: current).resolve(endpointAvailable: true, awaitingToken: false, current: current), .connected)
+        XCTAssertEqual(RealtimeStatus.authenticationFailed(cause: nil, credentials: current, tokenCanRecover: true).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current), .authenticationFailed(cause: nil))
+        XCTAssertEqual(
+            RealtimeStatus.authenticationFailed(cause: nil, credentials: current, tokenCanRecover: true).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: true, current: current),
+            .connecting,
+            "a failure is not final while a load is refreshing the same credentials"
+        )
+        XCTAssertEqual(
+            RealtimeStatus.authenticationFailed(cause: nil, credentials: current, tokenCanRecover: false).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: true, current: current),
+            .authenticationFailed(cause: nil),
+            "a failure no token fixes stands whatever is loading"
+        )
+        XCTAssertEqual(RealtimeStatus.connected(credentials: current).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current), .connected)
 
         let waiting = RealtimeStatus.disconnected(hasSubscriptions: true)
-        XCTAssertEqual(waiting.resolve(endpointAvailable: true, awaitingToken: false, current: current), .connecting)
-        XCTAssertEqual(waiting.resolve(endpointAvailable: false, awaitingToken: true, current: current), .connecting)
-        XCTAssertEqual(waiting.resolve(endpointAvailable: false, awaitingToken: false, current: current), .idle)
+        XCTAssertEqual(waiting.resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current), .connecting)
+        XCTAssertEqual(waiting.resolve(endpointAvailable: false, awaitingToken: true, tokenLoadInFlight: false, current: current), .connecting)
+        XCTAssertEqual(waiting.resolve(endpointAvailable: false, awaitingToken: false, tokenLoadInFlight: false, current: current), .idle)
         XCTAssertEqual(
-            RealtimeStatus.disconnected(hasSubscriptions: false).resolve(endpointAvailable: true, awaitingToken: false, current: current),
+            RealtimeStatus.disconnected(hasSubscriptions: false).resolve(endpointAvailable: true, awaitingToken: false, tokenLoadInFlight: false, current: current),
             .idle
         )
     }

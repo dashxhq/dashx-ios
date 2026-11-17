@@ -168,21 +168,24 @@ extension DashXClient {
     }
 
     /// Resolves the runtime's status against the credentials in the same lock hold that writes the
-    /// state, so it never pairs one identity's runtime facts with another's credentials.
-    private func publishConnectionState(from runtime: RealtimeRuntime, _ status: RealtimeStatus) {
+    /// state, so it never pairs one identity's runtime facts with another's credentials. Returns
+    /// the resolved state, which the runtime's subscriber errors follow.
+    private func publishConnectionState(from runtime: RealtimeRuntime, _ status: RealtimeStatus) -> DashXConnectionState? {
         stateLock.lock()
         guard _realtimeRuntime === runtime else {
             stateLock.unlock()
-            return
+            return nil
         }
         let endpointAvailable = realtimeEndpointLocked() != nil
         let state = status.resolve(
             endpointAvailable: endpointAvailable,
             awaitingToken: !endpointAvailable && realtimeUnmetPrerequisiteLocked() == nil,
+            tokenLoadInFlight: _tokenLoadInFlight != nil,
             current: _account.credentialVersion
         )
         if let state { setConnectionStateLocked(state) }
         stateLock.unlock()
+        return state
     }
 
     /// For states the client owns itself: no runtime yet, or auth failures.

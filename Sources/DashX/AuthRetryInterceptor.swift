@@ -154,8 +154,8 @@ final class AuthRetryInterceptor: ApolloInterceptor {
             chain.handleErrorAsync(DashXClientError.sessionEnded, request: request, response: response, completion: completion)
             return
         case .rejectionStands:
-            if let rejection = rejection as? Result<GraphQLResult<Operation.Data>, any Error> {
-                completion(rejection)
+            if let rejection = rejection as? GraphQLResult<Operation.Data> {
+                chain.returnValueAsync(for: request, value: rejection, completion: completion)
             } else {
                 chain.handleErrorAsync(DashXClientError.sessionEnded, request: request, response: response, completion: completion)
             }
@@ -178,23 +178,32 @@ final class AuthRetryInterceptor: ApolloInterceptor {
                 completion(result)
                 return
             }
-            // Completes only after the new token is installed, so the retry picks it up.
+            // Completes only after the new token is installed, so the retry picks it up. The
+            // refresh answers on the provider's thread or the timeout queue, and a retry pass runs
+            // inline on its caller's: a rejection that stands goes back through the chain, which
+            // delivers it on the callback queue.
+            let returnRejection = {
+                chain.returnValueAsync(for: request, value: graphQLResult, completion: completion)
+            }
             self.refreshToken(versionAtStart) { refreshed in
                 if !refreshed {
                     // With no provider bound an expired token would fail every call, so drop it and
                     // retry once on the public key alone. A bound provider that failed keeps the
-                    // token: the next rejection asks it again.
+                    // token: the next rejection asks it again. A session-bound request is a chat
+                    // operation, which the server refuses without an identity token: its token is
+                    // dropped all the same, and the rejection stands unsent.
                     if AuthRetryPolicy.isExpired(errors: errors),
-                       let dropped = self.dropExpiredToken(tokenAtStart, generationAtStart) {
-                        self.armFallback(dropped, rejection: result)
+                       let dropped = self.dropExpiredToken(tokenAtStart, generationAtStart),
+                       !(request.context is DashXSessionRequestContext) {
+                        self.armFallback(dropped, rejection: graphQLResult)
                         chain.retry(request: request, completion: completion)
                     } else {
-                        completion(result)
+                        returnRejection()
                     }
                     return
                 }
                 guard self.credentials().version.sessionGeneration == generationAtStart else {
-                    completion(result)
+                    returnRejection()
                     return
                 }
                 chain.retry(request: request, completion: completion)

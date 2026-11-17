@@ -210,6 +210,39 @@ final class TokenProviderRecoveryTests: XCTestCase {
         awaitUntil(what: "recovered to idle") { self.client.connectionState == .idle }
     }
 
+    func testRegisteringProviderAfterARealtimeRejectionForcesARefreshWhateverTheStateSays() {
+        client.setIdentity(uid: uid, token: "rejected-token")
+        client.onRealtimeAuthRejected(credentials: client.account.credentialVersion) { _ in }
+        // The runtime reports `.connecting` while a 4401's refresh is pending and until its
+        // failure is published; a registration landing then sees no failure in the state.
+        client.publishDirect(.connecting)
+
+        let seenForceRefresh = Atomic<Bool?>(nil)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { forceRefresh, callback in
+            seenForceRefresh.value = forceRefresh
+            callback.onToken("fresh-token")
+        })
+
+        awaitUntil(what: "fresh token installed") { self.client.account.identityToken == "fresh-token" }
+        XCTAssertEqual(seenForceRefresh.value, true, "the held token is the rejected one")
+    }
+
+    func testARealtimeRejectionOfAReplacedTokenDoesNotForceALaterRegistration() {
+        client.setIdentity(uid: uid, token: "rejected-token")
+        client.onRealtimeAuthRejected(credentials: client.account.credentialVersion) { _ in }
+        client.setIdentity(uid: uid, token: "next-token")
+
+        let calls = Atomic<Int>(0)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            _ = calls.increment()
+            callback.onToken("unwanted-token")
+        })
+
+        settle(0.3)
+        XCTAssertEqual(calls.value, 0, "the rejection belonged to the token that was replaced")
+        XCTAssertEqual(client.account.identityToken, "next-token")
+    }
+
     func testExplicitTokenSupersedesAnInFlightLoad() {
         client.setIdentity(uid: uid, token: "t0")
         let pending = Atomic<DashXTokenCallback?>(nil)

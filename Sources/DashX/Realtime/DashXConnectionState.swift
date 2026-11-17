@@ -6,7 +6,8 @@ public enum DashXConnectionState {
     /// Configured; nothing subscribed. No socket by design.
     case idle
 
-    /// Connect attempt in flight, retry backoff, or an identity-token load in flight.
+    /// Connect attempt in flight, retry backoff, or an identity-token load in flight, including
+    /// the refresh that follows a rejected token.
     case connecting
 
     /// Socket open. Individual channels may still be awaiting acknowledgement.

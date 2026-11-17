@@ -149,13 +149,14 @@ private final class RuntimeBackedBackend: ChatSessionBackend {
             onAuthRejected: { [authRejected] _, completion in authRejected.value(completion) },
             publishState: { [states, url, unmet, credentials] status in
                 let endpointAvailable = url.value != nil
-                if let state = status.resolve(
+                let state = status.resolve(
                     endpointAvailable: endpointAvailable,
                     awaitingToken: !endpointAvailable && unmet.value == nil,
+                    tokenLoadInFlight: false,
                     current: credentials.value
-                ) {
-                    states.append(state)
-                }
+                )
+                if let state { states.append(state) }
+                return state
             },
             initialForeground: true,
             socketFactory: { [connections] _, listener in

@@ -69,8 +69,9 @@ struct CredentialVersion: Equatable {
 /// resolved by the client under its own lock, so a published state never pairs one identity's
 /// runtime facts with another identity's credentials.
 enum RealtimeStatus {
-    /// `credentials` were rejected or could not be loaded.
-    case authenticationFailed(cause: Error?, credentials: CredentialVersion)
+    /// `credentials` were rejected or could not be loaded. `tokenCanRecover` is whether a new
+    /// token would fix it: a 4401 or a failed load, not any other terminal close.
+    case authenticationFailed(cause: Error?, credentials: CredentialVersion, tokenCanRecover: Bool)
     /// A socket carrying `credentials`.
     case connected(credentials: CredentialVersion)
     case connecting(credentials: CredentialVersion)
@@ -81,11 +82,22 @@ enum RealtimeStatus {
 
     /// Nil drops a verdict or socket for credentials other than `current`, whether an earlier
     /// identity's or an older token of this one: the change that replaced them is queued and
-    /// publishes in its turn.
-    func resolve(endpointAvailable: Bool, awaitingToken: Bool, current: CredentialVersion) -> DashXConnectionState? {
+    /// publishes in its turn. `tokenLoadInFlight` is whether a provider load is under way for
+    /// `current`: a failure a token can fix is final only once none is, so a 4401 whose refresh
+    /// is pending, or a failed refresh a newly registered provider has taken over, resolves to
+    /// `.connecting`. A failure no token fixes stands whatever is loading. The client reads it in
+    /// the lock hold that claims a load, so a failure never lands on top of a refresh that has
+    /// started.
+    func resolve(
+        endpointAvailable: Bool,
+        awaitingToken: Bool,
+        tokenLoadInFlight: Bool,
+        current: CredentialVersion
+    ) -> DashXConnectionState? {
         switch self {
-        case .authenticationFailed(let cause, let credentials):
-            return credentials == current ? .authenticationFailed(cause: cause) : nil
+        case .authenticationFailed(let cause, let credentials, let tokenCanRecover):
+            guard credentials == current else { return nil }
+            return tokenCanRecover && tokenLoadInFlight ? .connecting : .authenticationFailed(cause: cause)
         case .connected(let credentials):
             return credentials == current ? .connected : nil
         case .connecting(let credentials):
@@ -142,7 +154,10 @@ final class RealtimeRuntime {
     /// recover on its own; true when a load is under way. Its outcome comes back as an identity
     /// change or as unavailable credentials.
     private let recoverCredentials: (_ credentials: CredentialVersion) -> Bool
-    private let publishStateSink: (RealtimeStatus) -> Void
+    /// Returns the state the status resolved to, nil when it was dropped. A credential failure is
+    /// reported to subscribers only when this is `.authenticationFailed`: one decision, taken
+    /// under the client's lock, serves the connection state and the conversations alike.
+    private let publishStateSink: (RealtimeStatus) -> DashXConnectionState?
     private let socketFactory: RealtimeSocketFactory
     private let ackTimeout: TimeInterval
 
@@ -185,7 +200,7 @@ final class RealtimeRuntime {
         currentCredentials: @escaping () -> CredentialVersion,
         onAuthRejected: @escaping (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void,
         recoverCredentials: @escaping (_ credentials: CredentialVersion) -> Bool = { _ in false },
-        publishState: @escaping (RealtimeStatus) -> Void,
+        publishState: @escaping (RealtimeStatus) -> DashXConnectionState?,
         initialForeground: Bool,
         socketFactory: RealtimeSocketFactory? = nil,
         ackTimeout: TimeInterval = RealtimeRuntime.ackTimeout
@@ -462,7 +477,9 @@ final class RealtimeRuntime {
                         self.enqueue { self.handleAuthRefreshSkipped(rejected: rejected) }
                     }
                 }
-            } else {
+            } else if publishFailure() {
+                // Decided with the published state: a spent 4401 with a load already in flight
+                // waits for that load, and a close no token fixes is final at once.
                 failSubscribers(code: code, reason: reason)
             }
         } else {
@@ -487,8 +504,10 @@ final class RealtimeRuntime {
         credentialFailureCause = cause
         authVerdictCredentials = credentials
         // Without a socket no ack or deadline is coming; a live socket's own acks still decide.
-        if socket == nil && connectingSocket == nil { failSubscribers(Self.credentialsUnavailableError) }
-        publishState()
+        // Not while another load is already bringing a token: its outcome decides.
+        if publishFailure() && socket == nil && connectingSocket == nil {
+            failSubscribers(Self.credentialsUnavailableError)
+        }
     }
 
     private static let credentialsUnavailableError = DashXClientError.subscriptionFailed(
@@ -502,7 +521,23 @@ final class RealtimeRuntime {
         guard credentialGeneration == self.credentialGeneration, authFailed,
               rejected == currentCredentials()
         else { return }
+        // The load that failed may no longer be the one refreshing these credentials: a provider
+        // registered since starts its own. Recovery is then still under way and nothing is failed;
+        // that load's install reconnects, and its failure arrives as unavailable credentials.
+        guard publishFailure() else {
+            DashXLog.d(tag: Self.tag, "A failed token refresh defers to the load that replaced it")
+            return
+        }
         failSubscribers(code: Self.closeCodeUnauthorized, reason: "token refresh did not recover")
+    }
+
+    /// Publishes the stored failure and reports whether it stands. The client resolves it in the
+    /// lock hold a provider registration claims its load in, so the published state and the
+    /// subscribers' errors follow one decision: a registration either came first, and neither
+    /// reports a failure, or comes after a failure both have reported.
+    private func publishFailure() -> Bool {
+        if case .authenticationFailed? = publishState() { return true }
+        return false
     }
 
     /// The credentials were replaced before the client could refresh them, so nothing was spent:
@@ -538,7 +573,7 @@ final class RealtimeRuntime {
         subscriptions.removeAll()
         firstAckGeneration.removeAll()
         pendingAcks.removeAll()
-        publishStateSink(.ended)
+        _ = publishStateSink(.ended)
     }
 
     /// Whether the stored auth verdict belongs to the credentials current now.
@@ -629,10 +664,15 @@ final class RealtimeRuntime {
         }
     }
 
-    private func publishState() {
+    @discardableResult
+    private func publishState() -> DashXConnectionState? {
         let status: RealtimeStatus
         if authFailed || credentialsUnavailable {
-            status = .authenticationFailed(cause: credentialFailureCause, credentials: authVerdictCredentials)
+            status = .authenticationFailed(
+                cause: credentialFailureCause,
+                credentials: authVerdictCredentials,
+                tokenCanRecover: authFailed ? authFailureIsUnauthorized : true
+            )
         } else if socket != nil {
             status = .connected(credentials: socketCredentials)
         } else if connectingSocket != nil {
@@ -642,7 +682,7 @@ final class RealtimeRuntime {
         } else {
             status = .disconnected(hasSubscriptions: !subscriptions.isEmpty)
         }
-        publishStateSink(status)
+        return publishStateSink(status)
     }
 
     private final class ConnectionListener: RealtimeSocketListener {

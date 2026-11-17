@@ -93,6 +93,7 @@
 		AEB5ED280DCBC5C72BBC5B6C /* SystemContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4610DCAE227CF4FCC18CEB9A /* SystemContext.swift */; };
 		AF2BFABDE7E5E1063E7112B6 /* DashXClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC06EF3F16C15FF6862EA8C6 /* DashXClient.swift */; };
 		AFD4F846005EDA81D5CFD9C2 /* IdentifyAccountMutation.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87537B3BCC7C5CF8872E1FC9 /* IdentifyAccountMutation.graphql.swift */; };
+		B13E8C61D8379966AB94FB40 /* AuthRetryInterceptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 079E3711AA369781B4B9B5A7 /* AuthRetryInterceptorTests.swift */; };
 		B1D3EC3EC333E18A6F00382E /* SystemContextScreenInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED707184539A7B20614CFD40 /* SystemContextScreenInput.graphql.swift */; };
 		B23842FD8DF2A7425366E531 /* SystemContextLocationInput.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B11F11D8B276D44417093C /* SystemContextLocationInput.graphql.swift */; };
 		B36D17765A2D76CF4FFFD3CD /* AssetQuery.graphql.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599D3A5D17B8BB53147D93E9 /* AssetQuery.graphql.swift */; };
@@ -218,6 +219,7 @@
 /* Begin PBXFileReference section */
 		01267ED6350A0CC2A9347B25 /* ContactKind.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactKind.graphql.swift; sourceTree = "<group>"; };
 		052C2F0E0C20906696BFBDE1 /* TrackMessageResponse.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMessageResponse.graphql.swift; sourceTree = "<group>"; };
+		079E3711AA369781B4B9B5A7 /* AuthRetryInterceptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRetryInterceptorTests.swift; sourceTree = "<group>"; };
 		097DAE886334C1329E9F5C90 /* SystemContextAppInput.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemContextAppInput.graphql.swift; sourceTree = "<group>"; };
 		09BAC3918FADCA31DF4347E9 /* Account.graphql.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.graphql.swift; sourceTree = "<group>"; };
 		0A4969845F44F23610A6B667 /* ModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelsTests.swift; sourceTree = "<group>"; };
@@ -446,6 +448,7 @@
 		2C43685924536A2FD21099DF /* SDKTests */ = {
 			isa = PBXGroup;
 			children = (
+				079E3711AA369781B4B9B5A7 /* AuthRetryInterceptorTests.swift */,
 				8DDE90B35D89749D0CA19C86 /* AuthRetryPolicyTests.swift */,
 				7C476C862D474E6BAE4C08C2 /* ChatSessionGuardTests.swift */,
 				5F521BAB32990E4425790BDA /* ChatTestSupport.swift */,
@@ -1072,6 +1075,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B13E8C61D8379966AB94FB40 /* AuthRetryInterceptorTests.swift in Sources */,
 				03EDC782F35382F63B78200B /* AuthRetryPolicyTests.swift in Sources */,
 				80AEBB98683AA8426950E683 /* ChatSessionGuardTests.swift in Sources */,
 				00C444A47673E856FE7DFE3D /* ChatTestSupport.swift in Sources */,

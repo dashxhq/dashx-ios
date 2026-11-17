@@ -84,7 +84,8 @@ server-only: the host's backend creates the conversation and returns the
   only once the identity has ended, so a conversation reopened from `setOnTerminated` belongs to
   whichever identity follows. The public-key retry
   goes out only while the account the drop left is unchanged and still has no token; otherwise
-  the original rejection is returned.
+  the original rejection is returned. A chat operation needs an identity token, so it is not
+  retried: its expired token is dropped and the rejection is returned.
 - A first identity connects conversations already waiting for one, whether it carries a
   uid, a token or both; a later token change keeps them only under the same non-nil uid.
   Switching uid and `reset()` end open chat sessions (leases receive `.error(.sessionEnded)`) and

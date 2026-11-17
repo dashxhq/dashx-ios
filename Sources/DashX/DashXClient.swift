@@ -198,6 +198,9 @@ public class DashXClient {
     // Guarded by `stateLock` unless noted.
     var _boundProvider: BoundTokenProvider?
     var _tokenLoadInFlight: TokenLoad?
+    /// Credentials whose token the realtime server rejected with a 4401. While they are still the
+    /// current ones the held token is known bad, whatever the published connection state says.
+    var _realtimeRejectedCredentials: CredentialVersion?
     var _realtimeBaseURI: String?
     var _realtimeRuntime: RealtimeRuntime?
     /// Test seam; nil uses the URLSession socket.
