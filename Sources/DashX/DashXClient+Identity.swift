@@ -136,80 +136,122 @@ extension DashXClient {
 
     /// Registers a token provider for `uid`; it is asked again, with `forceRefresh`, after a rejection.
     public func setIdentityTokenProvider(uid: String, provider: DashXTokenProvider) {
-        let current = account
-        let bound = BoundTokenProvider(uid: uid, provider: provider)
+        identityTransition { afterwards in
+            let current = account
+            let bound = BoundTokenProvider(uid: uid, provider: provider)
 
-        // Each branch claims its load in the same lock hold that commits the identity: a realtime
-        // state resolved in between would otherwise see neither a token nor a pending load.
-        if current.uid == nil && current.identityToken == nil {
-            stateLock.lock()
-            _boundProvider = bound
-            _account.uid = uid
-            _account.identityToken = nil
-            persistIdentityLocked()
-            let claimed = claimTokenLoadLocked(bound: bound, forceRefresh: false)
-            stateLock.unlock()
-            publishDirect(.connecting)
-            claimed.launch?()
-        } else if current.uid == uid {
-            stateLock.lock()
-            _boundProvider = bound
-            let superseded = _tokenLoadInFlight
-            _tokenLoadInFlight = nil
-            // The rejection is read from the record of it as well as the published state: a
-            // failure is published as `.connecting` while a load is in flight, and stays so until
-            // the runtime publishes again, so a registration landing then must still ask this
-            // provider.
-            let authFailed: Bool
-            if case .authenticationFailed = _connectionState {
-                authFailed = true
+            // Each branch claims its load and publishes `.connecting` in the same lock hold that commits
+            // the identity: a realtime state resolved in between would otherwise see neither a token
+            // nor a pending load, and a later identity change's state would be overwritten.
+            if current.uid == nil && current.identityToken == nil {
+                stateLock.lock()
+                _boundProvider = bound
+                _account.uid = uid
+                _account.identityToken = nil
+                persistIdentityLocked()
+                let claimed = claimTokenLoadLocked(bound: bound, forceRefresh: false)
+                setConnectionStateLocked(.connecting)
+                stateLock.unlock()
+                afterwards.append { claimed.launch?() }
+            } else if current.uid == uid {
+                stateLock.lock()
+                _boundProvider = bound
+                let superseded = _tokenLoadInFlight
+                _tokenLoadInFlight = nil
+                // The rejection is read from the record of it as well as the published state: a
+                // failure is published as `.connecting` while a load is in flight, and stays so until
+                // the runtime publishes again, so a registration landing then must still ask this
+                // provider.
+                let authFailed: Bool
+                if case .authenticationFailed = _connectionState {
+                    authFailed = true
+                } else {
+                    authFailed = _realtimeRejectedCredentials == _account.credentialVersion
+                }
+                let hasToken = _account.identityToken != nil
+                let awaitingToken = !hasToken || authFailed
+                // A cached token under authenticationFailed IS the rejected token. A load the previous
+                // provider left in flight is taken over, so its waiting retries reach this provider.
+                let handedOff = superseded?.beginForwarding() == true ? superseded : nil
+                let claimed = awaitingToken || handedOff != nil
+                    ? claimTokenLoadLocked(bound: bound, forceRefresh: (authFailed && hasToken) || handedOff?.forceRefresh == true)
+                    : nil
+                if claimed != nil && awaitingToken { setConnectionStateLocked(.connecting) }
+                stateLock.unlock()
+                if let claimed {
+                    afterwards.append {
+                        handedOff?.finishForwarding(to: claimed.load)
+                        claimed.launch?()
+                    }
+                }
             } else {
-                authFailed = _realtimeRejectedCredentials == _account.credentialVersion
+                let claimed = endIdentitySession(afterwards: &afterwards) {
+                    _boundProvider = bound
+                    commitAccountLocked {
+                        $0.uid = uid
+                        $0.identityToken = nil
+                        $0.sessionGeneration += 1
+                    }
+                    let claimed = claimTokenLoadLocked(bound: bound, forceRefresh: false)
+                    setConnectionStateLocked(.connecting)
+                    return claimed
+                }
+                afterwards.append { claimed.launch?() }
             }
-            let hasToken = _account.identityToken != nil
-            let awaitingToken = !hasToken || authFailed
-            // A cached token under authenticationFailed IS the rejected token. A load the previous
-            // provider left in flight is taken over, so its waiting retries reach this provider.
-            let handedOff = superseded?.beginForwarding() == true ? superseded : nil
-            let claimed = awaitingToken || handedOff != nil
-                ? claimTokenLoadLocked(bound: bound, forceRefresh: (authFailed && hasToken) || handedOff?.forceRefresh == true)
-                : nil
-            stateLock.unlock()
-            if let claimed {
-                handedOff?.finishForwarding(to: claimed.load)
-                if awaitingToken { publishDirect(.connecting) }
-                claimed.launch?()
-            }
-        } else {
-            endIdentitySession()
-            stateLock.lock()
-            _boundProvider = bound
-            _account.uid = uid
-            _account.identityToken = nil
-            _account.sessionGeneration += 1
-            persistIdentityLocked()
-            let claimed = claimTokenLoadLocked(bound: bound, forceRefresh: false)
-            stateLock.unlock()
-            publishDirect(.connecting)
-            claimed.launch?()
         }
     }
 
-    /// Closes the previous identity's chat sessions and drops its provider. Persisted identity and
-    /// the push subscription are untouched; that is `reset()`.
-    func endIdentitySession() {
+    /// Runs one identity transition at a time, so each classifies the account it then writes: a
+    /// registration for one uid can never resume after a switch and bind its provider to the next
+    /// account. `afterwards` runs once the lock is released: a settled token load runs its waiters
+    /// inline, and a waiting retry may drop an expired token, a transition of its own.
+    func identityTransition<T>(_ body: (_ afterwards: inout [() -> Void]) -> T) -> T {
+        var afterwards: [() -> Void] = []
+        identityTransitionLock.lock()
+        let result = body(&afterwards)
+        identityTransitionLock.unlock()
+        afterwards.forEach { $0() }
+        return result
+    }
+
+    /// Ends the current identity session around `commit`, which writes the next account with
+    /// `stateLock` held: the one ordering a uid switch, `reset()` and a token-only expiry share.
+    /// Call within `identityTransition`. The outgoing provider and its in-flight load are dropped
+    /// in the commit's hold, so no load is claimed for an account already replaced. Persisted
+    /// identity and the push subscription are `commit`'s and `reset()`'s business.
+    @discardableResult
+    func endIdentitySession<T>(afterwards: inout [() -> Void], commit: () -> T) -> T {
         stateLock.lock()
-        _boundProvider = nil
-        let superseded = _tokenLoadInFlight
-        _tokenLoadInFlight = nil
+        let departing = _account.sessionGeneration
         let runtime = _realtimeRuntime
         stateLock.unlock()
         // Queued ahead of the departing sessions' unsubscribes and of the superseded refresh's
         // outcome, so neither publishes or acts on the previous identity's auth state.
         runtime?.onIdentityEnded()
-        superseded?.complete(nil)
-        ChatCoordinator.shared.closeAllSessions()
-        pushRuntime.clearVisible()
+        var superseded: TokenLoad?
+        let result = endChatSessions(openedUnder: departing) {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            _boundProvider = nil
+            superseded = _tokenLoadInFlight
+            _tokenLoadInFlight = nil
+            return commit()
+        }
+        if let superseded { afterwards.append { superseded.complete(nil) } }
+        return result
+    }
+
+    /// Ends the chat sessions opened under `generation` around `commit`. They are detached while
+    /// the departing account still stands, so the realtime reset that follows finds none of their
+    /// subscriptions to fail first. One opened between the detach and the commit is closed after
+    /// it, and the next identity's, opened under the new generation, stay open. The leases hear
+    /// last: a conversation reopened from that callback opens under the session that follows.
+    func endChatSessions<T>(openedUnder generation: Int, around commit: () -> T) -> T {
+        let notifyEnded = ChatCoordinator.shared.detachSessions(openedUnder: generation)
+        let result = commit()
+        ChatCoordinator.shared.closeSessions(openedUnder: generation)
+        notifyEnded()
+        return result
     }
 
     /// Drops the held token when no provider is bound to refresh it, so requests fall back to the
@@ -225,45 +267,39 @@ extension DashXClient {
             self._boundProvider == nil && self._account.identityToken == rejected
                 && self._account.sessionGeneration == identityGeneration
         }
-        stateLock.lock()
-        let endsTokenOnlySession = isDroppable() && _account.uid == nil
-        stateLock.unlock()
-        // Detached while the expiring account still holds the token, so the realtime reset below
-        // finds none of its subscriptions to fail first. Their leases learn of it only after the
-        // commit: one reopened from that callback must open under the session that follows. A
-        // change that wins the commit instead ends this session itself: every token change of a
-        // token-only identity does.
-        let notifyEnded = endsTokenOnlySession
-            ? ChatCoordinator.shared.detachSessions(openedUnder: identityGeneration)
-            : nil
-
-        stateLock.lock()
-        guard isDroppable() else {
+        return identityTransition { _ in
+            stateLock.lock()
+            let endsTokenOnlySession = isDroppable() && _account.uid == nil
             stateLock.unlock()
-            notifyEnded?()
-            return nil
+
+            let commit: () -> CredentialVersion? = {
+                self.stateLock.lock()
+                defer { self.stateLock.unlock() }
+                guard isDroppable() else { return nil }
+                self._account.identityToken = nil
+                self._account.tokenEpoch += 1
+                let endsSession = self._account.uid == nil
+                if endsSession { self._account.sessionGeneration += 1 }
+                self.persistIdentityLocked()
+                let committed = self._account
+                // Queued in the commit's hold: the next identity can register a provider the moment
+                // the lock is released, keeping these credentials until its token arrives, and a fast
+                // failure of its first load must land after this reset rather than be cleared by it.
+                if let runtime = self._realtimeRuntime {
+                    runtime.onIdentityChanged(credentials: committed.credentialVersion)
+                } else if endsSession && self._tokenLoadInFlight == nil {
+                    self.setConnectionStateLocked(.idle)
+                }
+                return committed.credentialVersion
+            }
+            let dropped = endsTokenOnlySession
+                ? endChatSessions(openedUnder: identityGeneration, around: commit)
+                : commit()
+            if dropped != nil {
+                DashXLog.i(tag: #function, "Identity token expired with no provider bound; continuing unauthenticated")
+            }
+            return dropped
         }
-        _account.identityToken = nil
-        _account.tokenEpoch += 1
-        let endsSession = _account.uid == nil
-        if endsSession { _account.sessionGeneration += 1 }
-        persistIdentityLocked()
-        let committed = _account
-        // Queued in the commit's hold: the next identity can register a provider the moment the
-        // lock is released, keeping these credentials until its token arrives, and a fast failure
-        // of its first load must land after this reset rather than be cleared by it.
-        if let runtime = _realtimeRuntime {
-            runtime.onIdentityChanged(credentials: committed.credentialVersion)
-        } else if endsSession && _tokenLoadInFlight == nil {
-            setConnectionStateLocked(.idle)
-        }
-        stateLock.unlock()
-        DashXLog.i(tag: #function, "Identity token expired with no provider bound; continuing unauthenticated")
-        // A conversation opened under the expiring session after the detach. The next
-        // identity's sessions, opened under the new generation, stay open.
-        if endsSession { ChatCoordinator.shared.closeSessions(openedUnder: identityGeneration) }
-        notifyEnded?()
-        return committed.credentialVersion
     }
 
     /// Refreshes the token, joining any in-flight load, and reports whether a new one is installed.

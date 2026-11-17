@@ -158,7 +158,7 @@ final class TokenProviderRecoveryTests: XCTestCase {
 
         // As the raw operations deliver: gated on the session the call began under.
         let outcome = Atomic<Result<String, Error>?>(nil)
-        let completion: (Result<String, Error>) -> Void = client.sessionBound { outcome.value = $0 }
+        let completion: (Result<String, Error>) -> Void = client.sessionBound({ outcome.value = $0 }, generation: client.currentSessionGeneration)
         client.awaitIdentityToken { result in
             DispatchQueue.main.async { completion(result.mapError { $0 }) }
         }
@@ -950,25 +950,6 @@ final class TokenProviderRecoveryTests: XCTestCase {
         socket.cancel()
     }
 
-    func testAResetPublishingLateNeverOverwritesAProviderActivationsConnecting() {
-        client.setIdentity(uid: uid, token: "token-a")
-        client.reset()
-        let committedReset = client.account
-        let pending = Atomic<DashXTokenCallback?>(nil)
-        // Activation from the signed-out account: the uid changes, the generation and epoch do not.
-        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
-            pending.value = callback
-        })
-        awaitUntil(what: "load started") { pending.value != nil }
-        XCTAssertEqual(client.connectionState, .connecting)
-
-        client.publishIdle(ifCurrent: committedReset)
-        XCTAssertEqual(client.connectionState, .connecting, "the reset's late idle must not hide the token load")
-
-        pending.value?.onToken("token")
-        awaitUntil(what: "the load's own completion publishes idle") { self.client.connectionState == .idle }
-    }
-
     func testALateTokenInstallCommandCannotClearTheNextUsersFailure() {
         let realtime = RealtimeSeam(client)
         defer { realtime.restore() }
@@ -1026,24 +1007,6 @@ final class TokenProviderRecoveryTests: XCTestCase {
         XCTAssertEqual(client.dropUnrefreshableIdentityToken(rejected: "same-token", identityGeneration: generation)?.sessionGeneration,
                        generation, "a uid keeps its session when only the token goes")
         XCTAssertNil(client.account.identityToken)
-    }
-
-    func testAnEarlierAccountsIdleNeverOverwritesTheNextIdentitysConnecting() {
-        client.setIdentity(uid: uid, token: "token-a")
-        let committedA = client.account
-        let pendingB = Atomic<DashXTokenCallback?>(nil)
-        client.setIdentityTokenProvider(uid: uid + "-b", provider: DashXClosureTokenProvider { _, callback in
-            pendingB.value = callback
-        })
-        awaitUntil(what: "B's load started") { pendingB.value != nil }
-        XCTAssertEqual(client.connectionState, .connecting)
-
-        // A's completion publishing late, after B's load began.
-        client.publishIdle(ifCurrent: committedA)
-        XCTAssertEqual(client.connectionState, .connecting)
-
-        pendingB.value?.onToken("token-b")
-        awaitUntil(what: "B's own completion publishes idle") { self.client.connectionState == .idle }
     }
 
     func testResetEndsTheProviderSessionAndReturnsToIdle() {

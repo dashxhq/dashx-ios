@@ -144,27 +144,17 @@ extension DashXClient {
         return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 
-    /// `committed` is the account the identity change wrote.
-    func notifyIdentityChanged(committed: AccountSnapshot) {
-        if let runtime = realtimeRuntime {
-            runtime.onIdentityChanged(credentials: committed.credentialVersion)
+    /// Call with `stateLock` held, in the hold that commits an identity change. Queued any later,
+    /// the realtime change could follow a provider registered meanwhile, by another thread or
+    /// from a lease's termination callback: that registration keeps these credentials, and a fast
+    /// failure of its first load must land after this change rather than be cleared by it. The
+    /// `.idle` written with no runtime belongs to this account for the same reason.
+    func notifyIdentityChangedLocked() {
+        if let runtime = _realtimeRuntime {
+            runtime.onIdentityChanged(credentials: _account.credentialVersion)
         } else {
-            publishIdle(ifCurrent: committed)
+            setConnectionStateLocked(.idle)
         }
-    }
-
-    /// Publishes `.idle` only while the account is still the one `committed` describes and no token
-    /// load is pending, checked in the lock hold that writes it: a later identity's state is never
-    /// overwritten. The uid matters on its own: provider registration on a signed-out account
-    /// changes it without moving the session generation or the token epoch.
-    func publishIdle(ifCurrent committed: AccountSnapshot) {
-        stateLock.lock()
-        let isCurrent = _account.uid == committed.uid
-            && _account.sessionGeneration == committed.sessionGeneration
-            && _account.tokenEpoch == committed.tokenEpoch
-            && _tokenLoadInFlight == nil
-        if isCurrent { setConnectionStateLocked(.idle) }
-        stateLock.unlock()
     }
 
     /// Resolves the runtime's status against the credentials in the same lock hold that writes the

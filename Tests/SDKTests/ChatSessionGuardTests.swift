@@ -19,7 +19,7 @@ final class ChatSessionGuardTests: XCTestCase {
     func testCompletionAfterAnIdentitySwitchDeliversSessionEndedNotTheOldIdentitysData() {
         client.setIdentity(uid: "guard-user-a", token: "token-a")
         var delivered: [Result<String, Error>] = []
-        let bound = client.sessionBound { (result: Result<String, Error>) in delivered.append(result) }
+        let bound = client.sessionBound({ (result: Result<String, Error>) in delivered.append(result) }, generation: client.currentSessionGeneration)
 
         client.setIdentity(uid: "guard-user-b", token: "token-b") // T2: new session generation
 
@@ -31,7 +31,7 @@ final class ChatSessionGuardTests: XCTestCase {
     func testErrorAfterAResetDeliversSessionEnded() {
         client.setIdentity(uid: "guard-user-a", token: "token-a")
         var delivered: [Result<String, Error>] = []
-        let bound = client.sessionBound { (result: Result<String, Error>) in delivered.append(result) }
+        let bound = client.sessionBound({ (result: Result<String, Error>) in delivered.append(result) }, generation: client.currentSessionGeneration)
 
         client.setIdentity(uid: nil, token: nil) // logout bumps the generation like reset()
 
@@ -43,7 +43,7 @@ final class ChatSessionGuardTests: XCTestCase {
     func testSameIdentityTokenRefreshLeavesTheOperationValid() {
         client.setIdentity(uid: "guard-user-a", token: "token-a")
         var delivered: [Result<String, Error>] = []
-        let bound = client.sessionBound { (result: Result<String, Error>) in delivered.append(result) }
+        let bound = client.sessionBound({ (result: Result<String, Error>) in delivered.append(result) }, generation: client.currentSessionGeneration)
 
         client.setIdentity(uid: "guard-user-a", token: "token-a2") // T1: generation unchanged
 

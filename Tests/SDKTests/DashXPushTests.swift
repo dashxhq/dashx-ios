@@ -60,9 +60,7 @@ final class DashXPushTests: XCTestCase {
         state.setConversationVisible("c2", owner: owner, visible: true)
         state.setConversationVisible("c1", owner: owner, visible: false)
         XCTAssertEqual(state.get().visibleConversationIds, ["c2"])
-        state.clearVisible()
-        XCTAssertTrue(state.get().isForeground, "clearing visibility must not touch foreground")
-        XCTAssertTrue(state.get().visibleConversationIds.isEmpty)
+        XCTAssertTrue(state.get().isForeground, "visibility writes must not touch foreground")
     }
 
     func testAConversationStaysVisibleWhileAnyOwnerShowsIt() {

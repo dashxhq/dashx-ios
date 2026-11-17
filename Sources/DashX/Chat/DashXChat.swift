@@ -164,14 +164,6 @@ final class ChatCoordinator {
         if sessions[key] === session { sessions.removeValue(forKey: key) }
     }
 
-    func closeAllSessions() {
-        lock.lock()
-        let open = Array(sessions.values)
-        sessions.removeAll()
-        lock.unlock()
-        open.forEach { $0.endSession() }
-    }
-
     /// Ends only the sessions opened under `generation`; a later identity's stay open.
     func closeSessions(openedUnder generation: Int) {
         detachSessions(openedUnder: generation)()

@@ -38,12 +38,4 @@ final class PushRuntimeState {
         }
         snapshot.visibleConversationIds = Set(visibleOwners.keys)
     }
-
-    /// Identity switch / reset: visibility is stale, foreground is not.
-    func clearVisible() {
-        lock.lock()
-        defer { lock.unlock() }
-        visibleOwners = [:]
-        snapshot.visibleConversationIds = []
-    }
 }

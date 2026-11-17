@@ -162,6 +162,8 @@ public class DashXClient {
     // Using NSLock (non-recursive) is safe here because no getter or setter
     // calls another guarded property while the lock is held.
     let stateLock = NSLock()
+    /// Held across one identity transition; see `identityTransition(_:)`. Taken before `stateLock`.
+    let identityTransitionLock = NSLock()
 
     /// The one source of account state. Read it once per operation so a new uid is never paired
     /// with an old token.
@@ -457,47 +459,48 @@ public class DashXClient {
     /// - different uid, including nil: the previous identity's chat work ends. Without a uid nothing
     ///   ties two tokens to one user, so any later change of a token-only identity ends it too.
     public func setIdentity(uid: String?, token: String?) {
-        let current = account
-        if current.uid == uid && current.identityToken == token { return }
-        if let currentUid = current.uid, currentUid == uid, token == nil, current.identityToken != nil {
-            DashXLog.d(tag: #function, "Keeping the held identity token for the current uid")
-            return
-        }
+        identityTransition { afterwards in
+            let current = account
+            if current.uid == uid && current.identityToken == token { return }
+            if let currentUid = current.uid, currentUid == uid, token == nil, current.identityToken != nil {
+                DashXLog.d(tag: #function, "Keeping the held identity token for the current uid")
+                return
+            }
 
-        let isActivation = current.uid == nil && current.identityToken == nil && (uid != nil || token != nil)
-        let isRefresh = current.uid != nil && current.uid == uid
+            let isActivation = current.uid == nil && current.identityToken == nil && (uid != nil || token != nil)
+            let isRefresh = current.uid != nil && current.uid == uid
 
-        let committed: AccountSnapshot
-        if isActivation || isRefresh {
-            // Same identity: the session generation is unchanged so in-flight work survives.
-            stateLock.lock()
-            _account.uid = uid
-            _account.identityToken = token
-            _account.tokenEpoch += 1
-            // Awaiting retries get this token; the in-flight load is stale under the new epoch.
-            let superseded = _tokenLoadInFlight
-            _tokenLoadInFlight = nil
-            persistIdentityLocked()
-            committed = _account
-            stateLock.unlock()
-            superseded?.complete(token)
-        } else {
-            endIdentitySession()
-            committed = commitAccount {
-                $0.uid = uid
-                $0.identityToken = token
-                $0.sessionGeneration += 1
-                $0.tokenEpoch += 1
+            if isActivation || isRefresh {
+                // Same identity: the session generation is unchanged so in-flight work survives.
+                stateLock.lock()
+                _account.uid = uid
+                _account.identityToken = token
+                _account.tokenEpoch += 1
+                // Awaiting retries get this token; the in-flight load is stale under the new epoch.
+                let superseded = _tokenLoadInFlight
+                _tokenLoadInFlight = nil
+                persistIdentityLocked()
+                notifyIdentityChangedLocked()
+                stateLock.unlock()
+                if let superseded { afterwards.append { superseded.complete(token) } }
+            } else {
+                endIdentitySession(afterwards: &afterwards) {
+                    commitAccountLocked {
+                        $0.uid = uid
+                        $0.identityToken = token
+                        $0.sessionGeneration += 1
+                        $0.tokenEpoch += 1
+                    }
+                    notifyIdentityChangedLocked()
+                }
             }
         }
-
-        notifyIdentityChanged(committed: committed)
     }
 
-    /// Mutates and persists the identity under one lock hold, so disk order matches memory order.
+    /// Mutates and persists the identity. Call with `stateLock` held, so disk order matches memory
+    /// order.
     @discardableResult
-    func commitAccount(_ transform: (inout AccountSnapshot) -> Void) -> AccountSnapshot {
-        stateLock.lock(); defer { stateLock.unlock() }
+    func commitAccountLocked(_ transform: (inout AccountSnapshot) -> Void) -> AccountSnapshot {
         transform(&_account)
         persistIdentityLocked()
         return _account
@@ -576,9 +579,6 @@ public class DashXClient {
         self.bumpSubscribeGeneration()
         self.clearSubscriptionDeviceInfoRefreshPending()
 
-        // The unsubscribe above captured the outgoing account identifiers and FCM token.
-        endIdentitySession()
-
         let preferences = UserDefaults.standard
 
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_ANONYMOUS_UID)
@@ -586,16 +586,20 @@ public class DashXClient {
         preferences.removeObject(forKey: Constants.USER_PREFERENCES_KEY_SUBSCRIBED_AD_INFO_VERSION)
 
         let anonymousUid = self.generateAnonymousUid(withRegenerate: true)
-        let committed = commitAccount {
-            $0.uid = nil
-            $0.identityToken = nil
-            $0.anonymousUid = anonymousUid
-            $0.sessionGeneration += 1
+        // The unsubscribe above captured the outgoing account identifiers and FCM token.
+        identityTransition { afterwards in
+            endIdentitySession(afterwards: &afterwards) {
+                commitAccountLocked {
+                    $0.uid = nil
+                    $0.identityToken = nil
+                    $0.anonymousUid = anonymousUid
+                    $0.sessionGeneration += 1
+                }
+                notifyIdentityChangedLocked()
+                setConnectionStateLocked(.idle)
+            }
         }
         self.isAdTrackingRequested = false
-
-        realtimeRuntime?.onIdentityChanged(credentials: committed.credentialVersion)
-        publishIdle(ifCurrent: committed)
     }
 
     // MARK: - Analytics
