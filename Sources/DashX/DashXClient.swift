@@ -207,6 +207,9 @@ public class DashXClient {
     var _lifecycleForeground = false
     let pushRuntime = PushRuntimeState()
     let tokenQueue = DispatchQueue(label: "com.dashx.ios.tokenProvider", qos: .utility)
+    let tokenTimeoutQueue = DispatchQueue(label: "com.dashx.ios.tokenProvider.timeout", qos: .utility)
+    /// How long a provider load may go unanswered before it is reported unavailable.
+    var _tokenLoadTimeout: TimeInterval = DashXClient.defaultTokenLoadTimeout
 
     private var _apnsToken: String?
     private var apnsToken: String? {
@@ -444,11 +447,12 @@ public class DashXClient {
         }
     }
 
-    /// - no identity yet: waiting conversations connect
+    /// - no identity yet: waiting conversations connect, whether a uid, a token or both arrive
     /// - same uid and token: no-op
     /// - same uid, nil token while one is held: no-op (`reset()` clears it)
     /// - same uid, new token: chat sessions survive, the socket is recycled
-    /// - different uid, including nil: the previous identity's chat work ends
+    /// - different uid, including nil: the previous identity's chat work ends. Without a uid nothing
+    ///   ties two tokens to one user, so any later change of a token-only identity ends it too.
     public func setIdentity(uid: String?, token: String?) {
         let current = account
         if current.uid == uid && current.identityToken == token { return }
@@ -457,7 +461,7 @@ public class DashXClient {
             return
         }
 
-        let isActivation = current.uid == nil && current.identityToken == nil && uid != nil
+        let isActivation = current.uid == nil && current.identityToken == nil && (uid != nil || token != nil)
         let isRefresh = current.uid != nil && current.uid == uid
 
         let committed: AccountSnapshot

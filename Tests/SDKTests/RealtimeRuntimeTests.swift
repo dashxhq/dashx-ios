@@ -52,6 +52,9 @@ private final class Harness {
     /// The client's identity session; sockets are stamped with it when they connect.
     let identity = Atomic<Int>(0)
     let epoch = Atomic<Int>(0)
+    /// Credentials each recovery request named; `recoveryStarts` is the client's answer.
+    let recoveries = Atomic<[CredentialVersion]>([])
+    let recoveryStarts = Atomic<Bool>(false)
 
     let runtime: RealtimeRuntime
 
@@ -75,6 +78,11 @@ private final class Harness {
                 } else {
                     completion(harness.authRefreshSucceeds.value ? .refreshed : .failed)
                 }
+            },
+            recoverCredentials: { credentials in
+                guard let harness = harnessBox.value else { return false }
+                harness.recoveries.append(credentials)
+                return harness.recoveryStarts.value
             },
             publishState: { status in
                 // Resolved as the client does, against the harness's credentials.
@@ -653,6 +661,92 @@ final class RealtimeRuntimeTests: XCTestCase {
         harness.open()
         harness.ack("in_app_chat:conversation:c1")
         awaitUntil(what: "recovered") { harness.established.value == [false] }
+    }
+
+    func testANewSubscriberAfterAFailedLoadAsksForARecoveryInsteadOfFailing() {
+        let harness = Harness(url: nil)
+        harness.subscribe("c1")
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "waiting subscriber failed") { harness.subscribeErrors.value.count == 1 }
+        XCTAssertTrue(harness.recoveries.value.isEmpty, "the failure itself asks for nothing")
+
+        harness.recoveryStarts.value = true
+        harness.subscribe("c2")
+        awaitUntil(what: "recovery asked") { harness.recoveries.value == [harness.credentials] }
+        settle(0.2)
+        XCTAssertEqual(harness.subscribeErrors.value.count, 1, "a load under way is not an error")
+
+        harness.url.value = URL(string: "wss://realtime.test/socket")
+        harness.epoch.value = 1
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        harness.ack("in_app_chat:conversation:c2")
+        awaitUntil(what: "recovered") { harness.established.value == [false] }
+    }
+
+    func testANewSubscriberStillFailsWhenNoRecoveryCanStart() {
+        let harness = Harness(url: nil)
+        harness.subscribe("c1")
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        awaitUntil(what: "waiting subscriber failed") { harness.subscribeErrors.value.count == 1 }
+
+        harness.subscribe("c2")
+        awaitUntil(what: "new subscriber failed") { harness.subscribeErrors.value.count == 2 }
+        XCTAssertEqual(harness.recoveries.value.count, 1, "asked once, and no provider could answer")
+    }
+
+    func testForegroundAfterAnUnrecoveredRejectionAsksForARecovery() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "subscriber failed") { harness.subscribeErrors.value.count == 1 }
+
+        harness.runtime.onBackground()
+        harness.recoveryStarts.value = true
+        harness.runtime.onForeground()
+        awaitUntil(what: "recovery asked") { harness.recoveries.value == [harness.credentials] }
+        XCTAssertEqual(harness.sockets.count, 1, "no socket until a token is installed")
+
+        harness.epoch.value = 1
+        harness.identityChanged(fromAuthRefresh: true)
+        awaitUntil(what: "reconnected") { harness.sockets.count == 2 }
+    }
+
+    func testAPermissionCloseNeverAsksForARecovery() {
+        let harness = Harness()
+        harness.recoveryStarts.value = true
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        harness.close(0, code: 4403, reason: "FORBIDDEN")
+        awaitUntil(what: "subscriber failed") { harness.subscribeErrors.value.count == 1 }
+
+        harness.subscribe("c2")
+        awaitUntil(what: "new subscriber failed at once") { harness.subscribeErrors.value.count == 2 }
+        harness.runtime.onBackground()
+        harness.runtime.onForeground()
+        settle(0.2)
+        XCTAssertTrue(harness.recoveries.value.isEmpty, "no token fixes a permission problem")
+    }
+
+    func testARecoveryIsNeverAskedWhileASocketCanStillDecide() {
+        let harness = Harness()
+        harness.recoveryStarts.value = true
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open()
+        awaitUntil(what: "connected") { harness.lastState == .connected }
+
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        harness.subscribe("c2")
+        harness.runtime.onBackground()
+        harness.runtime.onForeground()
+        awaitUntil(what: "reconnected after the foreground") { harness.sockets.count == 2 }
+        settle(0.2)
+        XCTAssertTrue(harness.recoveries.value.isEmpty, "a live or connecting socket's acks still decide")
     }
 
     /// `connect()` hands the socket the only reference to its listener; a socket that does not

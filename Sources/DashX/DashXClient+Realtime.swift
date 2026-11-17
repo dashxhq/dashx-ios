@@ -57,6 +57,7 @@ extension DashXClient {
             onAuthRejected: { credentials, completion in
                 self.onRealtimeAuthRejected(credentials: credentials, completion: completion)
             },
+            recoverCredentials: { self.recoverRealtimeCredentials($0) },
             publishState: { status in self.publishConnectionState(from: created, status) },
             initialForeground: _lifecycleForeground,
             socketFactory: _realtimeSocketFactory

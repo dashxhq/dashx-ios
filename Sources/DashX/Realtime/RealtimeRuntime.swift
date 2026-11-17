@@ -139,6 +139,10 @@ final class RealtimeRuntime {
     /// 4401 close: asks for a fresh token once for the credentials the socket was opened with;
     /// reports whether one was installed.
     private let onAuthRejected: (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void
+    /// Asks the client to load a token for `credentials`, whose stored verdict leaves no socket to
+    /// recover on its own; true when a load is under way. Its outcome comes back as an identity
+    /// change or as unavailable credentials.
+    private let recoverCredentials: (_ credentials: CredentialVersion) -> Bool
     private let publishStateSink: (RealtimeStatus) -> Void
     private let socketFactory: RealtimeSocketFactory
     private let ackTimeout: TimeInterval
@@ -151,13 +155,15 @@ final class RealtimeRuntime {
     private var socketCredentials = CredentialVersion(sessionGeneration: 0, tokenEpoch: 0)
     private var isForeground: Bool
     private var authFailed = false
+    /// Whether the terminal close behind `authFailed` was a 4401, the only one a new token can fix.
+    private var authFailureIsUnauthorized = false
     /// One refresh per rejection cycle: set when 4401 fires the hook, re-armed only by an ack or an
     /// external (non-refresh) identity change — a refreshed token that 4401s again stays terminal.
     private var authRefreshAttempted = false
     /// Credentials of the socket whose 4401 spent the current attempt.
     private var refreshAttemptCredentials: CredentialVersion?
     /// Reported by the client when no token could be loaded. The socket is left alone (the held
-    /// token may still work) but the published state stays terminal until the next identity change.
+    /// token may still work) but the published state stays terminal until a token is installed.
     private var credentialsUnavailable = false
     private var credentialFailureCause: Error?
     /// Identity session the current auth failure belongs to.
@@ -180,6 +186,7 @@ final class RealtimeRuntime {
         currentCredentials: @escaping () -> CredentialVersion,
         onAnyFrame: @escaping (DashXRealtimeMessage) -> Void,
         onAuthRejected: @escaping (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void,
+        recoverCredentials: @escaping (_ credentials: CredentialVersion) -> Bool = { _ in false },
         publishState: @escaping (RealtimeStatus) -> Void,
         initialForeground: Bool,
         socketFactory: RealtimeSocketFactory? = nil,
@@ -190,6 +197,7 @@ final class RealtimeRuntime {
         self.currentCredentials = currentCredentials
         self.onAnyFrame = onAnyFrame
         self.onAuthRejected = onAuthRejected
+        self.recoverCredentials = recoverCredentials
         self.publishStateSink = publishState
         self.isForeground = initialForeground
         self.socketFactory = socketFactory ?? { url, listener in
@@ -207,6 +215,12 @@ final class RealtimeRuntime {
 
     func onForeground() {
         enqueue { self.handleForegrounded() }
+    }
+
+    /// A new lease on a conversation already subscribed: no SUBSCRIBE reaches the runtime, so it is
+    /// asked here whether a credential failure still strands that subscription.
+    func onSubscriberReturned() {
+        enqueue { _ = self.recoverCredentialsIfStranded() }
     }
 
     func onBackground() {
@@ -228,7 +242,8 @@ final class RealtimeRuntime {
         enqueue { self.handleIdentityEnded() }
     }
 
-    /// A provider load failed: the state is `authenticationFailed` until the identity changes.
+    /// A provider load failed: the state is `authenticationFailed` until a token is installed, by an
+    /// identity change or by a load a new subscriber or a return to the foreground asks for.
     /// `isCurrent` is asked on the runtime queue, so a token installed meanwhile wins.
     func onCredentialsUnavailable(cause: Error?, credentials: CredentialVersion, isCurrent: @escaping () -> Bool = { true }) {
         enqueue { self.handleCredentialsUnavailable(cause: cause, credentials: credentials, isCurrent: isCurrent) }
@@ -277,13 +292,17 @@ final class RealtimeRuntime {
         // connect() refuses to run while auth-failed, so no ack deadline would surface the problem.
         // A stored verdict is replayed only for the credentials that earned it: once they are
         // replaced, the replacement's queued change clears it and connects, and the newcomer waits.
+        // A provider load asked for here settles the newcomer instead: a token reconnects, and a
+        // failure fails every waiting subscriber.
         if authFailed {
-            if isAuthVerdictCurrent {
+            if isAuthVerdictCurrent && !recoverCredentialsIfStranded() {
                 handle.onSubscribeError(.subscriptionFailed(
                     "Realtime authentication failed; channel \(handle.channelName) cannot subscribe"))
             }
         } else if credentialsUnavailable && socket == nil && connectingSocket == nil {
-            if isAuthVerdictCurrent { handle.onSubscribeError(Self.credentialsUnavailableError) }
+            if isAuthVerdictCurrent && !recoverCredentialsIfStranded() {
+                handle.onSubscribeError(Self.credentialsUnavailableError)
+            }
         } else if let unmet = unmetPrerequisiteWhileDisconnected() {
             handle.onSubscribeError(unmet)
         }
@@ -309,6 +328,8 @@ final class RealtimeRuntime {
     private func handleForegrounded() {
         isForeground = true
         if socket == nil && connectingSocket == nil { connect() }
+        // After the connect: a held token that may still work gets its socket, not a forced load.
+        _ = recoverCredentialsIfStranded()
         publishState()
     }
 
@@ -423,6 +444,7 @@ final class RealtimeRuntime {
                 return
             }
             authFailed = true
+            authFailureIsUnauthorized = code == Self.closeCodeUnauthorized
             authVerdictCredentials = socketCredentials
             DashXLog.e(tag: Self.tag, "Realtime closed with terminal code \(code) (\(reason))")
             // Only 4401 can be fixed by a fresh token, and only once per cycle.
@@ -472,7 +494,7 @@ final class RealtimeRuntime {
     }
 
     private static let credentialsUnavailableError = DashXClientError.subscriptionFailed(
-        "No identity token is available; the channel cannot subscribe until the identity changes")
+        "No identity token is available; the channel subscribes once one is installed")
 
     private func handleAuthRefreshFailed(credentialGeneration: Int, rejected: CredentialVersion) {
         // Only while the rejection that asked for the refresh still stands. The runtime's own
@@ -524,6 +546,19 @@ final class RealtimeRuntime {
     /// Whether the stored auth verdict belongs to the credentials current now.
     private var isAuthVerdictCurrent: Bool {
         authVerdictCredentials == currentCredentials()
+    }
+
+    /// A current auth verdict a new token can fix, with no socket left, strands every subscriber
+    /// until the credentials change: a 4401 no refresh recovered, or a provider load that failed.
+    /// With subscribers waiting, the client is asked for a fresh load; true when one is under way.
+    /// Asked on every new subscriber, reused or not, and on every return to the foreground.
+    /// Any other terminal close is a permission problem no token fixes.
+    private func recoverCredentialsIfStranded() -> Bool {
+        let stranded = authFailed
+            ? authFailureIsUnauthorized
+            : credentialsUnavailable && socket == nil && connectingSocket == nil
+        guard stranded, isAuthVerdictCurrent, !subscriptions.isEmpty else { return false }
+        return recoverCredentials(authVerdictCredentials)
     }
 
     /// Not auth-failed and without a socket because there is no endpoint and nothing is coming to

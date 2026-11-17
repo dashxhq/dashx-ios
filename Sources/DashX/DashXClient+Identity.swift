@@ -105,6 +105,13 @@ private final class OnceTokenCallback: DashXTokenCallback {
         fire(nil, cause)
     }
 
+    /// Whether a delivery, the provider's or the timeout's, was already accepted.
+    var isSettled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return delivered
+    }
+
     private func fire(_ token: String?, _ cause: Error?) {
         lock.lock()
         if delivered {
@@ -118,7 +125,7 @@ private final class OnceTokenCallback: DashXTokenCallback {
 }
 
 extension DashXClient {
-    static let tokenLoadTimeout: TimeInterval = 30
+    static let defaultTokenLoadTimeout: TimeInterval = 30
 
     /// Whether an identity token is currently held. Chat operations need one, or a bound
     /// `DashXTokenProvider` to load it.
@@ -202,23 +209,55 @@ extension DashXClient {
     /// Drops the held token when no provider is bound to refresh it, so requests fall back to the
     /// public key; with a provider bound the retry path refreshes instead. A newer token is never
     /// cleared by an old rejection: neither another token string nor the same string re-issued to
-    /// a later identity session than the request's `identityGeneration`.
-    func dropUnrefreshableIdentityToken(rejected: String?, identityGeneration: Int) -> Bool {
-        guard let rejected else { return false }
+    /// a later identity session than the request's `identityGeneration`. A token-only identity
+    /// ends with its token: nothing ties a next token to this user, whose open conversations a
+    /// first activation would otherwise hand on. Returns the credentials the drop committed, which
+    /// the public-key retry is bound to, or nil when nothing was dropped.
+    func dropUnrefreshableIdentityToken(rejected: String?, identityGeneration: Int) -> CredentialVersion? {
+        guard let rejected else { return nil }
+        let isDroppable = {
+            self._boundProvider == nil && self._account.identityToken == rejected
+                && self._account.sessionGeneration == identityGeneration
+        }
         stateLock.lock()
-        if _boundProvider != nil || _account.identityToken != rejected || _account.sessionGeneration != identityGeneration {
+        let endsTokenOnlySession = isDroppable() && _account.uid == nil
+        stateLock.unlock()
+        // Detached while the expiring account still holds the token, so the realtime reset below
+        // finds none of its subscriptions to fail first. Their leases learn of it only after the
+        // commit: one reopened from that callback must open under the session that follows. A
+        // change that wins the commit instead ends this session itself: every token change of a
+        // token-only identity does.
+        let notifyEnded = endsTokenOnlySession
+            ? ChatCoordinator.shared.detachSessions(openedUnder: identityGeneration)
+            : nil
+
+        stateLock.lock()
+        guard isDroppable() else {
             stateLock.unlock()
-            return false
+            notifyEnded?()
+            return nil
         }
         _account.identityToken = nil
         _account.tokenEpoch += 1
+        let endsSession = _account.uid == nil
+        if endsSession { _account.sessionGeneration += 1 }
         persistIdentityLocked()
-        let credentials = _account.credentialVersion
-        let runtime = _realtimeRuntime
+        let committed = _account
+        // Queued in the commit's hold: the next identity can register a provider the moment the
+        // lock is released, keeping these credentials until its token arrives, and a fast failure
+        // of its first load must land after this reset rather than be cleared by it.
+        if let runtime = _realtimeRuntime {
+            runtime.onIdentityChanged(credentials: committed.credentialVersion)
+        } else if endsSession && _tokenLoadInFlight == nil {
+            setConnectionStateLocked(.idle)
+        }
         stateLock.unlock()
         DashXLog.i(tag: #function, "Identity token expired with no provider bound; continuing unauthenticated")
-        runtime?.onIdentityChanged(credentials: credentials)
-        return true
+        // A conversation opened under the expiring session after the detach. The next
+        // identity's sessions, opened under the new generation, stay open.
+        if endsSession { ChatCoordinator.shared.closeSessions(openedUnder: identityGeneration) }
+        notifyEnded?()
+        return committed.credentialVersion
     }
 
     /// Refreshes the token, joining any in-flight load, and reports whether a new one is installed.
@@ -327,6 +366,23 @@ extension DashXClient {
         claimed.load.await { completion($0 != nil ? .refreshed : .failed) }
     }
 
+    /// A stored realtime verdict for `credentials` left a subscriber without a socket. With a
+    /// provider bound, starts or joins a load: forced while a token is held, since that token was
+    /// rejected or failed to refresh. Its install reconnects and its failure fails the waiting
+    /// subscribers, both the usual way. False when the credentials were replaced or no provider is
+    /// bound: the verdict then stands until the host supplies a token.
+    func recoverRealtimeCredentials(_ credentials: CredentialVersion) -> Bool {
+        stateLock.lock()
+        guard _account.credentialVersion == credentials, let bound = _boundProvider, bound.uid == _account.uid else {
+            stateLock.unlock()
+            return false
+        }
+        let claimed = claimTokenLoadLocked(bound: bound, forceRefresh: _account.identityToken != nil)
+        stateLock.unlock()
+        claimed.launch?()
+        return true
+    }
+
     struct ClaimedTokenLoad {
         let load: TokenLoad
         /// Set when this call claimed the slot for a new load; run it after releasing `stateLock`.
@@ -341,22 +397,43 @@ extension DashXClient {
         let fresh = TokenLoad(forceRefresh: forceRefresh)
         _tokenLoadInFlight = fresh
         let requestSnapshot = _account
+        let timeout = _tokenLoadTimeout
         return ClaimedTokenLoad(load: fresh, launch: {
-            self.launchTokenLoad(bound: bound, forceRefresh: forceRefresh, load: fresh, requestSnapshot: requestSnapshot)
+            self.launchTokenLoad(bound: bound, forceRefresh: forceRefresh, load: fresh, requestSnapshot: requestSnapshot, timeout: timeout)
         })
     }
 
-    private func launchTokenLoad(bound: BoundTokenProvider, forceRefresh: Bool, load: TokenLoad, requestSnapshot: AccountSnapshot) {
+    private func launchTokenLoad(
+        bound: BoundTokenProvider,
+        forceRefresh: Bool,
+        load: TokenLoad,
+        requestSnapshot: AccountSnapshot,
+        timeout: TimeInterval
+    ) {
         let callback = OnceTokenCallback { token, cause in
             self.finishTokenLoad(bound: bound, load: load, requestSnapshot: requestSnapshot, token: token, cause: cause)
         }
-        tokenQueue.asyncAfter(deadline: .now() + Self.tokenLoadTimeout) {
+        // On its own queue: a provider blocking `tokenQueue` must not hold the timeout back.
+        tokenTimeoutQueue.asyncAfter(deadline: .now() + timeout) {
             callback.onUnavailable(DashXClientError.customError(
-                message: "The identity token provider did not respond within \(Int(Self.tokenLoadTimeout))s"))
+                message: "The identity token provider did not respond within \(Int(timeout))s"))
         }
         tokenQueue.async {
+            // Queued behind a provider that blocked, the load may have timed out or been superseded
+            // meanwhile: its result would be discarded, and a forced refresh would still rotate the
+            // host's credentials.
+            guard !callback.isSettled, self.isCurrentTokenLoad(load, bound: bound) else {
+                DashXLog.d(tag: #function, "Skipping a token load that settled while queued")
+                return
+            }
             bound.provider.loadToken(forceRefresh: forceRefresh, callback: callback)
         }
+    }
+
+    private func isCurrentTokenLoad(_ load: TokenLoad, bound: BoundTokenProvider) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return _tokenLoadInFlight === load && _boundProvider === bound
     }
 
     private func finishTokenLoad(bound: BoundTokenProvider, load: TokenLoad, requestSnapshot: AccountSnapshot, token: String?, cause: Error?) {

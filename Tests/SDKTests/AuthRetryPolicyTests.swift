@@ -65,4 +65,20 @@ final class AuthRetryPolicyTests: XCTestCase {
             Info(code: DashXGraphQLErrors.forbidden, message: "rejected"),
         ]))
     }
+
+    func testARetryOutsideTheFirstPassSessionIsRefused() {
+        let admission = AuthRetryAdmission(firstPassGeneration: 3)
+        XCTAssertEqual(admission.verdict(token: "refreshed", version: CredentialVersion(sessionGeneration: 3, tokenEpoch: 9)), .proceed)
+        XCTAssertEqual(admission.verdict(token: "next-user", version: CredentialVersion(sessionGeneration: 4, tokenEpoch: 0)), .sessionEnded)
+    }
+
+    func testThePublicKeyFallbackRunsOnlyOnTheAccountTheDropLeft() {
+        let dropped = CredentialVersion(sessionGeneration: 4, tokenEpoch: 2)
+        let admission = AuthRetryAdmission(firstPassGeneration: 3, fallbackCredentials: dropped)
+        XCTAssertEqual(admission.verdict(token: nil, version: dropped), .proceed)
+        // A sign-in activating on the cleared account keeps its generation but installs a token.
+        XCTAssertEqual(admission.verdict(token: "next-user", version: CredentialVersion(sessionGeneration: 4, tokenEpoch: 3)), .rejectionStands)
+        XCTAssertEqual(admission.verdict(token: nil, version: CredentialVersion(sessionGeneration: 4, tokenEpoch: 3)), .rejectionStands)
+        XCTAssertEqual(admission.verdict(token: nil, version: CredentialVersion(sessionGeneration: 5, tokenEpoch: 0)), .rejectionStands)
+    }
 }

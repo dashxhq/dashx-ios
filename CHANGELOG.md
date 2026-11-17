@@ -37,13 +37,17 @@ server-only: the host's backend creates the conversation and returns the
   `DashXTokenProvider` (adapters: `DashXClosureTokenProvider`, `DashXAsyncTokenProvider`), called
   with `forceRefresh: true` after a rejection. Register it at launch. A chat operation made while
   it loads waits for its token, and one made after a failed load asks it again; `.notIdentified`
-  means neither a token nor a provider is set.
+  means neither a token nor a provider is set. After a failed load, or a realtime rejection no
+  refresh recovered, opening a conversation (again, too) or returning to the foreground with one
+  open asks the provider again (with `forceRefresh: true` while a token is held). A provider that
+  does not answer within 30 seconds is reported unavailable even if it blocks its calling thread,
+  and a load that times out while queued behind it never reaches it.
 - **Composable push** — `DashXPush.isDashXMessage(_:)` / `shouldDisplay(_:)` for hosts with their
   own `UNUserNotificationCenterDelegate`. A chat push for the conversation on screen is not
   presented in the foreground (`DashXAppDelegate` applies this before
-  `notificationDeliveredInForeground(message:)`; delivery is still tracked), and opening a
-  conversation clears its delivered notifications. `DashX.setNotificationDisplayDecider(_:)`
-  lets a host veto any foreground notification.
+  `notificationDeliveredInForeground(message:)`; delivery is still tracked), and
+  `setVisible(true)` on a lease clears that conversation's delivered notifications.
+  `DashX.setNotificationDisplayDecider(_:)` lets a host veto any foreground notification.
 - `DashXClientError.sessionEnded`, `DashXClientError.subscriptionFailed`,
   `DashXGraphQLErrors.code` (the response's `extensions.code`) and `DashX.hasIdentityToken`.
 
@@ -59,10 +63,17 @@ server-only: the host's backend creates the conversation and returns the
   `UNAUTHORIZED` before execution is retried once after a token refresh. When no provider is bound
   and the token has expired, the SDK drops it and continues on the public key alone, so
   `identify` / `track` / `subscribe` keep working as in 1.6.x; with a provider bound the token is
-  kept and the next rejection asks the provider again.
+  kept and the next rejection asks the provider again. Dropping the token of an identity set
+  without a uid ends that identity and the chat sessions opened under it; their leases hear of it
+  only once the identity has ended, so a conversation reopened from `setOnTerminated` belongs to
+  whichever identity follows. The public-key retry
+  goes out only while the account the drop left is unchanged and still has no token; otherwise
+  the original rejection is returned.
 - `setIdentity(uid:token:)` with a nil token for the current uid keeps the held token; `reset()`
-  clears it. Switching uid and `reset()` end open chat sessions (leases receive
-  `.error(.sessionEnded)`) and recycle the realtime connection.
+  clears it. A first identity connects conversations already waiting for one, whether it carries a
+  uid, a token or both; a later token change keeps them only under the same non-nil uid.
+  Switching uid and `reset()` end open chat sessions (leases receive `.error(.sessionEnded)`) and
+  recycle the realtime connection.
 - GraphQL code regenerated: `SystemContextScreenInput.density` is now `Double` (was `Int`), and
   `SearchRecordsInput` gained an optional `project` field.
 

@@ -436,6 +436,306 @@ final class TokenProviderRecoveryTests: XCTestCase {
         lease.close()
     }
 
+    func testOpeningAConversationAfterAFailedFirstLoadAsksTheProviderAgain() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        let requests = Atomic<[Bool]>([])
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { forceRefresh, callback in
+            requests.append(forceRefresh)
+            if requests.value.count == 1 {
+                callback.onUnavailable(nil)
+            } else {
+                callback.onToken("recovered-token")
+            }
+        })
+        awaitUntil(what: "first load failed") { self.isAuthFailed(self.client.connectionState) }
+
+        let lease = client.chat(chatIdentityId: "identity").openConversation("conversation")
+        awaitUntil(what: "socket under the recovered token") { realtime.connections.value.count == 1 }
+        XCTAssertEqual(requests.value, [false, false], "no token was held, so none was rejected")
+        XCTAssertEqual(client.account.identityToken, "recovered-token")
+        if case .error = lease.state { XCTFail("a recovered load must not fail the conversation") }
+        lease.close()
+    }
+
+    func testForegroundAfterAnUnrecoveredRejectionForcesAProviderRefresh() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        let requests = Atomic<[Bool]>([])
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { forceRefresh, callback in
+            requests.append(forceRefresh)
+            switch requests.value.count {
+            case 1: callback.onToken("token-1")
+            case 2: callback.onUnavailable(nil)
+            default: callback.onToken("token-2")
+            }
+        })
+        awaitUntil(what: "first token") { self.client.account.identityToken == "token-1" }
+
+        let lease = client.chat(chatIdentityId: "identity").openConversation("conversation")
+        awaitUntil(what: "socket 1") { realtime.connections.value.count == 1 }
+        realtime.open(0)
+        realtime.close(0, code: 4401)
+        // The failed refresh fails the subscriber only after its load released the slot.
+        awaitUntil(what: "refresh failed") {
+            if case .error(.subscriptionFailed) = lease.state { return true }
+            return false
+        }
+        XCTAssertEqual(realtime.connections.value.count, 1)
+
+        client.realtimeRuntime?.onBackground()
+        client.realtimeRuntime?.onForeground()
+        awaitUntil(what: "reconnected under a forced token") { realtime.connections.value.count == 2 }
+        XCTAssertEqual(requests.value, [false, true, true], "the rejected token is never handed back")
+        XCTAssertEqual(client.account.identityToken, "token-2")
+        lease.close()
+    }
+
+    func testATokenOnlyFirstActivationConnectsAWaitingConversation() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        let lease = client.chat(chatIdentityId: "identity").openConversation("conversation")
+        awaitUntil(what: "waiting for an identity") {
+            if case .error(.notIdentified) = lease.state { return true }
+            return false
+        }
+
+        client.setIdentity(uid: nil, token: "token-only")
+        awaitUntil(what: "socket under the token") { realtime.connections.value.count == 1 }
+        if case .error(.sessionEnded) = lease.state { XCTFail("a first activation must not end the session") }
+
+        // No uid ties a second token to the first one's user.
+        client.setIdentity(uid: nil, token: "another-token")
+        awaitUntil(what: "session ended") {
+            if case .error(.sessionEnded) = lease.state { return true }
+            return false
+        }
+        lease.close()
+    }
+
+    func testAnExpiredTokenOnlyIdentityEndsItsSessionBeforeTheNextActivation() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        client.setIdentity(uid: nil, token: "token-only")
+        let generation = client.currentSessionGeneration
+        let lease = client.chat(chatIdentityId: "identity").openConversation("conversation")
+        awaitUntil(what: "socket") { realtime.connections.value.count == 1 }
+
+        let dropped = client.dropUnrefreshableIdentityToken(rejected: "token-only", identityGeneration: generation)
+        XCTAssertEqual(dropped?.sessionGeneration, generation + 1, "the public-key retry belongs to the session that follows")
+        awaitUntil(what: "session ended") {
+            if case .error(.sessionEnded) = lease.state { return true }
+            return false
+        }
+
+        client.setIdentity(uid: nil, token: "next-user-token")
+        let next = client.chat(chatIdentityId: "identity").openConversation("conversation")
+        XCTAssertFalse(next === lease)
+        settle(0.2)
+        if case .error(.sessionEnded) = next.state { XCTFail("the next user's conversation starts fresh") }
+        lease.close()
+        next.close()
+    }
+
+    func testASignInBeforeTheFallbackRetryKeepsItsTokenFromThePreviousRequest() {
+        client.setIdentity(uid: nil, token: "token-only")
+        let generation = client.currentSessionGeneration
+        guard let dropped = client.dropUnrefreshableIdentityToken(rejected: "token-only", identityGeneration: generation) else {
+            return XCTFail("the expired token is dropped")
+        }
+        let admission = AuthRetryAdmission(firstPassGeneration: generation, fallbackCredentials: dropped)
+        XCTAssertEqual(admission.verdict(token: client.account.identityToken, version: client.account.credentialVersion), .proceed)
+
+        // Activates on the cleared account: same generation, but now with the next user's token.
+        client.setIdentity(uid: "next-\(uid)", token: "next-user-token")
+        XCTAssertEqual(client.currentSessionGeneration, dropped.sessionGeneration)
+        XCTAssertEqual(admission.verdict(token: client.account.identityToken, version: client.account.credentialVersion), .rejectionStands)
+    }
+
+    func testTokenOnlyExpiryTeardownLeavesALaterSessionsConversationsOpen() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        client.setIdentity(uid: nil, token: "token-only")
+        let expired = client.currentSessionGeneration
+        let chat = client.chat(chatIdentityId: "identity")
+        let departing = chat.openConversation("departing")
+
+        // Stands in for a sign-in that opened chat after the cleared account became visible.
+        client.updateAccount { $0.sessionGeneration += 1 }
+        let arriving = chat.openConversation("arriving")
+
+        ChatCoordinator.shared.closeSessions(openedUnder: expired)
+        awaitUntil(what: "the expired session's conversation ended") {
+            if case .error(.sessionEnded) = departing.state { return true }
+            return false
+        }
+        settle(0.2)
+        if case .error(.sessionEnded) = arriving.state { XCTFail("a later session's conversation stays open") }
+        departing.close()
+        arriving.close()
+    }
+
+    func testANextProvidersFailureAfterATokenOnlyExpiryStaysRecoverable() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        client.setIdentity(uid: nil, token: "token-only")
+        let generation = client.currentSessionGeneration
+        let departingStates = Atomic<[DashXConversationState]>([])
+        let observer = DashXConversationStateObserver { departingStates.append($0) }
+        let departing = client.chat(chatIdentityId: "identity").openConversation("departing")
+        departing.addStateListener(observer)
+        awaitUntil(what: "socket") { realtime.connections.value.count == 1 }
+
+        XCTAssertNotNil(client.dropUnrefreshableIdentityToken(rejected: "token-only", identityGeneration: generation))
+        let requests = Atomic<Int>(0)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            if requests.increment() == 1 {
+                callback.onUnavailable(nil)
+            } else {
+                callback.onToken("next-user-token")
+            }
+        })
+        awaitUntil(what: "the next provider's failure is published") { self.isAuthFailed(self.client.connectionState) }
+        settle(0.2)
+        XCTAssertTrue(isAuthFailed(client.connectionState), "the expiry reset must not clear the next identity's failure")
+        XCTAssertFalse(departingStates.value.contains {
+            if case .error(.notIdentified) = $0 { return true }
+            return false
+        }, "the departing conversation ends without first failing for a missing identity")
+
+        let arriving = client.chat(chatIdentityId: "identity").openConversation("arriving")
+        awaitUntil(what: "recovered socket") { realtime.connections.value.count == 2 }
+        XCTAssertEqual(requests.value, 2)
+        departing.close()
+        arriving.close()
+    }
+
+    func testADetachedSessionsLeasesHearOfItsEndOnlyWhenNotified() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        client.setIdentity(uid: nil, token: "token-only")
+        let generation = client.currentSessionGeneration
+        let lease = client.chat(chatIdentityId: "identity").openConversation("conversation")
+        let terminations = Atomic<Int>(0)
+        lease.setOnTerminated { _ in terminations.mutate { $0 += 1 } }
+
+        let notifyEnded = ChatCoordinator.shared.detachSessions(openedUnder: generation)
+        let replayed = Atomic<[DashXConversationState]>([])
+        lease.addStateListener(DashXConversationStateObserver { replayed.append($0) })
+        let sendRefusals = Atomic<Int>(0)
+        lease.sendMessage(content: ["text": "hello"]) { _ in sendRefusals.mutate { $0 += 1 } }
+        settle(0.2)
+        XCTAssertEqual(terminations.value, 0, "an identity change commits before its leases hear of the end")
+        XCTAssertEqual(sendRefusals.value, 0, "a refused send waits for the end to be published")
+        if case .error(.sessionEnded) = lease.state { XCTFail("the terminal state is published with the notification") }
+        XCTAssertFalse(replayed.value.contains(.error(.sessionEnded)), "a reattached listener's replay is not terminal yet")
+
+        notifyEnded()
+        awaitUntil(what: "termination delivered") { terminations.value == 1 && sendRefusals.value == 1 }
+        awaitUntil(what: "terminal state replayed") { replayed.value.last == .error(.sessionEnded) }
+        if case .error(.sessionEnded) = lease.state {} else { XCTFail("the terminal state is published") }
+        lease.close()
+    }
+
+    func testAConversationReopenedWhenAnExpiryEndsItBelongsToTheNextSession() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        client.setIdentity(uid: nil, token: "token-only")
+        let generation = client.currentSessionGeneration
+        let chat = client.chat(chatIdentityId: "identity")
+        let departing = chat.openConversation("conversation")
+        let reopened = Atomic<DashXConversationLease?>(nil)
+        departing.setOnTerminated { _ in reopened.value = chat.openConversation("conversation") }
+
+        XCTAssertNotNil(client.dropUnrefreshableIdentityToken(rejected: "token-only", identityGeneration: generation))
+        awaitUntil(what: "reopened from the termination callback") { reopened.value != nil }
+        settle(0.2)
+        guard let lease = reopened.value else { return XCTFail("the conversation is reopened") }
+        if case .error(.sessionEnded) = lease.state { XCTFail("the reopened lease belongs to the session that follows") }
+        departing.close()
+        lease.close()
+    }
+
+    func testReopeningAConversationBeforeAnExpiryCleanupGetsAFreshSession() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        client.setIdentity(uid: nil, token: "token-only")
+        let expired = client.currentSessionGeneration
+        let chat = client.chat(chatIdentityId: "identity")
+        let departing = chat.openConversation("conversation")
+
+        // The expiry committed the next generation; its cleanup has not run yet.
+        client.updateAccount { $0.sessionGeneration += 1 }
+        let reopened = chat.openConversation("conversation")
+        awaitUntil(what: "the expired session ended on replacement") {
+            if case .error(.sessionEnded) = departing.state { return true }
+            return false
+        }
+
+        ChatCoordinator.shared.closeSessions(openedUnder: expired)
+        settle(0.2)
+        if case .error(.sessionEnded) = reopened.state { XCTFail("the reopened lease belongs to the current session") }
+        departing.close()
+        reopened.close()
+    }
+
+    func testReopeningAConversationWhoseRecoveryFailedAsksTheProviderAgain() {
+        let realtime = RealtimeSeam(client)
+        defer { realtime.restore() }
+        let requests = Atomic<Int>(0)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            if requests.increment() < 3 {
+                callback.onUnavailable(nil)
+            } else {
+                callback.onToken("third-token")
+            }
+        })
+        awaitUntil(what: "first load failed") { self.isAuthFailed(self.client.connectionState) }
+
+        let chat = client.chat(chatIdentityId: "identity")
+        let first = chat.openConversation("conversation")
+        awaitUntil(what: "recovery failed") {
+            if case .error(.subscriptionFailed) = first.state { return true }
+            return false
+        }
+        XCTAssertEqual(requests.value, 2)
+
+        // The retained lease keeps the session and its subscription: no new SUBSCRIBE is sent.
+        let second = chat.openConversation("conversation")
+        awaitUntil(what: "socket under the third token") { realtime.connections.value.count == 1 }
+        XCTAssertEqual(requests.value, 3)
+        first.close()
+        second.close()
+    }
+
+    func testAQueuedLoadThatTimedOutNeverReachesTheProvider() {
+        client.stateLock.lock()
+        client._tokenLoadTimeout = 0.2
+        client.stateLock.unlock()
+        let release = DispatchSemaphore(value: 0)
+        defer {
+            release.signal()
+            client.stateLock.lock()
+            client._tokenLoadTimeout = DashXClient.defaultTokenLoadTimeout
+            client.stateLock.unlock()
+        }
+        let calls = Atomic<Int>(0)
+        client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { _, callback in
+            if calls.increment() == 1 { release.wait() }
+            callback.onToken("late-token")
+        })
+        awaitUntil(what: "first load timed out while its provider blocks") { self.isAuthFailed(self.client.connectionState) }
+
+        let outcome = awaitIdentityToken()
+        awaitUntil(what: "queued load timed out") { outcome.value != nil }
+        if case .success? = outcome.value { XCTFail("a timed-out load supplies no token") }
+
+        release.signal()
+        settle(0.3)
+        XCTAssertEqual(calls.value, 1, "the timed-out queued load never reaches the provider")
+        XCTAssertNil(client.account.identityToken, "the blocked provider's late answer is discarded")
+    }
+
     func testAnEarlierIdentitysRefreshRequestNeverReachesTheCurrentProvider() {
         client.setIdentityTokenProvider(uid: uid, provider: DashXClosureTokenProvider { forceRefresh, callback in
             callback.onToken(forceRefresh ? "token-a2" : "token-a")
@@ -686,10 +986,12 @@ final class TokenProviderRecoveryTests: XCTestCase {
         client.reset()
         client.setIdentity(uid: uid, token: "same-token")
 
-        XCTAssertFalse(client.dropUnrefreshableIdentityToken(rejected: "same-token", identityGeneration: requestGeneration))
+        XCTAssertNil(client.dropUnrefreshableIdentityToken(rejected: "same-token", identityGeneration: requestGeneration))
         XCTAssertEqual(client.account.identityToken, "same-token", "an old request must not clear the new session's token")
 
-        XCTAssertTrue(client.dropUnrefreshableIdentityToken(rejected: "same-token", identityGeneration: client.currentSessionGeneration))
+        let generation = client.currentSessionGeneration
+        XCTAssertEqual(client.dropUnrefreshableIdentityToken(rejected: "same-token", identityGeneration: generation)?.sessionGeneration,
+                       generation, "a uid keeps its session when only the token goes")
         XCTAssertNil(client.account.identityToken)
     }
 

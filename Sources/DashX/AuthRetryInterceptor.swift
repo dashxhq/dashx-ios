@@ -53,6 +53,32 @@ enum AuthRetryPolicy {
     }
 }
 
+/// Whether a retry pass may go out, judged from the same snapshot that supplies its token.
+struct AuthRetryAdmission {
+    enum Verdict: Equatable {
+        case proceed
+        /// The identity session changed since the first pass.
+        case sessionEnded
+        /// The public-key fallback lost the account the drop left; the rejection stands.
+        case rejectionStands
+    }
+
+    /// The session the first pass ran under.
+    var firstPassGeneration = 0
+    /// Set once the expired token was dropped: the fallback runs only on the credentials the drop
+    /// committed and only while they still carry no token. A sign-in that activates on the cleared
+    /// account keeps its generation, so the generation alone would let it lend its token to the
+    /// previous identity's request.
+    var fallbackCredentials: CredentialVersion?
+
+    func verdict(token: String?, version: CredentialVersion) -> Verdict {
+        if let fallbackCredentials {
+            return token == nil && version == fallbackCredentials ? .proceed : .rejectionStands
+        }
+        return version.sessionGeneration == firstPassGeneration ? .proceed : .sessionEnded
+    }
+}
+
 /// Attaches the identity token and retries a request rejected before execution once, after a token
 /// refresh. Token and session generation are read as one snapshot, so the header on the wire and
 /// the generation the retry is guarded by always belong to the same account. Sits at the head of
@@ -71,11 +97,13 @@ final class AuthRetryInterceptor: ApolloInterceptor {
     private let refreshToken: RefreshToken
     private let credentials: () -> Credentials
     /// Clears the rejected token when nothing can refresh it and it is still the one held by the
-    /// request's identity session.
-    private let dropExpiredToken: (_ rejected: String?, _ identityGeneration: Int) -> Bool
+    /// request's identity session; returns the credentials the drop committed, or nil.
+    private let dropExpiredToken: (_ rejected: String?, _ identityGeneration: Int) -> CredentialVersion?
     private let lock = NSLock()
     private var attempted = false
-    private var firstPassGeneration = 0
+    private var admission = AuthRetryAdmission()
+    /// The first pass's rejection, answered when the fallback retry may not go out.
+    private var fallbackRejection: Any?
 
     init(
         refreshToken: @escaping RefreshToken = { DashXClient.instance.awaitTokenRefresh(expected: $0, completion: $1) },
@@ -83,7 +111,7 @@ final class AuthRetryInterceptor: ApolloInterceptor {
             let account = DashXClient.instance.account
             return (account.identityToken, account.credentialVersion)
         },
-        dropExpiredToken: @escaping (_ rejected: String?, _ identityGeneration: Int) -> Bool = {
+        dropExpiredToken: @escaping (_ rejected: String?, _ identityGeneration: Int) -> CredentialVersion? = {
             DashXClient.instance.dropUnrefreshableIdentityToken(rejected: $0, identityGeneration: $1)
         }
     ) {
@@ -115,12 +143,22 @@ final class AuthRetryInterceptor: ApolloInterceptor {
 
         lock.lock()
         let isRetryPass = attempted
-        if !isRetryPass { firstPassGeneration = generationAtStart }
-        let firstGeneration = firstPassGeneration
+        if !isRetryPass { admission.firstPassGeneration = generationAtStart }
+        let verdict = isRetryPass ? admission.verdict(token: tokenAtStart, version: versionAtStart) : .proceed
+        let rejection = fallbackRejection
         lock.unlock()
-        // The operation belongs to the session it started under; a retry under another is refused.
-        if isRetryPass, generationAtStart != firstGeneration {
+        switch verdict {
+        case .proceed:
+            break
+        case .sessionEnded:
             chain.handleErrorAsync(DashXClientError.sessionEnded, request: request, response: response, completion: completion)
+            return
+        case .rejectionStands:
+            if let rejection = rejection as? Result<GraphQLResult<Operation.Data>, any Error> {
+                completion(rejection)
+            } else {
+                chain.handleErrorAsync(DashXClientError.sessionEnded, request: request, response: response, completion: completion)
+            }
             return
         }
 
@@ -146,7 +184,9 @@ final class AuthRetryInterceptor: ApolloInterceptor {
                     // With no provider bound an expired token would fail every call, so drop it and
                     // retry once on the public key alone. A bound provider that failed keeps the
                     // token: the next rejection asks it again.
-                    if AuthRetryPolicy.isExpired(errors: errors), self.dropExpiredToken(tokenAtStart, generationAtStart) {
+                    if AuthRetryPolicy.isExpired(errors: errors),
+                       let dropped = self.dropExpiredToken(tokenAtStart, generationAtStart) {
+                        self.armFallback(dropped, rejection: result)
                         chain.retry(request: request, completion: completion)
                     } else {
                         completion(result)
@@ -166,6 +206,13 @@ final class AuthRetryInterceptor: ApolloInterceptor {
     static func isBoundToAnotherSession(_ context: Any?, sessionGeneration: Int) -> Bool {
         guard let bound = context as? DashXSessionRequestContext else { return false }
         return bound.sessionGeneration != sessionGeneration
+    }
+
+    private func armFallback(_ credentials: CredentialVersion, rejection: Any) {
+        lock.lock()
+        defer { lock.unlock() }
+        admission.fallbackCredentials = credentials
+        fallbackRejection = rejection
     }
 
     /// One retry per request chain; the retried pass must pass its own result through.

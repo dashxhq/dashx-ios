@@ -15,8 +15,10 @@ public enum DashXConnectionState {
     /// Process backgrounded with subscriptions still registered; resumes on foreground.
     case suspended
 
-    /// Terminal: the server rejected the credentials and no token refresh recovered. A later
-    /// `setIdentity(uid:token:)` or `setIdentityTokenProvider(uid:provider:)` retries.
+    /// The server rejected the credentials and no token refresh recovered, or the provider supplied
+    /// none. A later `setIdentity(uid:token:)` or `setIdentityTokenProvider(uid:provider:)` retries;
+    /// with a provider bound, so does opening a conversation or returning to the foreground with
+    /// one open.
     case authenticationFailed(cause: Error?)
 }
 

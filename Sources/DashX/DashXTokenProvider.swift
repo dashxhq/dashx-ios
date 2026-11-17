@@ -4,7 +4,8 @@ import Foundation
 public protocol DashXTokenCallback: AnyObject {
     func onToken(_ token: String)
 
-    /// No valid token is available — the SDK enters `authenticationFailed` rather than retrying.
+    /// No valid token is available — the SDK enters `authenticationFailed` rather than retrying at
+    /// once. The next chat operation, conversation open or return to the foreground asks again.
     func onUnavailable(_ cause: Error?)
 }
 

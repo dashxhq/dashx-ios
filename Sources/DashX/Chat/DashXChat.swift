@@ -141,13 +141,18 @@ final class ChatCoordinator {
         while true {
             lock.lock()
             let session: ConversationSession
-            if let existing = sessions[key] {
+            var stale: ConversationSession?
+            if let existing = sessions[key], existing.identityGeneration == DashXClient.instance.currentSessionGeneration {
                 session = existing
             } else {
+                // A session from an ended identity may still await its cleanup, which looks it up
+                // here: once replaced, it is ended now instead.
+                stale = sessions[key]
                 session = ConversationSession(key: key)
                 sessions[key] = session
             }
             lock.unlock()
+            stale?.endSession()
             if let lease = session.newLease() { return lease }
             // Lost a race with the session's teardown; the loop builds a new one.
         }
@@ -167,6 +172,23 @@ final class ChatCoordinator {
         open.forEach { $0.endSession() }
     }
 
+    /// Ends only the sessions opened under `generation`; a later identity's stay open.
+    func closeSessions(openedUnder generation: Int) {
+        detachSessions(openedUnder: generation)()
+    }
+
+    /// Ends the sessions opened under `generation` without telling their leases yet; the returned
+    /// closure does. An identity change detaches before it commits and notifies after, so a lease
+    /// reopened from a termination callback is opened under the identity that follows.
+    func detachSessions(openedUnder generation: Int) -> () -> Void {
+        lock.lock()
+        let ending = sessions.values.filter { $0.identityGeneration == generation }
+        ending.forEach { sessions.removeValue(forKey: $0.key) }
+        lock.unlock()
+        let notifications = ending.compactMap { $0.detach() }
+        return { notifications.forEach { $0() } }
+    }
+
     func onAppForegrounded() {
         lock.lock()
         let open = Array(sessions.values)
@@ -181,6 +203,8 @@ final class ChatCoordinator {
 /// Seam so the synchronizer is testable without a socket or transport.
 protocol ChatSessionBackend {
     func subscribe(_ handle: SubscriberHandle) -> DashXRealtimeSubscription
+    /// A new lease reused an existing subscription; a credential failure stranding it is retried.
+    func subscriberReturned()
     func summarizeMessages(conversationId: String) async throws -> Int
     func fetchPage(conversationId: String, limit: Int, page: Int) async throws -> [DashXChatMessage]
     func fetchAfter(conversationId: String, limit: Int, afterMessageId: String) async throws -> [DashXChatMessage]
@@ -209,11 +233,19 @@ protocol ChatSessionBackend {
     var sessionGeneration: Int { get }
 }
 
+extension ChatSessionBackend {
+    func subscriberReturned() {}
+}
+
 struct DashXChatSessionBackend: ChatSessionBackend {
     private var client: DashXClient { DashXClient.instance }
 
     func subscribe(_ handle: SubscriberHandle) -> DashXRealtimeSubscription {
         client.requireRealtimeRuntime().subscribe(handle)
+    }
+
+    func subscriberReturned() {
+        client.realtimeRuntime?.onSubscriberReturned()
     }
 
     func summarizeMessages(conversationId: String) async throws -> Int {
@@ -286,7 +318,7 @@ final class ConversationSession {
     let key: ChatSessionKey
     fileprivate let backend: ChatSessionBackend
     /// The identity session this conversation was opened under.
-    private let identityGeneration: Int
+    let identityGeneration: Int
     fileprivate let lane = DispatchQueue(label: "com.dashx.ios.chat.session")
     private let callbackQueue: DispatchQueue
 
@@ -294,6 +326,8 @@ final class ConversationSession {
     private var currentState: DashXConversationState = .loading
     private var leases: [Lease] = []
     private var ended = false
+    /// Between a detach and its notification: `.sessionEnded` reports held until the leases hear.
+    private var heldEndedReports: [() -> Void]?
     private var subscription: DashXRealtimeSubscription?
 
     // Confined to `lane`.
@@ -350,11 +384,14 @@ final class ConversationSession {
 
     func newLease() -> DashXConversationLease? {
         lock.lock()
-        defer { lock.unlock() }
-        if ended { return nil }
+        if ended {
+            lock.unlock()
+            return nil
+        }
         let lease = Lease(session: self)
         leases.append(lease)
-        if subscription == nil {
+        let reused = subscription != nil
+        if !reused {
             let handle = SubscriberHandle(
                 channelName: RealtimeRuntime.chatChannelName(conversationId: key.conversationId),
                 onFrame: { [weak self] frame in self?.onFrame(frame) },
@@ -363,6 +400,8 @@ final class ConversationSession {
             )
             subscription = backend.subscribe(handle)
         }
+        lock.unlock()
+        if reused { backend.subscriberReturned() }
         return lease
     }
 
@@ -709,29 +748,57 @@ final class ConversationSession {
     }
 
     func endSession() {
+        detach()?()
+    }
+
+    /// Ends the session without telling its leases; the returned closure publishes
+    /// `.sessionEnded` to them. Until it runs, `state` and its replay keep the last state and a
+    /// refused send waits, so nothing has the app reopen the conversation before the identity
+    /// change commits. Nil when the session had already ended.
+    func detach() -> (() -> Void)? {
         lock.lock()
         if ended {
             lock.unlock()
-            return
+            return nil
         }
         ended = true
+        heldEndedReports = []
         let toNotify = leases
         leases.removeAll()
         let departing = subscription
         subscription = nil
-        let terminal = DashXConversationState.error(.sessionEnded)
-        currentState = terminal
         writeVisibilityLocked(false)
         lock.unlock()
 
         departing?.unsubscribe()
-        toNotify.forEach { lease in
-            lease.notifyStateListeners(terminal)
-            if let callback = lease.terminatedCallback {
-                callbackQueue.async { callback(.sessionEnded) }
-            }
-        }
         ChatCoordinator.shared.remove(key, self)
+        return {
+            let terminal = DashXConversationState.error(.sessionEnded)
+            self.lock.lock()
+            self.currentState = terminal
+            let held = self.heldEndedReports ?? []
+            self.heldEndedReports = nil
+            self.lock.unlock()
+            toNotify.forEach { lease in
+                lease.notifyStateListeners(terminal)
+                if let callback = lease.terminatedCallback {
+                    self.deliver { callback(.sessionEnded) }
+                }
+            }
+            held.forEach(self.deliver)
+        }
+    }
+
+    /// Delivers a `.sessionEnded` report, after the leases hear of the end when it is still held.
+    fileprivate func deliverEndedReport(_ report: @escaping () -> Void) {
+        lock.lock()
+        if heldEndedReports != nil {
+            heldEndedReports?.append(report)
+            lock.unlock()
+            return
+        }
+        lock.unlock()
+        deliver(report)
     }
 
     fileprivate func closeLease(_ lease: Lease) {
@@ -846,7 +913,7 @@ final class ConversationSession {
             // the request would carry the next identity's token. Checked again at dispatch, which
             // a first token load can delay past a close.
             guard canSend else {
-                session.deliver { completion(.failure(DashXClientError.sessionEnded)) }
+                session.deliverEndedReport { completion(.failure(DashXClientError.sessionEnded)) }
                 return clientMessageId
             }
             session.backend.send(
@@ -861,7 +928,11 @@ final class ConversationSession {
                 if case .success(let message) = result {
                     session.lane.async { session.mergeLive(message) }
                 }
-                completion(result)
+                if case .failure(let error as DashXClientError) = result, case .sessionEnded = error {
+                    session.deliverEndedReport { completion(result) }
+                } else {
+                    completion(result)
+                }
             }
             return clientMessageId
         }
