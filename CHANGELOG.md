@@ -8,6 +8,10 @@ All notable changes to `dashx-ios` are documented in this file. Format loosely f
 
 - **Minimum deployment target is now iOS 15.0** (was 13.0) for `Package.swift`, the podspec and
   the shipped xcframeworks. Xcode 27 no longer builds for earlier versions.
+- **`setIdentity(uid:token:)` with a nil token for the current uid keeps the held token** (1.6.x
+  cleared it). `reset()` clears it, but signs the user out as a whole: it also unsubscribes the
+  device from push, regenerates the anonymous uid and ends open chat sessions. No single call
+  clears only the token while keeping the uid.
 
 In-app chat. The SDK now manages a realtime WebSocket connection and exposes a conversation API
 on top of it. Conversation creation is
@@ -81,8 +85,7 @@ server-only: the host's backend creates the conversation and returns the
   whichever identity follows. The public-key retry
   goes out only while the account the drop left is unchanged and still has no token; otherwise
   the original rejection is returned.
-- `setIdentity(uid:token:)` with a nil token for the current uid keeps the held token; `reset()`
-  clears it. A first identity connects conversations already waiting for one, whether it carries a
+- A first identity connects conversations already waiting for one, whether it carries a
   uid, a token or both; a later token change keeps them only under the same non-nil uid.
   Switching uid and `reset()` end open chat sessions (leases receive `.error(.sessionEnded)`) and
   recycle the realtime connection.

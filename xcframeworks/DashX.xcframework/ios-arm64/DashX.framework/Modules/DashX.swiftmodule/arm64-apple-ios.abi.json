@@ -23556,7 +23556,7 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient+Identity.swift",
       "kind": "StringLiteral",
-      "offset": 12181,
+      "offset": 11936,
       "length": 76,
       "value": "\"The identity token provider supplied no token; the next call asks it again\""
     },
@@ -23724,35 +23724,35 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "IntegerLiteral",
-      "offset": 65800,
+      "offset": 65818,
       "length": 1,
       "value": "5"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "FloatLiteral",
-      "offset": 65862,
+      "offset": 65880,
       "length": 3,
       "value": "2.0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 70289,
+      "offset": 70307,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 74003,
+      "offset": 74021,
       "length": 4,
       "value": "true"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient.swift",
       "kind": "BooleanLiteral",
-      "offset": 77184,
+      "offset": 77202,
       "length": 5,
       "value": "false"
     },
