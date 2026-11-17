@@ -157,6 +157,45 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXNotificationServiceExtensionTests
         GENERATE_INFOPLIST_FILE: YES
 
+  # Scene-based host app for the cold-launch smoke test. It opens a
+  # conversation during `didFinishLaunching` against loopback GraphQL and
+  # WebSocket stubs, so the hosted test below observes what a real UIKit
+  # launch does to the SDK's foreground state. Public DashX API only.
+  DashXSmokeHost:
+    type: application
+    platform: iOS
+    sources:
+      - path: ../Tests/SmokeHost
+    dependencies:
+      - target: DashX
+    info:
+      path: ../Tests/SmokeHost/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXSmokeHost
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+
+  DashXSmokeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../Tests/SmokeTests
+    dependencies:
+      - target: DashXSmokeHost
+      - target: DashX
+        embed: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXSmokeTests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   DashX:
     build:
@@ -170,15 +209,17 @@ schemes:
         DashXNotificationServiceExtension: all
     archive:
       config: Release
-  # Aggregate scheme — run `xcodebuild test -scheme DashXTests` and both
-  # test bundles execute in one pass.
+  # Aggregate scheme — run `xcodebuild test -scheme DashXTests` and every
+  # test bundle executes in one pass.
   DashXTests:
     build:
       targets:
         DashXTests: [test]
         DashXNotificationServiceExtensionTests: [test]
+        DashXSmokeTests: [test]
     test:
       config: Debug
       targets:
         - DashXTests
         - DashXNotificationServiceExtensionTests
+        - DashXSmokeTests
