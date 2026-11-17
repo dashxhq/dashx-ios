@@ -484,7 +484,6 @@ final public class DashXClosureTokenProvider : DashX::DashXTokenProvider {
 }
 final public class DashXAsyncTokenProvider : DashX::DashXTokenProvider {
   public typealias Loader = (_ forceRefresh: Swift::Bool) async throws -> Swift::String?
-  public static let loaderTimeout: Swift::Double
   public init(_ loader: @escaping DashX::DashXAsyncTokenProvider.DashX::Loader)
   final public func loadToken(forceRefresh: Swift::Bool, callback: any DashX::DashXTokenCallback)
   @objc deinit

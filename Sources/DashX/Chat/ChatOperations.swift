@@ -271,10 +271,6 @@ extension DashXClient {
 
     /// Gates a completion on the session generation it began under: a request begun as user A must
     /// not deliver into user B's UI. Same-identity token refreshes leave the generation unchanged.
-    func sessionBound<T>(_ completion: @escaping (Result<T, Error>) -> Void) -> (Result<T, Error>) -> Void {
-        sessionBound(completion, generation: currentSessionGeneration)
-    }
-
     func sessionBound<T>(_ completion: @escaping (Result<T, Error>) -> Void, generation: Int) -> (Result<T, Error>) -> Void {
         return { result in
             if DashXClient.instance.currentSessionGeneration != generation {

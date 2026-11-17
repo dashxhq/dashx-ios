@@ -37,7 +37,7 @@ public final class DashXClosureTokenProvider: DashXTokenProvider {
 public final class DashXAsyncTokenProvider: DashXTokenProvider {
     public typealias Loader = (_ forceRefresh: Bool) async throws -> String?
 
-    public static let loaderTimeout: TimeInterval = 35
+    private static let loaderTimeout: TimeInterval = 35
 
     private let loader: Loader
 

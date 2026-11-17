@@ -17787,57 +17787,6 @@
         "printedName": "DashXAsyncTokenProvider",
         "children": [
           {
-            "kind": "Var",
-            "name": "loaderTimeout",
-            "printedName": "loaderTimeout",
-            "children": [
-              {
-                "kind": "TypeNominal",
-                "name": "Double",
-                "printedName": "Swift.Double",
-                "usr": "s:Sd"
-              }
-            ],
-            "declKind": "Var",
-            "usr": "s:5DashX0A19XAsyncTokenProviderC13loaderTimeoutSdvpZ",
-            "mangledName": "$s5DashX0A19XAsyncTokenProviderC13loaderTimeoutSdvpZ",
-            "moduleName": "DashX",
-            "static": true,
-            "declAttributes": [
-              "HasInitialValue",
-              "Final",
-              "HasStorage",
-              "AccessControl"
-            ],
-            "isLet": true,
-            "hasStorage": true,
-            "accessors": [
-              {
-                "kind": "Accessor",
-                "name": "Get",
-                "printedName": "Get()",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "Double",
-                    "printedName": "Swift.Double",
-                    "usr": "s:Sd"
-                  }
-                ],
-                "declKind": "Accessor",
-                "usr": "s:5DashX0A19XAsyncTokenProviderC13loaderTimeoutSdvgZ",
-                "mangledName": "$s5DashX0A19XAsyncTokenProviderC13loaderTimeoutSdvgZ",
-                "moduleName": "DashX",
-                "static": true,
-                "implicit": true,
-                "declAttributes": [
-                  "Final"
-                ],
-                "accessorKind": "get"
-              }
-            ]
-          },
-          {
             "kind": "Constructor",
             "name": "init",
             "printedName": "init(_:)",
@@ -22863,7 +22812,7 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/ChatOperations.swift",
       "kind": "BooleanLiteral",
-      "offset": 13192,
+      "offset": 13005,
       "length": 4,
       "value": "true"
     },
@@ -23934,7 +23883,7 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXTokenProvider.swift",
       "kind": "IntegerLiteral",
-      "offset": 1831,
+      "offset": 1832,
       "length": 2,
       "value": "35"
     },
