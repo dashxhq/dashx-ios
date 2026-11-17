@@ -486,6 +486,30 @@ final class RealtimeRuntimeTests: XCTestCase {
         awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
     }
 
+    func testTerminal4401FailedProviderRefreshFailsSubscribersOnce() {
+        let harness = Harness()
+        let pendingCompletion = Atomic<((AuthRefreshOutcome) -> Void)?>(nil)
+        harness.onAuthRejectedHook.value = { completion in
+            harness.refreshInFlight.value = true
+            pendingCompletion.value = completion
+        }
+        harness.subscribe("c1")
+        awaitUntil(what: "socket 1") { harness.sockets.count == 1 }
+        harness.open(0)
+
+        harness.close(0, code: 4401, reason: "UNAUTHORIZED")
+        awaitUntil(what: "hook entered") { pendingCompletion.value != nil }
+
+        // As the client does for a bound provider: unavailable credentials, then the outcome.
+        harness.refreshInFlight.value = false
+        harness.runtime.onCredentialsUnavailable(cause: nil, credentials: harness.credentials)
+        pendingCompletion.value?(.failed)
+        awaitUntil(what: "authenticationFailed") { isAuthFailed(harness.lastState) }
+        awaitUntil(what: "subscribe error") { harness.subscribeErrors.value.count == 1 }
+        settle(0.3)
+        XCTAssertEqual(harness.subscribeErrors.value.count, 1, "one failed refresh is one error")
+    }
+
     func testTerminal4401WithNoRefreshToStartNeverPublishesConnecting() {
         let harness = Harness()
         // No provider bound: the hook answers `.failed` at once and no load is ever in flight.

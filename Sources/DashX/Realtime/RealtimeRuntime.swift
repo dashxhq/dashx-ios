@@ -180,6 +180,8 @@ final class RealtimeRuntime {
     /// token may still work) but the published state stays terminal until a token is installed.
     private var credentialsUnavailable = false
     private var credentialFailureCause: Error?
+    /// Credentials whose failed load the subscribers were already told about.
+    private var unavailabilityReportedFor: CredentialVersion?
     /// Identity session the current auth failure belongs to.
     private var authVerdictCredentials = CredentialVersion(sessionGeneration: 0, tokenEpoch: 0)
     /// Advanced by every identity change; a refresh outcome from before it is stale.
@@ -506,6 +508,7 @@ final class RealtimeRuntime {
         // Without a socket no ack or deadline is coming; a live socket's own acks still decide.
         // Not while another load is already bringing a token: its outcome decides.
         if publishFailure() && socket == nil && connectingSocket == nil {
+            unavailabilityReportedFor = credentials
             failSubscribers(Self.credentialsUnavailableError)
         }
     }
@@ -528,6 +531,9 @@ final class RealtimeRuntime {
             DashXLog.d(tag: Self.tag, "A failed token refresh defers to the load that replaced it")
             return
         }
+        // A bound provider's failed load reaches the runtime as unavailable credentials first, and
+        // the subscribers heard it there. With no provider bound this is the only report.
+        guard unavailabilityReportedFor != rejected else { return }
         failSubscribers(code: Self.closeCodeUnauthorized, reason: "token refresh did not recover")
     }
 
