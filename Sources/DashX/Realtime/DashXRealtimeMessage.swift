@@ -10,6 +10,8 @@ enum DashXRealtimeMessage {
     case unsubscriptionSucceeded(channel: String)
     /// Two-way chat message. Distinct from `.inAppMessage`, which is notification-style.
     case inAppChatMessage(DashXRealtimeChatMessage)
+    /// An agent reply while it is generated; the stored reply still arrives as `.inAppChatMessage`.
+    case inAppChatStream(DashXRealtimeChatStream)
     case inAppMessage(DashXRealtimeInAppMessage)
     /// Read-state change for one notification; `readAt == nil` means marked unread.
     case inAppMessageRead(id: String, readAt: String?)
@@ -23,7 +25,7 @@ struct DashXRealtimeChatMessage {
     let externalUid: String
     let conversationId: String
     let senderId: String?
-    /// `USER` for the visitor's own message; anything else is an agent or AI reply.
+    /// `user` for the visitor's own message; anything else, or nil, is an agent or AI reply.
     let aiRole: String?
     let turnSeq: Int
     let renderedContent: [String: Any]
@@ -72,6 +74,71 @@ struct DashXRealtimeChatMessage {
     }
 }
 
+/// One frame of a streamed agent reply, for a deployment that opted into streaming. Frames are
+/// ephemeral: a lost one costs only the early view of a reply that still arrives whole.
+struct DashXRealtimeChatStream: Equatable {
+    enum Kind: String {
+        case delta = "DELTA"
+        /// The run is over; sent once, after every delta of the run.
+        case end = "END"
+    }
+
+    let conversationId: String
+    /// The turn being answered: the visitor message's `turnSeq`, which the stored reply carries.
+    let turnSeq: Int
+    /// Ranks the turn's runs: a retry numbers above the run it replaced. Compare
+    /// `(turnSeq, run)`, never `run` alone.
+    let run: Int
+    /// Order within one run, from 0; `end` takes the next number.
+    let seq: Int
+    let kind: Kind
+    /// The model response a delta belongs to; only the run's last response is the reply.
+    let responseId: String?
+    let text: String?
+    /// On `end`: whether a visible reply was stored, so an `.inAppChatMessage` is on its way.
+    let persisted: Bool?
+
+    init(
+        conversationId: String,
+        turnSeq: Int,
+        run: Int,
+        seq: Int,
+        kind: Kind,
+        responseId: String? = nil,
+        text: String? = nil,
+        persisted: Bool? = nil
+    ) {
+        self.conversationId = conversationId
+        self.turnSeq = turnSeq
+        self.run = run
+        self.seq = seq
+        self.kind = kind
+        self.responseId = responseId
+        self.text = text
+        self.persisted = persisted
+    }
+
+    init?(json: [String: Any]?) {
+        guard let json,
+              let conversationId = json.dashxString("conversationId"),
+              let turnSeq = json.dashxInt("turnSeq"),
+              let run = json.dashxInt("run"),
+              let seq = json.dashxInt("seq"),
+              let kind = json.dashxString("kind").flatMap(Kind.init(rawValue:))
+        else { return nil }
+        self.init(
+            conversationId: conversationId,
+            turnSeq: turnSeq,
+            run: run,
+            seq: seq,
+            kind: kind,
+            responseId: json.dashxString("responseId"),
+            text: json.dashxString("text"),
+            persisted: json["persisted"] as? Bool
+        )
+    }
+}
+
 struct DashXRealtimeInAppMessage {
     let id: String
     let renderedContent: [String: Any]
@@ -113,6 +180,8 @@ enum DashXRealtimeCodec {
             return .unsubscriptionSucceeded(channel: data?.dashxString("channel") ?? "")
         case "IN_APP_CHAT_MESSAGE":
             return DashXRealtimeChatMessage(json: data).map { .inAppChatMessage($0) }
+        case "IN_APP_CHAT_STREAM":
+            return DashXRealtimeChatStream(json: data).map { .inAppChatStream($0) }
         case "IN_APP_MESSAGE":
             return DashXRealtimeInAppMessage(json: data).map { .inAppMessage($0) }
         case "IN_APP_MESSAGE_READ":

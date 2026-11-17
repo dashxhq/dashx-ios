@@ -1081,6 +1081,23 @@ final class RealtimeRuntimeTests: XCTestCase {
         awaitUntil(what: "the replacement's frame") { harness.frames.value == 1 }
     }
 
+    func testStreamFramesReachOnlyTheirConversationsSubscribers() {
+        let harness = Harness()
+        harness.subscribe("c1")
+        awaitUntil(what: "socket") { harness.sockets.count == 1 }
+        harness.open(0)
+        harness.ack("in_app_chat:conversation:c1", index: 0)
+        awaitUntil(what: "acknowledged") { harness.established.value == [false] }
+
+        harness.listener(0).socket(harness.socket(0), didReceiveText:
+            #"{"type":"IN_APP_CHAT_STREAM","data":{"conversationId":"c2","turnSeq":1,"run":1,"seq":0,"kind":"DELTA","text":"x"}}"#)
+        harness.listener(0).socket(harness.socket(0), didReceiveText:
+            #"{"type":"IN_APP_CHAT_STREAM","data":{"conversationId":"c1","turnSeq":1,"run":1,"seq":0,"kind":"DELTA","text":"x"}}"#)
+        awaitUntil(what: "c1's stream frame") { harness.frames.value == 1 }
+        settle(0.15)
+        XCTAssertEqual(harness.frames.value, 1, "another conversation's stream frame was dispatched")
+    }
+
     func testChatChannelNameAndTerminalCodeRange() {
         XCTAssertEqual(RealtimeRuntime.chatChannelName(conversationId: "abc"), "in_app_chat:conversation:abc")
         XCTAssertTrue(RealtimeRuntime.isTerminalCloseCode(4400))

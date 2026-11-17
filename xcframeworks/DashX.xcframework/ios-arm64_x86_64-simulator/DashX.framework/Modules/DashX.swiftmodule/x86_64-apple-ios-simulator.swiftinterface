@@ -176,9 +176,16 @@ public struct DashXChatConversationSummary : Swift::Equatable {
   public init(conversationId: Swift::String, category: Swift::String, context: DashX::DashXChatConversationSummary.DashX::Context?, topic: DashX::DashXChatConversationSummary.DashX::Topic?, status: Swift::String, title: Swift::String, lastMessagePreview: Swift::String?, lastMessageAt: Swift::String?, lastSenderKind: Swift::String?, activityAt: Swift::String, assignedGroups: [DashX::DashXChatConversationSummary.DashX::AssignedGroup], unreadCount: Swift::Int)
   public static func == (a: DashX::DashXChatConversationSummary, b: DashX::DashXChatConversationSummary) -> Swift::Bool
 }
+public struct DashXStreamingReply : Swift::Equatable {
+  public let turnSeq: Swift::Int
+  public let text: Swift::String
+  public let isComplete: Swift::Bool
+  public init(turnSeq: Swift::Int, text: Swift::String, isComplete: Swift::Bool)
+  public static func == (a: DashX::DashXStreamingReply, b: DashX::DashXStreamingReply) -> Swift::Bool
+}
 public enum DashXConversationState {
   case loading
-  case ready(messages: [DashX::DashXChatMessage], hasOlderMessages: Swift::Bool)
+  case ready(messages: [DashX::DashXChatMessage], hasOlderMessages: Swift::Bool, streamingReply: DashX::DashXStreamingReply?)
   case error(DashX::DashXClientError)
 }
 extension DashX::DashXConversationState : Swift::Equatable {

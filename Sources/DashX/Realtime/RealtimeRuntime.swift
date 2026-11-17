@@ -421,6 +421,8 @@ final class RealtimeRuntime {
             subscriptions[channel]?.forEach { $0.onEstablished(isResubscribe) }
         case .inAppChatMessage(let message):
             subscriptions[Self.chatChannelName(conversationId: message.conversationId)]?.forEach { $0.onFrame(frame) }
+        case .inAppChatStream(let stream):
+            subscriptions[Self.chatChannelName(conversationId: stream.conversationId)]?.forEach { $0.onFrame(frame) }
         default:
             break
         }

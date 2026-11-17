@@ -215,7 +215,7 @@ private final class RecordingListener: DashXConversationStateListener {
 
     func readyIdLists() -> [[String]] {
         seen.value.compactMap { state in
-            if case .ready(let messages, _) = state { return messages.map(\.id) }
+            if case .ready(let messages, _, _) = state { return messages.map(\.id) }
             return nil
         }
     }
@@ -225,12 +225,12 @@ final class ConversationSessionTests: XCTestCase {
     private let key = ChatSessionKey(chatIdentityId: "identity-1", conversationId: "c1")
 
     private func readyIds(_ lease: DashXConversationLease) -> [String]? {
-        if case .ready(let messages, _) = lease.state { return messages.map(\.id) }
+        if case .ready(let messages, _, _) = lease.state { return messages.map(\.id) }
         return nil
     }
 
     private func hasOlder(_ lease: DashXConversationLease) -> Bool? {
-        if case .ready(_, let hasOlderMessages) = lease.state { return hasOlderMessages }
+        if case .ready(_, let hasOlderMessages, _) = lease.state { return hasOlderMessages }
         return nil
     }
 
@@ -244,12 +244,16 @@ final class ConversationSessionTests: XCTestCase {
         return nil
     }
 
-    private func openReady(_ backend: FakeBackend, history: [DashXChatMessage]) -> (ConversationSession, DashXConversationLease) {
+    private func openReady(
+        _ backend: FakeBackend,
+        history: [DashXChatMessage],
+        streamTimeouts: ReplyStreamTimeouts = ReplyStreamTimeouts()
+    ) -> (ConversationSession, DashXConversationLease) {
         backend.count.value = history.count
         var pages = [max(1, (history.count + 49) / 50): Array(history.suffix(50))]
         if history.count > 50 { pages[1] = Array(history.prefix(50)) }
         backend.pages.value = pages
-        let session = ConversationSession(key: key, backend: backend)
+        let session = ConversationSession(key: key, backend: backend, streamTimeouts: streamTimeouts)
         let lease = session.newLease()!
         backend.handles.value[0].onEstablished(false)
         let newestIds = history.suffix(50).map(\.id)
@@ -1201,5 +1205,295 @@ final class ConversationSessionTests: XCTestCase {
         lease.setVisible(true)
         awaitUntil(what: "close finished") { closeFinished.value }
         XCTAssertTrue(backend.push.get().visibleConversationIds.isEmpty, "the closed lease's visibility outlived its close")
+    }
+
+    // MARK: - Streamed replies
+
+    private func stream(
+        turn: Int,
+        run: Int = 1,
+        seq: Int,
+        _ kind: DashXRealtimeChatStream.Kind = .delta,
+        text: String? = nil,
+        responseId: String? = "resp-1",
+        persisted: Bool? = nil
+    ) -> DashXRealtimeMessage {
+        .inAppChatStream(DashXRealtimeChatStream(
+            conversationId: "c1", turnSeq: turn, run: run, seq: seq, kind: kind,
+            responseId: kind == .delta ? responseId : nil, text: text, persisted: persisted
+        ))
+    }
+
+    private func streamingReply(_ lease: DashXConversationLease) -> DashXStreamingReply? {
+        if case .ready(_, _, let reply) = lease.state { return reply }
+        return nil
+    }
+
+    private func deliver(_ frames: DashXRealtimeMessage..., to backend: FakeBackend) {
+        frames.forEach { backend.handles.value[0].onFrame($0) }
+    }
+
+    func testStreamedReplyGrowsThenGivesWayToTheStoredReply() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, seq: 0, text: "Hel"), stream(turn: 2, seq: 1, text: "lo"), to: backend)
+        awaitUntil(what: "streamed text") {
+            self.streamingReply(lease) == DashXStreamingReply(turnSeq: 2, text: "Hello", isComplete: false)
+        }
+
+        deliver(stream(turn: 2, seq: 2, .end, persisted: true), to: backend)
+        awaitUntil(what: "stream complete") { self.streamingReply(lease)?.isComplete == true }
+
+        deliver(chatFrame("r2", seq: 2), to: backend)
+        awaitUntil(what: "stored reply replaces the stream") { self.readyIds(lease) == ["m1", "r2"] }
+        XCTAssertNil(streamingReply(lease))
+        session.endSession()
+    }
+
+    func testStoredReplyArrivingFirstSuppressesTheTurnsLateFrames() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(chatFrame("r2", seq: 2), to: backend)
+        awaitUntil(what: "stored reply") { self.readyIds(lease) == ["m1", "r2"] }
+        deliver(stream(turn: 2, seq: 0, text: "late"), stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+        settle(0.15)
+        XCTAssertNil(streamingReply(lease), "a turn already answered must not show a stream")
+        session.endSession()
+    }
+
+    func testVisitorMessageOfTheSameTurnDoesNotEndTheStream() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+        let visitorRow = DashXChatMessage(
+            id: "v2", conversationId: "c1", externalUid: "in_app_chat:abc", senderId: nil, aiRole: "user",
+            turnSeq: 2, renderedContent: [:], createdAt: "2026-08-25 10:00:00", sentAt: nil
+        )
+        backend.sendResult.value = { _ in visitorRow }
+        lease.sendMessage(content: ["text": "hi"]) { _ in }
+        awaitUntil(what: "visitor row") { self.readyIds(lease) == ["m1", "v2"] }
+
+        deliver(stream(turn: 2, seq: 0, text: "Answer"), to: backend)
+        awaitUntil(what: "stream for the visitor's turn") { self.streamingReply(lease)?.text == "Answer" }
+        session.endSession()
+    }
+
+    func testEndWithoutAStoredReplyClearsTheStreamAndIgnoresItsLateFrames() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, seq: 0, text: "partial"), to: backend)
+        awaitUntil(what: "stream") { self.streamingReply(lease)?.text == "partial" }
+        deliver(stream(turn: 2, seq: 1, .end, persisted: false), stream(turn: 2, seq: 2, text: "late"), to: backend)
+        awaitUntil(what: "stream cleared") { self.streamingReply(lease) == nil }
+        settle(0.15)
+        XCTAssertNil(streamingReply(lease))
+        session.endSession()
+    }
+
+    func testRetriedRunReplacesTheAbandonedOneWhoseLateFramesAreIgnored() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, run: 4, seq: 0, text: "abandoned"), to: backend)
+        awaitUntil(what: "first run") { self.streamingReply(lease)?.text == "abandoned" }
+        deliver(stream(turn: 2, run: 5, seq: 0, text: "retry"), stream(turn: 2, run: 4, seq: 1, text: " late"), to: backend)
+        awaitUntil(what: "retry shown") { self.streamingReply(lease)?.text == "retry" }
+        settle(0.15)
+        XCTAssertEqual(streamingReply(lease)?.text, "retry")
+        session.endSession()
+    }
+
+    func testOnlyTheLastModelResponseIsShownAndAMissingFrameHidesWhatFollows() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(
+            stream(turn: 2, seq: 0, text: "Let me check.", responseId: "before-tool"),
+            stream(turn: 2, seq: 1, text: "It is", responseId: "answer"),
+            stream(turn: 2, seq: 3, text: " sunny", responseId: "answer"),
+            to: backend
+        )
+        awaitUntil(what: "answer text") { self.streamingReply(lease)?.text == "It is" }
+        deliver(stream(turn: 2, seq: 2, text: " warm and", responseId: "answer"), to: backend)
+        awaitUntil(what: "gap filled") { self.streamingReply(lease)?.text == "It is warm and sunny" }
+        session.endSession()
+    }
+
+    func testReconnectDropsAnUnfinishedStreamButKeepsAFinishedOne() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, seq: 0, text: "cut off"), to: backend)
+        awaitUntil(what: "stream") { self.streamingReply(lease)?.text == "cut off" }
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "unfinished stream dropped") { self.streamingReply(lease) == nil }
+
+        deliver(stream(turn: 3, seq: 0, text: "done"), stream(turn: 3, seq: 1, .end, persisted: true), to: backend)
+        awaitUntil(what: "finished stream") { self.streamingReply(lease)?.isComplete == true }
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "reconnect reconciled") { backend.fetchAfterCursors.value.count == 2 }
+        settle(0.15)
+        XCTAssertEqual(streamingReply(lease)?.text, "done", "a finished stream waits for its stored reply")
+        session.endSession()
+    }
+
+    func testStreamFrameNeverReplacesAConversationError() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        backend.after.value = { _ in throw graphQLFailure("You don't have access to this chat conversation.", code: DashXGraphQLErrors.forbidden) }
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "error state") { self.errorOf(lease) != nil }
+
+        deliver(stream(turn: 2, seq: 0, text: "hello"), stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+        settle(0.15)
+        XCTAssertEqual(errorOf(lease)?.graphQLCode, DashXGraphQLErrors.forbidden, "a stream frame restored a stale list")
+        session.endSession()
+    }
+
+    func testReconnectClearsAnUnfinishedPreviewBeforeTheReconcileFinishes() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+        deliver(stream(turn: 2, seq: 0, text: "cut off"), to: backend)
+        awaitUntil(what: "stream") { self.streamingReply(lease)?.text == "cut off" }
+
+        let gate = Gate()
+        backend.afterGate.value = gate
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "reconcile stalled") { backend.fetchAfterCursors.value.count == 1 }
+        awaitUntil(what: "preview cleared while the reconcile is stalled") {
+            self.readyIds(lease) == ["m1"] && self.streamingReply(lease) == nil
+        }
+        gate.open()
+        session.endSession()
+    }
+
+    func testQuietPreviewIsHiddenThenShownAgainWhenItsRunResumes() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 0.2, storedReplyGrace: 5)
+        )
+
+        deliver(stream(turn: 2, seq: 0, text: "Checking", responseId: "before-tool"), to: backend)
+        awaitUntil(what: "stream") { self.streamingReply(lease)?.text == "Checking" }
+        awaitUntil(what: "quiet preview hidden") { self.readyIds(lease) == ["m1"] && self.streamingReply(lease) == nil }
+        awaitUntil(what: "history reconciled") { backend.fetchAfterCursors.value == ["m1"] }
+
+        deliver(stream(turn: 2, seq: 1, text: "Sunny", responseId: "answer"), to: backend)
+        awaitUntil(what: "resumed run shown") { self.streamingReply(lease)?.text == "Sunny" }
+        session.endSession()
+    }
+
+    func testFinishedPreviewWhoseStoredReplyFrameIsLostGivesWayToTheFetchedReply() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 5, storedReplyGrace: 0.2)
+        )
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2)] : [] }
+
+        deliver(stream(turn: 2, seq: 0, text: "Done"), stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+        awaitUntil(what: "finished preview") { self.streamingReply(lease)?.isComplete == true }
+        XCTAssertTrue(backend.fetchAfterCursors.value.isEmpty, "reconciled before the grace period")
+
+        awaitUntil(what: "fetched reply replaces the preview") {
+            self.readyIds(lease) == ["m1", "r2"] && self.streamingReply(lease) == nil
+        }
+        deliver(stream(turn: 2, seq: 2, text: " late"), to: backend)
+        settle(0.15)
+        XCTAssertNil(streamingReply(lease), "a dropped run came back")
+        session.endSession()
+    }
+
+    func testTimeoutDuringTheFirstLoadReconcilesOnceItCompletes() {
+        let backend = FakeBackend()
+        backend.count.value = 1
+        backend.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        let gate = Gate()
+        backend.pageGate.value = gate
+        let session = ConversationSession(
+            key: key, backend: backend,
+            streamTimeouts: ReplyStreamTimeouts(idle: 5, storedReplyGrace: 0.2)
+        )
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "first load in flight") { backend.fetchPageCalls.value == [1] }
+
+        // The stored reply's frame is lost; the in-flight page predates the reply.
+        deliver(stream(turn: 2, seq: 0, text: "Done"), stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+        settle(0.4)
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2)] : [] }
+        gate.open()
+
+        awaitUntil(what: "reply reconciled after the first load") { self.readyIds(lease) == ["m1", "r2"] }
+        XCTAssertEqual(backend.fetchAfterCursors.value, ["m1"])
+        XCTAssertNil(streamingReply(lease))
+        session.endSession()
+    }
+
+    func testEndAfterALostDeltaNeverPresentsTruncatedTextAsComplete() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 5, storedReplyGrace: 0.3)
+        )
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2)] : [] }
+
+        deliver(stream(turn: 2, seq: 0, text: "Let me check.", responseId: "before-tool"), to: backend)
+        awaitUntil(what: "pre-tool text") { self.streamingReply(lease)?.text == "Let me check." }
+        // seq 1, the answer, is lost.
+        deliver(stream(turn: 2, seq: 2, .end, persisted: true), to: backend)
+        awaitUntil(what: "truncated preview hidden") { self.readyIds(lease) == ["m1"] && self.streamingReply(lease) == nil }
+
+        awaitUntil(what: "stored reply fetched") { self.readyIds(lease) == ["m1", "r2"] }
+        XCTAssertNil(streamingReply(lease))
+        session.endSession()
+    }
+
+    func testEndAwaitingALateDeltaShowsTheWholeReplyOnceItArrives() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, seq: 0, text: "It is"), stream(turn: 2, seq: 2, .end, persisted: true), to: backend)
+        awaitUntil(what: "hidden while a delta is missing") { self.readyIds(lease) == ["m1"] && self.streamingReply(lease) == nil }
+        deliver(stream(turn: 2, seq: 1, text: " sunny"), to: backend)
+        awaitUntil(what: "whole reply") {
+            self.streamingReply(lease) == DashXStreamingReply(turnSeq: 2, text: "It is sunny", isComplete: true)
+        }
+        session.endSession()
+    }
+
+    func testSupersededRunStaysIgnoredAfterAReconnectClearsThePreview() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, run: 4, seq: 0, text: "abandoned"), stream(turn: 2, run: 5, seq: 0, text: "retry"), to: backend)
+        awaitUntil(what: "retry shown") { self.streamingReply(lease)?.text == "retry" }
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "preview cleared") { self.streamingReply(lease) == nil }
+
+        deliver(stream(turn: 2, run: 4, seq: 0, text: "abandoned"), to: backend)
+        settle(0.15)
+        XCTAssertNil(streamingReply(lease), "the superseded run came back after the reconnect")
+        session.endSession()
+    }
+
+    func testStreamFramesBeforeTheFirstLoadAppearWithIt() {
+        let backend = FakeBackend()
+        backend.count.value = 1
+        backend.pages.value = [1: [chatMessage("m1", seq: 1)]]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+
+        deliver(stream(turn: 2, seq: 0, text: "early"), to: backend)
+        settle(0.1)
+        XCTAssertTrue(isLoading(lease), "a stream must not publish before the history")
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "ready with the stream") { self.streamingReply(lease)?.text == "early" }
+        XCTAssertEqual(readyIds(lease), ["m1"])
+        session.endSession()
     }
 }

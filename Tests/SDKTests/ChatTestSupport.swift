@@ -97,7 +97,7 @@ func chatMessage(_ id: String, seq: Int, externalUid: String? = nil, conversatio
         conversationId: conversationId,
         externalUid: externalUid,
         senderId: nil,
-        aiRole: "ASSISTANT",
+        aiRole: "assistant",
         turnSeq: seq,
         renderedContent: [:],
         createdAt: "2026-08-25 10:00:00",

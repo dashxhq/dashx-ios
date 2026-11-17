@@ -17,7 +17,7 @@ server-only: the host's backend creates the conversation and returns the
 ### Added
 
 - **`DashX.chat(chatIdentityId:)`** — `openConversation(_:)` returns a `DashXConversationLease`
-  with `state` (`.loading` / `.ready(messages:hasOlderMessages:)` / `.error`),
+  with `state` (`.loading` / `.ready(messages:hasOlderMessages:streamingReply:)` / `.error`),
   `addStateListener(_:)` (replays the current state on add), `sendMessage(content:completion:)`
   (returns the client message id synchronously — the idempotency key a retry must reuse),
   `loadPreviousPage`, `setVisible(_:)` (drives read-marking and push suppression) and `close()`.
@@ -30,6 +30,17 @@ server-only: the host's backend creates the conversation and returns the
   methods (`fetchInAppChatMessages`, `sendInAppChatMessage`, `markInAppChatConversationRead`, …),
   each with a completion and an `async` overload. Results are SDK models (`DashXChatMessage`,
   `DashXChatConversationSummary`); no Apollo type is exposed.
+- **Streamed agent replies** — for a deployment that streams replies, `.ready`'s
+  `streamingReply` (`DashXStreamingReply`: `turnSeq`, `text`, `isComplete`) carries the agent's
+  reply while it is generated, built from `IN_APP_CHAT_STREAM` frames. A retried run replaces
+  the one it superseded, text stops at a missing frame rather than showing a hole, and the
+  stream gives way to the stored reply once that reaches `messages`, whichever arrives first.
+  A run that ends without storing a reply, or is cut off by a reconnect, is dropped. A lost
+  frame cannot strand a preview: an unfinished run quiet for 20 seconds is hidden until it
+  streams again, a finished run whose stored reply has not arrived within 5 seconds is dropped,
+  and either one reconciles history, after a first load still in flight. A finished run missing
+  a delta stays hidden rather than show truncated text as the whole reply. A stream never
+  replaces a `.loading` or `.error` state.
 - **Managed realtime connection** — connects only while a conversation is open, the app is
   foregrounded and an identity token exists; reconnects with backoff. Observe it via
   `DashX.connectionState` / `addConnectionStateListener(_:)` (`DashXConnectionState`); override

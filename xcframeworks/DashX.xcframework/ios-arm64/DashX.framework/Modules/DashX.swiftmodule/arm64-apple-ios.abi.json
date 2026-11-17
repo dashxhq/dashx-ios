@@ -5857,6 +5857,250 @@
       },
       {
         "kind": "TypeDecl",
+        "name": "DashXStreamingReply",
+        "printedName": "DashXStreamingReply",
+        "children": [
+          {
+            "kind": "Var",
+            "name": "turnSeq",
+            "printedName": "turnSeq",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int",
+                "printedName": "Swift.Int",
+                "usr": "s:Si"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:5DashX0A15XStreamingReplyV7turnSeqSivp",
+            "mangledName": "$s5DashX0A15XStreamingReplyV7turnSeqSivp",
+            "moduleName": "DashX",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int",
+                    "printedName": "Swift.Int",
+                    "usr": "s:Si"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:5DashX0A15XStreamingReplyV7turnSeqSivg",
+                "mangledName": "$s5DashX0A15XStreamingReplyV7turnSeqSivg",
+                "moduleName": "DashX",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "text",
+            "printedName": "text",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:5DashX0A15XStreamingReplyV4textSSvp",
+            "mangledName": "$s5DashX0A15XStreamingReplyV4textSSvp",
+            "moduleName": "DashX",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "String",
+                    "printedName": "Swift.String",
+                    "usr": "s:SS"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:5DashX0A15XStreamingReplyV4textSSvg",
+                "mangledName": "$s5DashX0A15XStreamingReplyV4textSSvg",
+                "moduleName": "DashX",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Var",
+            "name": "isComplete",
+            "printedName": "isComplete",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Bool",
+                "printedName": "Swift.Bool",
+                "usr": "s:Sb"
+              }
+            ],
+            "declKind": "Var",
+            "usr": "s:5DashX0A15XStreamingReplyV10isCompleteSbvp",
+            "mangledName": "$s5DashX0A15XStreamingReplyV10isCompleteSbvp",
+            "moduleName": "DashX",
+            "declAttributes": [
+              "HasStorage",
+              "AccessControl",
+              "RawDocComment"
+            ],
+            "isLet": true,
+            "hasStorage": true,
+            "accessors": [
+              {
+                "kind": "Accessor",
+                "name": "Get",
+                "printedName": "Get()",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Bool",
+                    "printedName": "Swift.Bool",
+                    "usr": "s:Sb"
+                  }
+                ],
+                "declKind": "Accessor",
+                "usr": "s:5DashX0A15XStreamingReplyV10isCompleteSbvg",
+                "mangledName": "$s5DashX0A15XStreamingReplyV10isCompleteSbvg",
+                "moduleName": "DashX",
+                "implicit": true,
+                "accessorKind": "get"
+              }
+            ]
+          },
+          {
+            "kind": "Constructor",
+            "name": "init",
+            "printedName": "init(turnSeq:text:isComplete:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "DashXStreamingReply",
+                "printedName": "DashX.DashXStreamingReply",
+                "usr": "s:5DashX0A15XStreamingReplyV"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Int",
+                "printedName": "Swift.Int",
+                "usr": "s:Si"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "String",
+                "printedName": "Swift.String",
+                "usr": "s:SS"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "Bool",
+                "printedName": "Swift.Bool",
+                "usr": "s:Sb"
+              }
+            ],
+            "declKind": "Constructor",
+            "usr": "s:5DashX0A15XStreamingReplyV7turnSeq4text10isCompleteACSi_SSSbtcfc",
+            "mangledName": "$s5DashX0A15XStreamingReplyV7turnSeq4text10isCompleteACSi_SSSbtcfc",
+            "moduleName": "DashX",
+            "declAttributes": [
+              "AccessControl"
+            ],
+            "init_kind": "Designated"
+          },
+          {
+            "kind": "Function",
+            "name": "==",
+            "printedName": "==(_:_:)",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Bool",
+                "printedName": "Swift.Bool",
+                "usr": "s:Sb"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "DashXStreamingReply",
+                "printedName": "DashX.DashXStreamingReply",
+                "usr": "s:5DashX0A15XStreamingReplyV"
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "DashXStreamingReply",
+                "printedName": "DashX.DashXStreamingReply",
+                "usr": "s:5DashX0A15XStreamingReplyV"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "s:5DashX0A15XStreamingReplyV2eeoiySbAC_ACtFZ",
+            "mangledName": "$s5DashX0A15XStreamingReplyV2eeoiySbAC_ACtFZ",
+            "moduleName": "DashX",
+            "static": true,
+            "implicit": true,
+            "funcSelfKind": "NonMutating"
+          }
+        ],
+        "declKind": "Struct",
+        "usr": "s:5DashX0A15XStreamingReplyV",
+        "mangledName": "$s5DashX0A15XStreamingReplyV",
+        "moduleName": "DashX",
+        "declAttributes": [
+          "AccessControl",
+          "RawDocComment"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Equatable",
+            "printedName": "Equatable",
+            "usr": "s:SQ",
+            "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          }
+        ]
+      },
+      {
+        "kind": "TypeDecl",
         "name": "DashXConversationState",
         "printedName": "DashXConversationState",
         "children": [
@@ -5905,12 +6149,12 @@
               {
                 "kind": "TypeFunc",
                 "name": "Function",
-                "printedName": "(DashX.DashXConversationState.Type) -> ([DashX.DashXChatMessage], Swift.Bool) -> DashX.DashXConversationState",
+                "printedName": "(DashX.DashXConversationState.Type) -> ([DashX.DashXChatMessage], Swift.Bool, DashX.DashXStreamingReply?) -> DashX.DashXConversationState",
                 "children": [
                   {
                     "kind": "TypeFunc",
                     "name": "Function",
-                    "printedName": "([DashX.DashXChatMessage], Swift.Bool) -> DashX.DashXConversationState",
+                    "printedName": "([DashX.DashXChatMessage], Swift.Bool, DashX.DashXStreamingReply?) -> DashX.DashXConversationState",
                     "children": [
                       {
                         "kind": "TypeNominal",
@@ -5921,7 +6165,7 @@
                       {
                         "kind": "TypeNominal",
                         "name": "Tuple",
-                        "printedName": "(messages: [DashX.DashXChatMessage], hasOlderMessages: Swift.Bool)",
+                        "printedName": "(messages: [DashX.DashXChatMessage], hasOlderMessages: Swift.Bool, streamingReply: DashX.DashXStreamingReply?)",
                         "children": [
                           {
                             "kind": "TypeNominal",
@@ -5942,6 +6186,20 @@
                             "name": "Bool",
                             "printedName": "Swift.Bool",
                             "usr": "s:Sb"
+                          },
+                          {
+                            "kind": "TypeNominal",
+                            "name": "Optional",
+                            "printedName": "DashX.DashXStreamingReply?",
+                            "children": [
+                              {
+                                "kind": "TypeNominal",
+                                "name": "DashXStreamingReply",
+                                "printedName": "DashX.DashXStreamingReply",
+                                "usr": "s:5DashX0A15XStreamingReplyV"
+                              }
+                            ],
+                            "usr": "s:Sq"
                           }
                         ]
                       }
@@ -5964,8 +6222,8 @@
               }
             ],
             "declKind": "EnumElement",
-            "usr": "s:5DashX0A18XConversationStateO5readyyACSayAA0A12XChatMessageVG_SbtcACmF",
-            "mangledName": "$s5DashX0A18XConversationStateO5readyyACSayAA0A12XChatMessageVG_SbtcACmF",
+            "usr": "s:5DashX0A18XConversationStateO5readyyACSayAA0A12XChatMessageVG_SbAA0A15XStreamingReplyVSgtcACmF",
+            "mangledName": "$s5DashX0A18XConversationStateO5readyyACSayAA0A12XChatMessageVG_SbAA0A15XStreamingReplyVSgtcACmF",
             "moduleName": "DashX",
             "declAttributes": [
               "RawDocComment"
@@ -23230,37 +23488,72 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 22239,
+      "offset": 23821,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 24081,
+      "offset": 25663,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 35927,
+      "offset": 41169,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "BooleanLiteral",
-      "offset": 35998,
+      "offset": 41240,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
       "kind": "Array",
-      "offset": 36075,
+      "offset": 41317,
       "length": 2,
       "value": "[]"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
+      "kind": "IntegerLiteral",
+      "offset": 45833,
+      "length": 2,
+      "value": "20"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
+      "kind": "IntegerLiteral",
+      "offset": 45954,
+      "length": 1,
+      "value": "5"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
+      "kind": "Dictionary",
+      "offset": 46310,
+      "length": 3,
+      "value": "[]"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
+      "kind": "BooleanLiteral",
+      "offset": 46348,
+      "length": 5,
+      "value": "false"
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChat.swift",
+      "kind": "BooleanLiteral",
+      "offset": 46571,
+      "length": 5,
+      "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChatModels.swift",
@@ -23268,6 +23561,13 @@
       "offset": 170,
       "length": 14,
       "value": "\"in_app_chat:\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Chat\/DashXChatModels.swift",
+      "kind": "StringLiteral",
+      "offset": 214,
+      "length": 6,
+      "value": "\"user\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/DashXClient+Identity.swift",
@@ -23608,42 +23908,56 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
       "kind": "IntegerLiteral",
-      "offset": 1417,
+      "offset": 1577,
       "length": 1,
       "value": "0"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
       "kind": "Dictionary",
-      "offset": 1461,
+      "offset": 1621,
       "length": 3,
       "value": "[]"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
       "kind": "StringLiteral",
-      "offset": 3106,
+      "offset": 3028,
+      "length": 7,
+      "value": "\"DELTA\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
+      "kind": "StringLiteral",
+      "offset": 3125,
+      "length": 5,
+      "value": "\"END\""
+    },
+    {
+      "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
+      "kind": "StringLiteral",
+      "offset": 5495,
       "length": 6,
       "value": "\"PING\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
       "kind": "StringLiteral",
-      "offset": 3139,
+      "offset": 5528,
       "length": 6,
       "value": "\"PONG\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
       "kind": "StringLiteral",
-      "offset": 3177,
+      "offset": 5566,
       "length": 11,
       "value": "\"SUBSCRIBE\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/DashXRealtimeMessage.swift",
       "kind": "StringLiteral",
-      "offset": 3222,
+      "offset": 5611,
       "length": 13,
       "value": "\"UNSUBSCRIBE\""
     },
@@ -24175,21 +24489,21 @@
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/RealtimeRuntime.swift",
       "kind": "StringLiteral",
-      "offset": 23971,
+      "offset": 24132,
       "length": 78,
       "value": "\"No identity token is available; the channel subscribes once one is installed\""
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/RealtimeRuntime.swift",
       "kind": "BooleanLiteral",
-      "offset": 32932,
+      "offset": 33093,
       "length": 5,
       "value": "false"
     },
     {
       "filePath": "\/Users\/gulshan\/Work\/dashx-ios\/Sources\/DashX\/Realtime\/RealtimeRuntime.swift",
       "kind": "StringLiteral",
-      "offset": 33078,
+      "offset": 33239,
       "length": 29,
       "value": "\"com.dashx.ios.realtime.ping\""
     },

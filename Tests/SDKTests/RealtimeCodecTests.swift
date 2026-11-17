@@ -18,7 +18,7 @@ final class RealtimeCodecTests: XCTestCase {
         let frame = DashXRealtimeCodec.decode("""
         {"type":"IN_APP_CHAT_MESSAGE","data":{
             "id":"m1","externalUid":"ext-1","conversationId":"c1","senderId":null,
-            "aiRole":"USER","turnSeq":7,"renderedContent":{"text":"hi"},
+            "aiRole":"user","turnSeq":7,"renderedContent":{"text":"hi"},
             "createdAt":"2026-08-25 10:00:00","sentAt":"2026-08-25 10:00:00"
         }}
         """)
@@ -29,8 +29,43 @@ final class RealtimeCodecTests: XCTestCase {
         XCTAssertEqual(message.conversationId, "c1")
         XCTAssertEqual(message.turnSeq, 7)
         XCTAssertNil(message.senderId)
-        XCTAssertEqual(message.aiRole, "USER")
+        XCTAssertEqual(message.aiRole, "user")
         XCTAssertEqual(message.renderedContent["text"] as? String, "hi")
+    }
+
+    func testDecodesChatStreamDeltaAndEndFrames() {
+        let delta = DashXRealtimeCodec.decode("""
+        {"type":"IN_APP_CHAT_STREAM","data":{
+            "conversationId":"c1","turnSeq":3,"run":12,"seq":0,"kind":"DELTA",
+            "responseId":"resp-1","text":"Hel","persisted":null
+        }}
+        """)
+        guard case .inAppChatStream(let deltaFrame)? = delta else {
+            return XCTFail("expected inAppChatStream, got \(String(describing: delta))")
+        }
+        XCTAssertEqual(deltaFrame, DashXRealtimeChatStream(
+            conversationId: "c1", turnSeq: 3, run: 12, seq: 0, kind: .delta, responseId: "resp-1", text: "Hel"
+        ))
+
+        let end = DashXRealtimeCodec.decode("""
+        {"type":"IN_APP_CHAT_STREAM","data":{
+            "conversationId":"c1","turnSeq":3,"run":12,"seq":4,"kind":"END",
+            "responseId":null,"text":null,"persisted":true
+        }}
+        """)
+        guard case .inAppChatStream(let endFrame)? = end else {
+            return XCTFail("expected inAppChatStream, got \(String(describing: end))")
+        }
+        XCTAssertEqual(endFrame.kind, .end)
+        XCTAssertEqual(endFrame.persisted, true)
+        XCTAssertNil(endFrame.text)
+    }
+
+    func testChatStreamFrameWithAnUnknownKindOrMissingRunIsDropped() {
+        XCTAssertNil(DashXRealtimeCodec.decode(
+            #"{"type":"IN_APP_CHAT_STREAM","data":{"conversationId":"c1","turnSeq":1,"run":1,"seq":0,"kind":"TOOL"}}"#))
+        XCTAssertNil(DashXRealtimeCodec.decode(
+            #"{"type":"IN_APP_CHAT_STREAM","data":{"conversationId":"c1","turnSeq":1,"seq":0,"kind":"DELTA"}}"#))
     }
 
     func testChatFrameMissingRequiredFieldsIsDropped() {

@@ -3,13 +3,14 @@ import Foundation
 /// One chat message, normalized from history fetches and realtime frames alike.
 public struct DashXChatMessage {
     static let clientMessagePrefix = "in_app_chat:"
+    static let visitorRole = "user"
 
     public let id: String
     public let conversationId: String
     /// Raw server key. Prefer `clientMessageId` for reconciling a pending send.
     public let externalUid: String?
     public let senderId: String?
-    /// `USER` for the visitor's own message; anything else is an agent or AI reply.
+    /// `user` for the visitor's own message; anything else, or nil, is an agent or AI reply.
     public let aiRole: String?
     public let turnSeq: Int
     public let renderedContent: [String: Any?]
@@ -44,6 +45,8 @@ public struct DashXChatMessage {
         guard let externalUid, externalUid.hasPrefix(Self.clientMessagePrefix) else { return nil }
         return String(externalUid.dropFirst(Self.clientMessagePrefix.count))
     }
+
+    var isFromVisitor: Bool { aiRole == Self.visitorRole }
 
     /// Server message order: `(turnSeq, createdAt, id)` ascending.
     public static func order(_ lhs: DashXChatMessage, _ rhs: DashXChatMessage) -> Bool {
@@ -164,10 +167,28 @@ public struct DashXChatConversationSummary: Equatable {
     }
 }
 
+/// An agent reply while it is generated, for a deployment that streams replies. It is replaced
+/// by the stored reply: once that arrives in `messages`, the conversation drops it.
+public struct DashXStreamingReply: Equatable {
+    /// The turn being answered: the visitor message's `turnSeq`, which the stored reply carries too.
+    public let turnSeq: Int
+    /// The reply text received so far.
+    public let text: String
+    /// Generation is over and the stored reply is on its way; `text` will not grow.
+    public let isComplete: Bool
+
+    public init(turnSeq: Int, text: String, isComplete: Bool) {
+        self.turnSeq = turnSeq
+        self.text = text
+        self.isComplete = isComplete
+    }
+}
+
 public enum DashXConversationState {
     case loading
     /// `hasOlderMessages` is true while `loadPreviousPage` still has history to fetch.
-    case ready(messages: [DashXChatMessage], hasOlderMessages: Bool)
+    /// `streamingReply` is the agent reply being generated, or nil when none is.
+    case ready(messages: [DashXChatMessage], hasOlderMessages: Bool, streamingReply: DashXStreamingReply?)
     case error(DashXClientError)
 }
 
@@ -176,8 +197,8 @@ extension DashXConversationState: Equatable {
         switch (lhs, rhs) {
         case (.loading, .loading):
             return true
-        case let (.ready(lhsMessages, lhsOlder), .ready(rhsMessages, rhsOlder)):
-            return lhsOlder == rhsOlder && lhsMessages == rhsMessages
+        case let (.ready(lhsMessages, lhsOlder, lhsReply), .ready(rhsMessages, rhsOlder, rhsReply)):
+            return lhsOlder == rhsOlder && lhsReply == rhsReply && lhsMessages == rhsMessages
         case let (.error(lhsError), .error(rhsError)):
             return (lhsError as NSError) == (rhsError as NSError)
         default:

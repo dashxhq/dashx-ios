@@ -361,10 +361,28 @@ final class ConversationSession {
     private var markInFlight = false
     private var pendingMarkToken = 0
 
-    init(key: ChatSessionKey, backend: ChatSessionBackend = DashXChatSessionBackend(), callbackQueue: DispatchQueue = .main) {
+    /// The agent reply being streamed, at most one: a later turn or a retried run replaces it.
+    private var replyStream: ReplyStreamAccumulator?
+    /// The newest run already settled, by its stored reply or an `END` that stored none; its late
+    /// frames, and any older run's, are ignored.
+    private var settledStreamRun: ReplyStreamRun?
+    /// The newest run any frame has named. Kept apart from `replyStream`, which a reconnect
+    /// clears: a superseded run's delayed frames must not come back afterwards.
+    private var newestStreamRun: ReplyStreamRun?
+    /// The pending stream timeout; every stream frame reschedules it.
+    private var streamTimeout: DispatchWorkItem?
+    private let streamTimeouts: ReplyStreamTimeouts
+
+    init(
+        key: ChatSessionKey,
+        backend: ChatSessionBackend = DashXChatSessionBackend(),
+        callbackQueue: DispatchQueue = .main,
+        streamTimeouts: ReplyStreamTimeouts = ReplyStreamTimeouts()
+    ) {
         self.key = key
         self.backend = backend
         self.callbackQueue = callbackQueue
+        self.streamTimeouts = streamTimeouts
         self.identityGeneration = backend.sessionGeneration
     }
 
@@ -420,14 +438,28 @@ final class ConversationSession {
     }
 
     private func onFrame(_ frame: DashXRealtimeMessage) {
-        guard case .inAppChatMessage(let message) = frame else { return }
-        let chatMessage = DashXChatMessage(frame: message)
-        lane.async { self.mergeLive(chatMessage) }
+        switch frame {
+        case .inAppChatMessage(let message):
+            let chatMessage = DashXChatMessage(frame: message)
+            lane.async { self.mergeLive(chatMessage) }
+        case .inAppChatStream(let stream):
+            lane.async { self.mergeStream(stream) }
+        default:
+            break
+        }
     }
 
     private func onEstablished(_ isResubscribe: Bool) {
         DashXLog.d(tag: Self.tag, "Channel acknowledged for \(key.conversationId) (isResubscribe=\(isResubscribe))")
         lane.async {
+            // Frames sent while disconnected are gone, an `END` that stored nothing among them,
+            // so an unfinished reply could otherwise stay on screen. A finished one waits for its
+            // stored reply, which the reconcile below fetches if its frame was lost too.
+            if isResubscribe, self.replyStream?.isComplete == false {
+                self.replyStream = nil
+                // Now, not after the reconcile: a failing fetch would otherwise keep it on screen.
+                self.publishReadyIfShown()
+            }
             self.syncAttempts = 0
             if self.syncing {
                 // The running fetch may predate the gap; re-run once it completes.
@@ -655,9 +687,91 @@ final class ConversationSession {
     }
 
     private func publishReady() {
-        let next = DashXConversationState.ready(messages: messages, hasOlderMessages: oldestFetchedPage > 1)
+        settleAnsweredStream()
+        let next = DashXConversationState.ready(
+            messages: messages,
+            hasOlderMessages: oldestFetchedPage > 1,
+            streamingReply: replyStream?.reply
+        )
         if state == next { return }
         publishState(next)
+    }
+
+    /// Frames of one run in order; a later turn or a retried run of the same turn replaces the
+    /// current one. Published only while the state is `.ready`.
+    private func mergeStream(_ frame: DashXRealtimeChatStream) {
+        let run = ReplyStreamRun(turnSeq: frame.turnSeq, run: frame.run)
+        if let settledStreamRun, run <= settledStreamRun { return }
+        if let newestStreamRun, run < newestStreamRun { return }
+        newestStreamRun = run
+        if replyStream?.run != run { replyStream = ReplyStreamAccumulator(run: run) }
+
+        switch frame.kind {
+        case .delta:
+            replyStream?.add(seq: frame.seq, responseId: frame.responseId, text: frame.text ?? "")
+        case .end:
+            if frame.persisted == true {
+                replyStream?.complete(deltaCount: frame.seq)
+            } else {
+                settleStream()
+            }
+        }
+        armStreamTimeout()
+        publishReadyIfShown()
+    }
+
+    /// A conversation showing `.loading` or `.error` keeps it: a stream change alone must not
+    /// replace an error with a stale list.
+    private func publishReadyIfShown() {
+        if case .ready = state { publishReady() }
+    }
+
+    /// A lost frame must not leave a preview up forever. An unfinished run that goes quiet is
+    /// hidden but kept, since a tool call sends nothing for a while and its answer may still
+    /// stream; a finished one whose stored reply has not arrived is dropped. Either way history
+    /// is reconciled, which fetches a stored reply whose frame was lost.
+    private func armStreamTimeout() {
+        streamTimeout?.cancel()
+        streamTimeout = nil
+        guard let run = replyStream?.run, let isComplete = replyStream?.isComplete else { return }
+        // Only the run is captured: a copy of the accumulator would keep its deltas alive and
+        // make every later delta copy them.
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, self.replyStream?.run == run, !self.isEnded else { return }
+            self.streamTimeout = nil
+            if self.replyStream?.isComplete == true {
+                self.settleStream()
+            } else {
+                self.replyStream?.hide()
+            }
+            // A first load still in flight may predate the stored reply, so it is followed by a
+            // reconcile too. One not yet started fetches everything when it runs.
+            if self.snapshotDone || self.syncing { self.requestResync() }
+            self.publishReadyIfShown()
+        }
+        streamTimeout = timeout
+        lane.asyncAfter(deadline: .now() + (isComplete ? streamTimeouts.storedReplyGrace : streamTimeouts.idle), execute: timeout)
+    }
+
+    /// The stored reply replaces the stream, whether it arrived before the stream's frames or after.
+    private func settleAnsweredStream() {
+        guard let turnSeq = replyStream?.run.turnSeq, hasStoredReply(forTurn: turnSeq) else { return }
+        settleStream()
+    }
+
+    private func settleStream() {
+        guard let run = replyStream?.run else { return }
+        settledStreamRun = max(settledStreamRun ?? run, run)
+        replyStream = nil
+    }
+
+    /// `messages` is ordered by turn, so the scan stops at the first earlier turn.
+    private func hasStoredReply(forTurn turnSeq: Int) -> Bool {
+        for message in messages.reversed() {
+            if message.turnSeq < turnSeq { return false }
+            if message.turnSeq == turnSeq && !message.isFromVisitor { return true }
+        }
+        return false
     }
 
     private func publishState(_ newState: DashXConversationState) {
@@ -983,6 +1097,68 @@ final class ConversationSession {
             lock.unlock()
             session.closeLease(self)
         }
+    }
+}
+
+/// Identifies one reply run: the turn it answers, then the run number a retry raises.
+struct ReplyStreamRun: Comparable {
+    let turnSeq: Int
+    let run: Int
+
+    static func < (lhs: ReplyStreamRun, rhs: ReplyStreamRun) -> Bool {
+        (lhs.turnSeq, lhs.run) < (rhs.turnSeq, rhs.run)
+    }
+}
+
+struct ReplyStreamTimeouts {
+    /// Quiet time after which an unfinished run is hidden.
+    var idle: TimeInterval = 20
+    /// Time a finished run waits for its stored reply before it is dropped.
+    var storedReplyGrace: TimeInterval = 5
+}
+
+/// The deltas of one reply run. Text is read up to the first missing `seq`, so a lost frame
+/// never shows as a hole, and only the run's last model response counts: earlier ones are text
+/// produced before a tool call.
+struct ReplyStreamAccumulator {
+    let run: ReplyStreamRun
+    private var deltas: [Int: (responseId: String?, text: String)] = [:]
+    private(set) var isComplete = false
+    /// Deltas the run sent, from its `END`'s `seq`; fewer received means one was lost.
+    private var expectedDeltaCount: Int?
+    /// Gone quiet; a new delta or its `END` shows it again.
+    private var isHidden = false
+
+    init(run: ReplyStreamRun) {
+        self.run = run
+    }
+
+    mutating func add(seq: Int, responseId: String?, text: String) {
+        guard deltas[seq] == nil else { return }
+        deltas[seq] = (responseId, text)
+        isHidden = false
+    }
+
+    mutating func complete(deltaCount: Int) {
+        isComplete = true
+        expectedDeltaCount = deltaCount
+        isHidden = false
+    }
+
+    mutating func hide() {
+        isHidden = true
+    }
+
+    var reply: DashXStreamingReply? {
+        if isHidden { return nil }
+        var contiguous: [(responseId: String?, text: String)] = []
+        while let delta = deltas[contiguous.count] { contiguous.append(delta) }
+        // A finished run missing a delta would present truncated text as the whole reply; it
+        // stays hidden until the delta arrives or the stored reply replaces it.
+        if let expectedDeltaCount, contiguous.count < expectedDeltaCount { return nil }
+        guard let last = contiguous.last else { return nil }
+        let text = contiguous.filter { $0.responseId == last.responseId }.map(\.text).joined()
+        return text.isEmpty ? nil : DashXStreamingReply(turnSeq: run.turnSeq, text: text, isComplete: isComplete)
     }
 }
 
