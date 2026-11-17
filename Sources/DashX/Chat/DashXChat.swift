@@ -195,9 +195,6 @@ final class ChatCoordinator {
         lock.unlock()
         open.forEach { $0.onAppForegrounded() }
     }
-
-    /// Reserved for unread refresh hooks.
-    func onGlobalFrame(_ frame: DashXRealtimeMessage) {}
 }
 
 /// Seam so the synchronizer is testable without a socket or transport.

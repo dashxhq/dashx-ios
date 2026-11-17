@@ -46,11 +46,4 @@ final class PushRuntimeState {
         visibleOwners = [:]
         snapshot.visibleConversationIds = []
     }
-
-    func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        visibleOwners = [:]
-        snapshot = Snapshot(isForeground: false, visibleConversationIds: [])
-    }
 }

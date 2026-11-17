@@ -53,7 +53,7 @@ extension DashXClient {
             endpointProvider: { self.realtimeEndpoint() },
             unmetPrerequisite: { self.realtimeUnmetPrerequisite() },
             currentCredentials: { self.account.credentialVersion },
-            onAnyFrame: { ChatCoordinator.shared.onGlobalFrame($0) },
+            onAnyFrame: { _ in },
             onAuthRejected: { credentials, completion in
                 self.onRealtimeAuthRejected(credentials: credentials, completion: completion)
             },
