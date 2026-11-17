@@ -573,7 +573,7 @@ public class DashXClient {
         self.bumpSubscribeGeneration()
         self.clearSubscriptionDeviceInfoRefreshPending()
 
-        // The unsubscribe above captured the outgoing identity itself.
+        // The unsubscribe above captured the outgoing account identifiers and FCM token.
         endIdentitySession()
 
         let preferences = UserDefaults.standard

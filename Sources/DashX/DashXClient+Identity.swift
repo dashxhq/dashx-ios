@@ -131,8 +131,6 @@ extension DashXClient {
     /// `DashXTokenProvider` to load it.
     public var hasIdentityToken: Bool { account.identityToken != nil }
 
-    var identityToken: String? { account.identityToken }
-
     /// Stamp for the auth retry: an old-era request is never resent with a new-era token.
     var currentSessionGeneration: Int { account.sessionGeneration }
 
@@ -288,12 +286,6 @@ extension DashXClient {
         stateLock.unlock()
         claimed.launch?()
         claimed.load.await { completion($0 != nil) }
-    }
-
-    func awaitTokenRefresh() async -> Bool {
-        await withCheckedContinuation { continuation in
-            awaitTokenRefresh { continuation.resume(returning: $0) }
-        }
     }
 
     static let identityTokenUnavailableError = DashXClientError.customError(
