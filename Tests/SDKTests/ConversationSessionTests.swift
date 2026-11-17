@@ -146,7 +146,6 @@ private final class RuntimeBackedBackend: ChatSessionBackend {
             endpointProvider: { [url, credentials] in url.value.map { RealtimeEndpoint(url: $0, credentials: credentials.value) } },
             unmetPrerequisite: { [unmet] in unmet.value },
             currentCredentials: { [credentials] in credentials.value },
-            onAnyFrame: { _ in },
             onAuthRejected: { [authRejected] _, completion in authRejected.value(completion) },
             publishState: { [states, url, unmet, credentials] status in
                 let endpointAvailable = url.value != nil

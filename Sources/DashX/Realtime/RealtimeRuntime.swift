@@ -135,7 +135,6 @@ final class RealtimeRuntime {
     /// The credentials current now. A socket stamped with an older session carries a departed
     /// identity's credentials; an identity command for older credentials is superseded.
     private let currentCredentials: () -> CredentialVersion
-    private let onAnyFrame: (DashXRealtimeMessage) -> Void
     /// 4401 close: asks for a fresh token once for the credentials the socket was opened with;
     /// reports whether one was installed.
     private let onAuthRejected: (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void
@@ -184,7 +183,6 @@ final class RealtimeRuntime {
         endpointProvider: @escaping () -> RealtimeEndpoint?,
         unmetPrerequisite: @escaping () -> DashXClientError?,
         currentCredentials: @escaping () -> CredentialVersion,
-        onAnyFrame: @escaping (DashXRealtimeMessage) -> Void,
         onAuthRejected: @escaping (_ credentials: CredentialVersion, _ completion: @escaping (AuthRefreshOutcome) -> Void) -> Void,
         recoverCredentials: @escaping (_ credentials: CredentialVersion) -> Bool = { _ in false },
         publishState: @escaping (RealtimeStatus) -> Void,
@@ -195,7 +193,6 @@ final class RealtimeRuntime {
         self.endpointProvider = endpointProvider
         self.unmetPrerequisite = unmetPrerequisite
         self.currentCredentials = currentCredentials
-        self.onAnyFrame = onAnyFrame
         self.onAuthRejected = onAuthRejected
         self.recoverCredentials = recoverCredentials
         self.publishStateSink = publishState
@@ -426,7 +423,6 @@ final class RealtimeRuntime {
         default:
             break
         }
-        onAnyFrame(frame)
     }
 
     private func handleSocketClosed(generation: Int, code: Int, reason: String) {

@@ -136,13 +136,6 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
             return
         }
 
-        // Suppression is a presentation decision; delivery happened either way.
-        guard DashXPush.shouldDisplay(dashxData) else {
-            dashXClient.trackMessage(message: userInfo, event: .delivered)
-            completionHandler(.newData)
-            return
-        }
-
         let notificationContent = UNMutableNotificationContent()
         notificationContent.sound = UNNotificationSound.default
         notificationContent.title = dashxData.title

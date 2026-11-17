@@ -69,7 +69,6 @@ private final class Harness {
             },
             unmetPrerequisite: { harnessBox.value?.unmet.value },
             currentCredentials: { harnessBox.value?.credentials ?? CredentialVersion(sessionGeneration: 0, tokenEpoch: 0) },
-            onAnyFrame: { _ in },
             onAuthRejected: { _, completion in
                 guard let harness = harnessBox.value else { return completion(.failed) }
                 _ = harness.authRejections.increment()

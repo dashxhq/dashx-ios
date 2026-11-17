@@ -53,7 +53,6 @@ extension DashXClient {
             endpointProvider: { self.realtimeEndpoint() },
             unmetPrerequisite: { self.realtimeUnmetPrerequisite() },
             currentCredentials: { self.account.credentialVersion },
-            onAnyFrame: { _ in },
             onAuthRejected: { credentials, completion in
                 self.onRealtimeAuthRejected(credentials: credentials, completion: completion)
             },
