@@ -1,0 +1,5 @@
+query SummarizeInAppChatUnread($identityId: UUID!) {
+  summarizeInAppChatUnread(input: { identityId: $identityId }) {
+    count
+  }
+}

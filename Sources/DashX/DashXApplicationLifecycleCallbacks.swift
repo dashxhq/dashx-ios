@@ -30,10 +30,13 @@ class DashXApplicationLifecycleCallbacks: NSObject {
     private let installsCrashHandler: Bool
     private let isConfigured: () -> Bool
     private let isActive: () -> Bool
+    private let isForeground: () -> Bool
+    private let foregroundSink: (_ foreground: Bool) -> Void
     private let buildInfo: () -> (version: String, build: String)
     private let now: () -> TimeInterval
 
     private let lock = NSLock()
+    private var isObserving = false
     private var isEnabled = false
     private var isLaunchPending = false
     private var foregroundStartedAt: TimeInterval?
@@ -45,6 +48,8 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         installsCrashHandler: Bool = true,
         isConfigured: @escaping () -> Bool = { ConfigInterceptor.shared.publicKey != nil },
         isActive: @escaping () -> Bool = { UIApplication.shared.applicationState == .active },
+        isForeground: @escaping () -> Bool = { UIApplication.shared.applicationState != .background },
+        foregroundSink: @escaping (_ foreground: Bool) -> Void = { DashXClient.instance.setLifecycleForeground($0) },
         buildInfo: @escaping () -> (version: String, build: String) = DashXApplicationLifecycleCallbacks.mainBundleBuildInfo,
         now: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) {
@@ -54,6 +59,8 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         self.installsCrashHandler = installsCrashHandler
         self.isConfigured = isConfigured
         self.isActive = isActive
+        self.isForeground = isForeground
+        self.foregroundSink = foregroundSink
         self.buildInfo = buildInfo
         self.now = now
     }
@@ -73,6 +80,22 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         }
     }
 
+    /// Registers the process-lifecycle observers once and reports the current foreground state to
+    /// the sink; every transition follows. Lifecycle events stay off until `enable()`.
+    func observeForeground() {
+        lock.lock()
+        let alreadyObserving = isObserving
+        isObserving = true
+        lock.unlock()
+        guard !alreadyObserving else { return }
+
+        notificationCenter.addObserver(self, selector: #selector(appBackgrounded), name: UIApplication.didEnterBackgroundNotification, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(appForegrounded), name: UIApplication.willEnterForegroundNotification, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(appBecameActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+
+        reportForeground()
+    }
+
     func enable() {
         lock.lock()
         let alreadyEnabled = isEnabled
@@ -81,15 +104,27 @@ class DashXApplicationLifecycleCallbacks: NSObject {
         lock.unlock()
         guard !alreadyEnabled else { return }
 
-        notificationCenter.addObserver(self, selector: #selector(appBackgrounded), name: UIApplication.didEnterBackgroundNotification, object: nil)
-        notificationCenter.addObserver(self, selector: #selector(appForegrounded), name: UIApplication.willEnterForegroundNotification, object: nil)
-        notificationCenter.addObserver(self, selector: #selector(appBecameActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        observeForeground()
 
         if installsCrashHandler {
             _ = installCrashHandlerOnce
         }
 
         launchIfActive()
+    }
+
+    private var isTrackingEnabled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return isEnabled
+    }
+
+    private func reportForeground() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.reportForeground() }
+            return
+        }
+        foregroundSink(isForeground())
     }
 
     // A background launch (silent push, background fetch) is not an open, and applicationState
@@ -154,11 +189,16 @@ class DashXApplicationLifecycleCallbacks: NSObject {
 
     @objc
     func appBecameActive() {
+        // Not a foreground signal: activation also follows interruptions (Control Center, system
+        // alerts) that never left the foreground. `configure()` reports the cold-launch state.
+        guard isTrackingEnabled else { return }
         launchIfPending()
     }
 
     @objc
     func appForegrounded() {
+        foregroundSink(true)
+        guard isTrackingEnabled else { return }
         lock.lock()
         let isPending = isLaunchPending
         let isReturning = foregroundStartedAt == nil
@@ -176,6 +216,8 @@ class DashXApplicationLifecycleCallbacks: NSObject {
 
     @objc
     func appBackgrounded() {
+        foregroundSink(false)
+        guard isTrackingEnabled else { return }
         lock.lock()
         let startedAt = foregroundStartedAt
         foregroundStartedAt = nil

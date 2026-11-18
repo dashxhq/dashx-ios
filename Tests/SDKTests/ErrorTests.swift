@@ -88,6 +88,45 @@ final class DashXClientErrorTests: XCTestCase {
         XCTAssertFalse(DashXClientError.customError(message: "err").isRetryable)
     }
 
+    // MARK: - Chat additions
+
+    func testSessionEndedAndSubscriptionFailed() {
+        let ended = DashXClientError.sessionEnded
+        XCTAssertNotNil(ended.errorDescription)
+        XCTAssertNotNil(ended.recoverySuggestion)
+        XCTAssertFalse(ended.isRetryable)
+
+        let failed = DashXClientError.subscriptionFailed("Channel x was not acknowledged within 10000ms")
+        XCTAssertEqual(failed.errorDescription, "Channel x was not acknowledged within 10000ms")
+        XCTAssertNotNil(failed.recoverySuggestion)
+        XCTAssertTrue(failed.isRetryable)
+    }
+
+    func testGraphQLErrorsCarryTheResponseCodeAndIterateAsMessages() {
+        let errors = DashXGraphQLErrors(messages: ["Incorrect Identity Token: Expired."], code: DashXGraphQLErrors.unauthorized)
+        let error = DashXClientError.graphQLErrors(errors)
+        XCTAssertEqual(error.graphQLCode, "UNAUTHORIZED")
+        XCTAssertEqual(Array(errors), ["Incorrect Identity Token: Expired."])
+        XCTAssertEqual(errors.first, "Incorrect Identity Token: Expired.")
+        XCTAssertTrue(error.errorDescription!.contains("Expired"))
+
+        let literal: DashXGraphQLErrors = ["a", "b"]
+        XCTAssertNil(literal.code)
+        XCTAssertEqual(literal.messages, ["a", "b"])
+        XCTAssertEqual(DashXClientError.graphQLErrors(["a"]).graphQLCode, nil)
+        XCTAssertEqual(DashXGraphQLErrors.unprocessableEntity, "UNPROCESSABLE_ENTITY")
+    }
+
+    func testGraphQLErrorLiteralsMatchByMessagesWhateverTheCode() {
+        let errors = DashXGraphQLErrors(messages: ["Not found"], code: DashXGraphQLErrors.notFound)
+        XCTAssertTrue(errors == ["Not found"])
+        XCTAssertFalse(errors == ["Gone"])
+        if case .graphQLErrors(["Not found"]) = DashXClientError.graphQLErrors(errors) {} else {
+            XCTFail("a 1.6.x literal pattern must still match")
+        }
+        XCTAssertEqual(errors.code, DashXGraphQLErrors.notFound, "the code stays available for explicit checks")
+    }
+
     // MARK: - localizedDescription via Error protocol
 
     func testLocalizedDescriptionViaErrorProtocol() {

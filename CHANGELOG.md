@@ -2,6 +2,97 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.0] — 2026-11-16
+
+### Breaking
+
+- **Minimum deployment target is now iOS 15.0** (was 13.0) for `Package.swift`, the podspec and
+  the shipped xcframeworks. Xcode 27 no longer builds for earlier versions.
+- **`setIdentity(uid:token:)` with a nil token for the current uid keeps the held token** (1.6.x
+  cleared it). `reset()` clears it, but signs the user out as a whole: it also unsubscribes the
+  device from push, regenerates the anonymous uid and ends open chat sessions. No single call
+  clears only the token while keeping the uid.
+
+In-app chat. The SDK now manages a realtime WebSocket connection and exposes a conversation API
+on top of it. Conversation creation is
+server-only: the host's backend creates the conversation and returns the
+`(conversationId, chatIdentityId)` pair the SDK consumes.
+
+### Added
+
+- **`DashX.chat(chatIdentityId:)`** — `openConversation(_:)` returns a `DashXConversationLease`
+  with `state` (`.loading` / `.ready(messages:hasOlderMessages:streamingReply:)` / `.error`),
+  `addStateListener(_:)` (replays the current state on add), `sendMessage(content:completion:)`
+  (returns the client message id synchronously — the idempotency key a retry must reuse),
+  `loadPreviousPage`, `setVisible(_:)` (drives read-marking and push suppression) and `close()`.
+  A lease that is closed, or whose session has ended, sends nothing and completes with
+  `.sessionEnded`. Opening a conversation again after its first history load failed retries
+  that load.
+  Missed messages are reconciled after a reconnect; the first load shows at least a full page when
+  the history has one, and `hasOlderMessages` tells a host when to offer "load older". Also `fetchConversations`, `fetchConversation`, `summarizeConversations`,
+  `summarizeUnread` and `resolveConversation`, plus the same operations as raw `DashXClient`
+  methods (`fetchInAppChatMessages`, `sendInAppChatMessage`, `markInAppChatConversationRead`, …),
+  each with a completion and an `async` overload. Results are SDK models (`DashXChatMessage`,
+  `DashXChatConversationSummary`); no Apollo type is exposed.
+- **Streamed agent replies** — for a deployment that streams replies, `.ready`'s
+  `streamingReply` (`DashXStreamingReply`: `turnSeq`, `text`, `isComplete`) carries the agent's
+  reply while it is generated, built from `IN_APP_CHAT_STREAM` frames. A retried run replaces
+  the one it superseded, text stops at a missing frame rather than showing a hole, and the
+  stream gives way to the stored reply once that reaches `messages`, whichever arrives first.
+  A run that ends without storing a reply, or is cut off by a reconnect, is dropped. A lost
+  frame cannot strand a preview: an unfinished run quiet for 20 seconds is hidden until it
+  streams again, a finished run whose stored reply has not arrived within 5 seconds is dropped,
+  and either one reconciles history, after a first load still in flight. A finished run missing
+  a delta stays hidden rather than show truncated text as the whole reply. A stream never
+  replaces a `.loading` or `.error` state.
+- **Managed realtime connection** — connects only while a conversation is open, the app is
+  foregrounded and an identity token exists; reconnects with backoff. Observe it via
+  `DashX.connectionState` / `addConnectionStateListener(_:)` (`DashXConnectionState`); override
+  the endpoint with `DashX.setRealtimeBaseURI(_:)`.
+- **`DashX.setIdentityTokenProvider(uid:provider:)`** — on-demand identity token loading through
+  `DashXTokenProvider` (adapters: `DashXClosureTokenProvider`, `DashXAsyncTokenProvider`), called
+  with `forceRefresh: true` after a rejection. Register it at launch. A chat operation made while
+  it loads waits for its token, and one made after a failed load asks it again; `.notIdentified`
+  means neither a token nor a provider is set. After a failed load, or a realtime rejection no
+  refresh recovered, opening a conversation (again, too) or returning to the foreground with one
+  open asks the provider again (with `forceRefresh: true` while a token is held). A provider that
+  does not answer within 30 seconds is reported unavailable even if it blocks its calling thread,
+  and a load that times out while queued behind it never reaches it.
+- **Composable push** — `DashXPush.isDashXMessage(_:)` / `shouldDisplay(_:)` for hosts with their
+  own `UNUserNotificationCenterDelegate`. A chat push for the conversation on screen is not
+  presented in the foreground (`DashXAppDelegate` applies this before
+  `notificationDeliveredInForeground(message:)`; delivery is still tracked), and
+  `setVisible(true)` on a lease clears that conversation's delivered notifications.
+  `DashX.setNotificationDisplayDecider(_:)` lets a host veto any foreground notification.
+- `DashXClientError.sessionEnded`, `DashXClientError.subscriptionFailed`,
+  `DashXGraphQLErrors.code` (the response's `extensions.code`) and `DashX.hasIdentityToken`.
+
+### Changed
+
+- **`DashXClientError.graphQLErrors` now carries `DashXGraphQLErrors`** instead of `[String]`.
+  It iterates as the messages, is array-literal-expressible and compares by the messages alone,
+  so `case .graphQLErrors(let messages)`, `messages.count`, `messages.joined(...)`,
+  `messages == ["…"]` and `case .graphQLErrors(["…"])` behave as in 1.6.x; compare `code`
+  explicitly to match on it. Code that handed the payload to a `[String]` parameter should use
+  `.messages`.
+- The identity token is attached to every GraphQL request at send time, and a request rejected as
+  `UNAUTHORIZED` before execution is retried once after a token refresh. When no provider is bound
+  and the token has expired, the SDK drops it and continues on the public key alone, so
+  `identify` / `track` / `subscribe` keep working as in 1.6.x; with a provider bound the token is
+  kept and the next rejection asks the provider again. Dropping the token of an identity set
+  without a uid ends that identity and the chat sessions opened under it; their leases hear of it
+  only once the identity has ended, so a conversation reopened from `setOnTerminated` belongs to
+  whichever identity follows. The public-key retry
+  goes out only while the account the drop left is unchanged and still has no token; otherwise
+  the original rejection is returned. A chat operation needs an identity token, so it is not
+  retried: its expired token is dropped and the rejection is returned.
+- A first identity connects conversations already waiting for one, whether it carries a
+  uid, a token or both; a later token change keeps them only under the same non-nil uid.
+  Switching uid and `reset()` end open chat sessions (leases receive `.error(.sessionEnded)`, once
+  the next identity is committed) and recycle the realtime connection.
+- GraphQL code regenerated: `SystemContextScreenInput.density` is now `Double` (was `Int`), and
+  `SearchRecordsInput` gained an optional `project` field.
+
 ## [1.6.2] — 2026-10-30
 
 ### Fixed
