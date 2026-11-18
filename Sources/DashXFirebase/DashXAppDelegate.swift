@@ -80,7 +80,9 @@ open class DashXAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
         registerDashXNotificationCategoryIfNeeded(from: message)
 
-        let presentationOptions = notificationDeliveredInForeground(message: message)
+        let presentationOptions = DashXPush.shouldDisplay(message)
+            ? notificationDeliveredInForeground(message: message)
+            : []
 
         completionHandler(presentationOptions)
     }

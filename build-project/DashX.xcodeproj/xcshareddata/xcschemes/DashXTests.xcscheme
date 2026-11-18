@@ -29,6 +29,20 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "580F07DF0751C872300EFB45"
+               BuildableName = "DashXSmokeTests.xctest"
+               BlueprintName = "DashXSmokeTests"
+               ReferencedContainer = "container:DashX.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "27266A8ACC894C9536E2D6FD"
                BuildableName = "DashXTests.xctest"
                BlueprintName = "DashXTests"
@@ -72,6 +86,17 @@
                BlueprintIdentifier = "9A6C1E2ADF2980FF7A104A5B"
                BuildableName = "DashXNotificationServiceExtensionTests.xctest"
                BlueprintName = "DashXNotificationServiceExtensionTests"
+               ReferencedContainer = "container:DashX.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "580F07DF0751C872300EFB45"
+               BuildableName = "DashXSmokeTests.xctest"
+               BlueprintName = "DashXSmokeTests"
                ReferencedContainer = "container:DashX.xcodeproj">
             </BuildableReference>
          </TestableReference>

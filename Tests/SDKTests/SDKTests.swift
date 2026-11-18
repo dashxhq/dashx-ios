@@ -50,7 +50,7 @@ final class DashXClientTests: XCTestCase {
         DashXClient.instance.setIdentity(uid: nil, token: nil)
         XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_ACCOUNT_UID))
         XCTAssertNil(UserDefaults.standard.string(forKey: Constants.USER_PREFERENCES_KEY_IDENTITY_TOKEN))
-        XCTAssertNil(ConfigInterceptor.shared.identityToken)
+        XCTAssertFalse(DashXClient.instance.hasIdentityToken)
     }
 
     func testEnableAdTrackingSetsRequestFlag() {
@@ -154,7 +154,12 @@ final class LifecycleTrackingTests: XCTestCase {
         super.tearDown()
     }
 
-    private func makeCallbacks(build: String = "42", configured: Bool = true, active: Bool = true) -> DashXApplicationLifecycleCallbacks {
+    private func makeCallbacks(
+        build: String = "42",
+        configured: Bool = true,
+        active: Bool = true,
+        foregroundSink: @escaping (Bool) -> Void = { _ in }
+    ) -> DashXApplicationLifecycleCallbacks {
         DashXApplicationLifecycleCallbacks(
             track: { [unowned self] name, data in self.events.append((name, data)) },
             defaults: defaults,
@@ -162,9 +167,30 @@ final class LifecycleTrackingTests: XCTestCase {
             installsCrashHandler: false,
             isConfigured: { configured },
             isActive: { active },
+            isForeground: { active },
+            foregroundSink: foregroundSink,
             buildInfo: { ("1.2.0", build) },
             now: { [unowned self] in self.clock }
         )
+    }
+
+    func testForegroundObservationFeedsTheSinkWithoutTracking() {
+        let seen = Atomic<[Bool]>([])
+        let callbacks = makeCallbacks(active: false, foregroundSink: { seen.append($0) })
+        callbacks.observeForeground()
+        XCTAssertEqual(seen.value, [false], "the current state is reported on registration")
+
+        center.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        XCTAssertEqual(seen.value, [false], "activation without leaving the background is not a foreground transition")
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        center.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        XCTAssertEqual(seen.value, [false, false, true])
+        XCTAssertTrue(events.isEmpty, "observation alone sends no lifecycle events")
+
+        callbacks.enable()
+        center.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+        center.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        XCTAssertEqual(seen.value, [false, false, true, false], "one registration serves both consumers")
     }
 
     func testLaunchKindDecision() {

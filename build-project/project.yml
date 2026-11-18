@@ -22,7 +22,7 @@
 name: DashX
 options:
   deploymentTarget:
-    iOS: "13.0"
+    iOS: "15.0"
   xcodeVersion: "15.0"
   createIntermediateGroups: true
   groupSortPosition: top
@@ -40,7 +40,7 @@ settings:
     DYLIB_INSTALL_NAME_BASE: "@rpath"
     LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks"]
     CURRENT_PROJECT_VERSION: "1"
-    MARKETING_VERSION: "1.6.2"
+    MARKETING_VERSION: "1.7.0"
     # Auto-generate the framework Info.plist — without it a framework bundle
     # is malformed and Xcode rejects it at embed time ("Framework did not
     # contain an Info.plist").
@@ -157,6 +157,45 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXNotificationServiceExtensionTests
         GENERATE_INFOPLIST_FILE: YES
 
+  # Scene-based host app for the cold-launch smoke test. It opens a
+  # conversation during `didFinishLaunching` against loopback GraphQL and
+  # WebSocket stubs, so the hosted test below observes what a real UIKit
+  # launch does to the SDK's foreground state. Public DashX API only.
+  DashXSmokeHost:
+    type: application
+    platform: iOS
+    sources:
+      - path: ../Tests/SmokeHost
+    dependencies:
+      - target: DashX
+    info:
+      path: ../Tests/SmokeHost/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXSmokeHost
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+
+  DashXSmokeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../Tests/SmokeTests
+    dependencies:
+      - target: DashXSmokeHost
+      - target: DashX
+        embed: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dashx.ios.DashXSmokeTests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   DashX:
     build:
@@ -170,15 +209,17 @@ schemes:
         DashXNotificationServiceExtension: all
     archive:
       config: Release
-  # Aggregate scheme — run `xcodebuild test -scheme DashXTests` and both
-  # test bundles execute in one pass.
+  # Aggregate scheme — run `xcodebuild test -scheme DashXTests` and every
+  # test bundle executes in one pass.
   DashXTests:
     build:
       targets:
         DashXTests: [test]
         DashXNotificationServiceExtensionTests: [test]
+        DashXSmokeTests: [test]
     test:
       config: Debug
       targets:
         - DashXTests
         - DashXNotificationServiceExtensionTests
+        - DashXSmokeTests
