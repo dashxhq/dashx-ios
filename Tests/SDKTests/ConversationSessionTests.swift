@@ -119,7 +119,15 @@ private final class FakeBackend: ChatSessionBackend {
         push.setConversationVisible(conversationId, owner: owner, visible: visible)
     }
     func dismissConversationNotifications(conversationId: String) {}
-    var isAppForeground: Bool { foreground.value }
+    /// Runs once, on the session's lane, at the next foreground check: a read-marking pass inside a
+    /// lane operation, such as a sync pass publishing its result.
+    let onNextForegroundCheck = Atomic<(() -> Void)?>(nil)
+    var isAppForeground: Bool {
+        var hook: (() -> Void)?
+        onNextForegroundCheck.mutate { hook = $0; $0 = nil }
+        hook?()
+        return foreground.value
+    }
     var sessionGeneration: Int { generation.value }
 }
 
@@ -1409,6 +1417,123 @@ final class ConversationSessionTests: XCTestCase {
 
         awaitUntil(what: "stored reply fetched") { self.readyIds(lease) == ["m1", "r2", "v3"] }
         XCTAssertNil(streamingReply(lease))
+        session.endSession()
+    }
+
+    func testLiveReplyDuringATimeoutFetchShowsWithoutWaitingForIt() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 0.2, storedReplyGrace: 30)
+        )
+        lease.setVisible(true)
+        let gate = Gate()
+        backend.afterGate.value = gate
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2)] : [] }
+
+        deliver(stream(turn: 2, seq: 0, text: "Checking"), to: backend)
+        awaitUntil(what: "timeout fetch in flight") { backend.fetchAfterCursors.value == ["m1"] }
+        deliver(chatFrame("r2", seq: 2), to: backend)
+        awaitUntil(what: "live reply shown during the fetch") { self.readyIds(lease) == ["m1", "r2"] }
+        XCTAssertNil(streamingReply(lease))
+        settle(0.6)
+        XCTAssertFalse(backend.markReadIds.value.contains("r2"), "marked an unconfirmed message read")
+
+        gate.open()
+        awaitUntil(what: "confirmed reply marked read") { backend.markReadIds.value.contains("r2") }
+        XCTAssertEqual(readyIds(lease), ["m1", "r2"])
+        session.endSession()
+    }
+
+    func testReconnectDuringATimeoutFetchHoldsLiveMessagesUntilAFetchAfterItSucceeds() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 0.2, storedReplyGrace: 30)
+        )
+        let beforeDrop = Gate()
+        backend.afterGate.value = beforeDrop
+
+        deliver(stream(turn: 2, seq: 0, text: "Checking"), to: backend)
+        awaitUntil(what: "timeout fetch in flight") { backend.fetchAfterCursors.value == ["m1"] }
+        // The socket drops, missing m2, and reconnects; m3 arrives on the new connection.
+        backend.handles.value[0].onEstablished(true)
+        deliver(chatFrame("m3", seq: 3), to: backend)
+        settle(0.15)
+        let afterReconnect = Gate()
+        backend.afterGate.value = afterReconnect
+        beforeDrop.open()
+
+        awaitUntil(what: "refetch in flight") { backend.fetchAfterCursors.value.count == 2 }
+        backend.after.value = { cursor in
+            cursor == "m1" ? [chatMessage("m2", seq: 2), chatMessage("m3", seq: 3)] : []
+        }
+        settle(0.15)
+        XCTAssertEqual(readyIds(lease), ["m1"], "a live message showed past the gap")
+
+        afterReconnect.open()
+        awaitUntil(what: "gap filled") { self.readyIds(lease) == ["m1", "m2", "m3"] }
+        settle(0.15)
+        XCTAssertEqual(backend.fetchAfterCursors.value, ["m1", "m1"], "the repeat is the rerun")
+        session.endSession()
+    }
+
+    func testReconnectBetweenAPublishedPassAndTheSyncEndingHoldsLiveMessagesForTheRerun() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+        lease.setVisible(true)
+        awaitUntil(what: "confirmed newest marked") { backend.markReadIds.value == ["m1"] }
+        let firstFetch = Gate()
+        backend.afterGate.value = firstFetch
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "reconcile in flight") { backend.fetchAfterCursors.value == ["m1"] }
+
+        // Inside the hop that publishes the first fetch, before the hop that ends the sync: the
+        // socket drops again, missing m2, and m3 arrives behind the next acknowledgement.
+        let rerun = Gate()
+        backend.onNextForegroundCheck.value = {
+            backend.afterGate.value = rerun
+            backend.after.value = { cursor in
+                cursor == "m1" ? [chatMessage("m2", seq: 2), chatMessage("m3", seq: 3)] : []
+            }
+            backend.handles.value[0].onEstablished(true)
+            backend.handles.value[0].onFrame(chatFrame("m3", seq: 3))
+        }
+        firstFetch.open()
+
+        awaitUntil(what: "rerun in flight") { backend.fetchAfterCursors.value.count == 2 }
+        settle(0.15)
+        XCTAssertEqual(readyIds(lease), ["m1"], "a live message showed past the gap")
+
+        rerun.open()
+        awaitUntil(what: "gap filled") { self.readyIds(lease) == ["m1", "m2", "m3"] }
+        session.endSession()
+    }
+
+    func testLiveMessageDuringAReconnectSyncWaitsForItEvenAfterAStreamTimeout() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 0.2, storedReplyGrace: 30)
+        )
+        let gate = Gate()
+        backend.afterGate.value = gate
+        backend.after.value = { cursor in
+            cursor == "m1" ? [chatMessage("m2", seq: 2), chatMessage("r3", seq: 3)] : []
+        }
+
+        // m2 was sent while the socket was down.
+        backend.handles.value[0].onEstablished(true)
+        awaitUntil(what: "reconnect fetch in flight") { backend.fetchAfterCursors.value == ["m1"] }
+        deliver(stream(turn: 3, seq: 0, text: "Checking"), to: backend)
+        awaitUntil(what: "preview") { self.streamingReply(lease)?.text == "Checking" }
+        awaitUntil(what: "quiet preview hidden") { self.streamingReply(lease) == nil }
+        deliver(chatFrame("r3", seq: 3), to: backend)
+        settle(0.3)
+        XCTAssertEqual(readyIds(lease), ["m1"], "a live message showed past the gap")
+
+        gate.open()
+        awaitUntil(what: "gap filled") { self.readyIds(lease) == ["m1", "m2", "r3"] }
         session.endSession()
     }
 

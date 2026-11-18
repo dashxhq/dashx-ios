@@ -17,6 +17,12 @@ All notable changes to `dashx-ios` are documented in this file. Format loosely f
   dropped stayed missing until the next sync. Both checks now run regardless, and are skipped
   only when the stored reply has arrived. A run's `END` replaces its quiet check, so a run that
   stored nothing fetches nothing.
+- **A reply that arrives during that history check shows at once.** Live messages were held
+  until the check's fetch finished, and through its retries if it failed. On a loaded
+  conversation they now appear in `messages` while it runs, and are still marked read only once
+  the server confirms them. After a reconnect, including one during that fetch, live messages
+  wait until a fetch started after it succeeds, so none shows past messages missed while
+  disconnected.
 
 ## [1.7.0] — 2026-11-16
 

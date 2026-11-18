@@ -345,6 +345,18 @@ final class ConversationSession {
     /// Server-confirmed reconnect cursor, advanced only by fetch results. Frames can arrive out of
     /// order, and a frame-advanced cursor would leap past a lost sibling no walk could return.
     private var lastKnownMessageId: String?
+    /// An acknowledgement's sync has not completed: frames sent while disconnected may be
+    /// missing, so live messages wait for it rather than show past the gap.
+    private var reconnectGap = false
+    /// A stream timeout's sync is running on a loaded conversation. Live messages keep showing
+    /// meanwhile, so a reply that arrives over the socket is not held back behind the fetch.
+    private var showLiveDuringSync = false
+    /// Channel acknowledgements so far, and the count when the current pass started buffering: a
+    /// pass that sees them differ was overtaken by a reconnect during its fetch.
+    private var acknowledgements = 0
+    private var acknowledgementsAtPassStart = 0
+    /// Set by a pass a reconnect overtook: its buffer carries, unshown, into the pass after.
+    private var carryBuffer = false
 
     private var markedMessageId: String?
     private var markInFlight = false
@@ -451,9 +463,18 @@ final class ConversationSession {
                 // Now, not after the reconcile: a failing fetch would otherwise keep it on screen.
                 self.publishReadyIfShown()
             }
+            self.reconnectGap = true
+            self.acknowledgements += 1
             self.syncAttempts = 0
             if self.syncing {
-                // The running fetch may predate the gap; re-run once it completes.
+                // The running fetch may predate the gap; re-run once it completes. A pass that has
+                // already published left buffering off until the rerun, a separate lane hop away,
+                // so buffering restarts now and carries into it: frames behind this
+                // acknowledgement must not show before the rerun recovers what the drop lost.
+                if !self.buffering {
+                    self.startBuffering()
+                    self.carryBuffer = true
+                }
                 self.resyncPending = true
                 return
             }
@@ -476,10 +497,18 @@ final class ConversationSession {
     private func mergeLive(_ message: DashXChatMessage) {
         if buffering {
             if buffer.count >= Self.bufferLimit { bufferOverflowed = true } else { buffer.append(message) }
+            // Shown as well as buffered: the fetch still merges it by id. Read marking waits for
+            // the cycle, which marks only through the server-confirmed cursor.
+            if showsLiveDuringSync { applyMerge([message]) }
             return
         }
         applyMerge([message])
         maybeMarkRead()
+    }
+
+    private var showsLiveDuringSync: Bool {
+        guard showLiveDuringSync, !reconnectGap, case .ready = state else { return false }
+        return true
     }
 
     /// Starts buffering synchronously: a frame queued on the lane right behind the acknowledgement
@@ -512,6 +541,8 @@ final class ConversationSession {
                 if self.resyncPending { return true }
                 self.syncAttempts = 0
                 self.syncing = false
+                self.reconnectGap = false
+                self.showLiveDuringSync = false
                 return false
             })
         } catch {
@@ -572,6 +603,7 @@ final class ConversationSession {
             let candidate = mergeInto([], rows)
             let oldestFetched = oldestPage
             let done: Bool = await onLane {
+                if self.overtakenByReconnect() { return false }
                 let (bufferSnapshot, overflowed) = self.drainBufferAndResumeLive()
                 if overflowed { return false }
                 self.messages = self.mergeInto(candidate, bufferSnapshot)
@@ -625,6 +657,7 @@ final class ConversationSession {
                 return
             }
             let done: Bool = await onLane {
+                if self.overtakenByReconnect() { return false }
                 let (bufferSnapshot, overflowed) = self.drainBufferAndResumeLive()
                 if overflowed { return false }
                 self.applyMerge(fetched + bufferSnapshot)
@@ -647,8 +680,24 @@ final class ConversationSession {
         min(Self.cursorRetryBase * pow(2, Double(min(attempt - 1, 5))), Self.cursorRetryMax)
     }
 
+    /// A reconnect acknowledged during this pass's fetch: the fetch may predate messages the drop
+    /// lost, so neither its rows nor the buffer is shown. The pass repeats from a fetch started
+    /// after the acknowledgement, which is the rerun it queued, and the buffer carries into it,
+    /// since frames can hold rows a cursor walk does not return.
+    private func overtakenByReconnect() -> Bool {
+        guard acknowledgements != acknowledgementsAtPassStart else { return false }
+        carryBuffer = true
+        resyncPending = false
+        return true
+    }
+
     private func startBuffering() {
         buffering = true
+        acknowledgementsAtPassStart = acknowledgements
+        if carryBuffer {
+            carryBuffer = false
+            return
+        }
         buffer.removeAll()
         bufferOverflowed = false
     }
@@ -761,6 +810,7 @@ final class ConversationSession {
     }
 
     private func reconcileAfterStreamTimeout() {
+        if case .ready = state { showLiveDuringSync = true }
         // A first load still in flight may predate the stored reply, so it is followed by a
         // reconcile too. One not yet started fetches everything when it runs.
         if snapshotDone || syncing { requestResync() }
