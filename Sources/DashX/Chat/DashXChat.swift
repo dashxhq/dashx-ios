@@ -358,8 +358,9 @@ final class ConversationSession {
     /// The newest run any frame has named. Kept apart from `replyStream`, which a reconnect
     /// clears: a superseded run's delayed frames must not come back afterwards.
     private var newestStreamRun: ReplyStreamRun?
-    /// The pending stream timeout; every stream frame reschedules it.
-    private var streamTimeout: DispatchWorkItem?
+    /// Pending idle checks of unfinished runs. A frame of the same turn reschedules or cancels its
+    /// turn's check and an `END` cancels its run's; a later turn's frames leave it to finish.
+    private var idleChecks: [ReplyStreamRun: DispatchWorkItem] = [:]
     private let streamTimeouts: ReplyStreamTimeouts
 
     init(
@@ -691,6 +692,13 @@ final class ConversationSession {
     /// current one. Published only while the state is `.ready`.
     private func mergeStream(_ frame: DashXRealtimeChatStream) {
         let run = ReplyStreamRun(turnSeq: frame.turnSeq, run: frame.run)
+        // Before the run checks, which drop a run a later turn or a newer run has ended: its
+        // `END` still replaces the idle fallback. Nothing was stored, or the stored reply is in
+        // history and fetched if its frame does not follow.
+        if frame.kind == .end {
+            idleChecks.removeValue(forKey: run)?.cancel()
+            if frame.persisted == true { fetchStoredReplyIfMissing(run) }
+        }
         if let settledStreamRun, run <= settledStreamRun { return }
         if let newestStreamRun, run < newestStreamRun { return }
         newestStreamRun = run
@@ -706,7 +714,7 @@ final class ConversationSession {
                 settleStream()
             }
         }
-        armStreamTimeout()
+        armStreamTimeout(run)
         publishReadyIfShown()
     }
 
@@ -718,35 +726,53 @@ final class ConversationSession {
 
     /// A lost frame must not leave a preview up forever. An unfinished run that goes quiet is
     /// hidden but kept, since a tool call sends nothing for a while and its answer may still
-    /// stream; a finished one whose stored reply has not arrived is dropped. Either way history
-    /// is reconciled, which fetches a stored reply whose frame was lost.
-    private func armStreamTimeout() {
-        streamTimeout?.cancel()
-        streamTimeout = nil
-        guard let run = replyStream?.run, let isComplete = replyStream?.isComplete else { return }
+    /// stream, and history is reconciled in case its `END` was lost. A finished run is left to
+    /// `fetchStoredReplyIfMissing`.
+    ///
+    /// The check outlives the preview: a later turn ends the preview, but the run's reply may be
+    /// in history with its `END` and stored frame both lost, as a lagging socket drops frames
+    /// without reconnecting. Only hiding depends on the run still being shown.
+    private func armStreamTimeout(_ run: ReplyStreamRun) {
+        idleChecks.keys.filter { $0.turnSeq == run.turnSeq }
+            .forEach { idleChecks.removeValue(forKey: $0)?.cancel() }
+        guard replyStream?.run == run, replyStream?.isComplete == false else { return }
         // Only the run is captured: a copy of the accumulator would keep its deltas alive and
         // make every later delta copy them.
         let timeout = DispatchWorkItem { [weak self] in
-            guard let self, self.replyStream?.run == run, !self.isEnded else { return }
-            self.streamTimeout = nil
-            if self.replyStream?.isComplete == true {
-                self.settleStream()
-            } else {
-                self.replyStream?.hide()
-            }
-            // A first load still in flight may predate the stored reply, so it is followed by a
-            // reconcile too. One not yet started fetches everything when it runs.
-            if self.snapshotDone || self.syncing { self.requestResync() }
-            self.publishReadyIfShown()
+            guard let self, !self.isEnded else { return }
+            self.idleChecks.removeValue(forKey: run)
+            guard !self.hasStoredReply(forTurn: run.turnSeq) else { return }
+            if self.replyStream?.run == run { self.replyStream?.hide() }
+            self.reconcileAfterStreamTimeout()
         }
-        streamTimeout = timeout
-        lane.asyncAfter(deadline: .now() + (isComplete ? streamTimeouts.storedReplyGrace : streamTimeouts.idle), execute: timeout)
+        idleChecks[run] = timeout
+        lane.asyncAfter(deadline: .now() + streamTimeouts.idle, execute: timeout)
+    }
+
+    /// A finished run's reply is in history, so its fetch outlives the preview: a later turn or a
+    /// newer run ends the preview, not this. Skipped once the stored reply has arrived; otherwise
+    /// the preview, if still this run's, is dropped.
+    private func fetchStoredReplyIfMissing(_ run: ReplyStreamRun) {
+        lane.asyncAfter(deadline: .now() + streamTimeouts.storedReplyGrace) { [weak self] in
+            guard let self, !self.isEnded, !self.hasStoredReply(forTurn: run.turnSeq) else { return }
+            if self.replyStream?.run == run { self.settleStream() }
+            self.reconcileAfterStreamTimeout()
+        }
+    }
+
+    private func reconcileAfterStreamTimeout() {
+        // A first load still in flight may predate the stored reply, so it is followed by a
+        // reconcile too. One not yet started fetches everything when it runs.
+        if snapshotDone || syncing { requestResync() }
+        publishReadyIfShown()
     }
 
     /// The stored reply replaces the stream, whether it arrived before the stream's frames or after.
+    /// A later turn ends it too: the server stores a visible reply only while its turn is current.
     private func settleAnsweredStream() {
-        guard let turnSeq = replyStream?.run.turnSeq, hasStoredReply(forTurn: turnSeq) else { return }
-        settleStream()
+        guard let turnSeq = replyStream?.run.turnSeq else { return }
+        let overtaken = (messages.last?.turnSeq).map { $0 > turnSeq } ?? false
+        if overtaken || hasStoredReply(forTurn: turnSeq) { settleStream() }
     }
 
     private func settleStream() {
@@ -1091,7 +1117,7 @@ final class ConversationSession {
 }
 
 /// Identifies one reply run: the turn it answers, then the run number a retry raises.
-struct ReplyStreamRun: Comparable {
+struct ReplyStreamRun: Comparable, Hashable {
     let turnSeq: Int
     let run: Int
 

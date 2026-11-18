@@ -2,6 +2,22 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.1] — 2026-11-18
+
+### Fixed
+
+- **A streamed reply overtaken by a later turn is dropped.** When the visitor sent a message
+  while the previous turn's reply was streaming, that reply kept showing and growing, then
+  vanished once the server discarded it. It now gives way as soon as a later turn reaches
+  `messages`, and its remaining frames are ignored.
+- **A stored reply whose message frame was lost is fetched even after a later turn.** The
+  history checks that recover it (5 seconds after a finished run, 20 seconds after an
+  unfinished run goes quiet) ran only while that run's preview was still shown, so a later
+  turn or a newer run's first frame cancelled them, and a reply whose frames a lagging socket
+  dropped stayed missing until the next sync. Both checks now run regardless, and are skipped
+  only when the stored reply has arrived. A run's `END` replaces its quiet check, so a run that
+  stored nothing fetches nothing.
+
 ## [1.7.0] — 2026-11-16
 
 ### Breaking

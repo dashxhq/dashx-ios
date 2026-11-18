@@ -1299,6 +1299,134 @@ final class ConversationSessionTests: XCTestCase {
         session.endSession()
     }
 
+    func testLaterTurnEndsTheOvertakenStreamAndIgnoresItsLateFrames() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
+
+        deliver(stream(turn: 2, seq: 0, text: "stale"), to: backend)
+        awaitUntil(what: "stream") { self.streamingReply(lease)?.text == "stale" }
+        deliver(followUpFrame, stream(turn: 2, seq: 1, text: " answer"), to: backend)
+        awaitUntil(what: "stream ended by the later turn") {
+            self.readyIds(lease) == ["m1", "v3"] && self.streamingReply(lease) == nil
+        }
+        settle(0.15)
+        XCTAssertNil(streamingReply(lease))
+
+        deliver(stream(turn: 3, seq: 0, text: "fresh"), to: backend)
+        awaitUntil(what: "stream for the later turn") { self.streamingReply(lease)?.text == "fresh" }
+        session.endSession()
+    }
+
+    private let followUpRow = DashXChatMessage(
+        id: "v3", conversationId: "c1", externalUid: "in_app_chat:abc", senderId: nil, aiRole: "user",
+        turnSeq: 3, renderedContent: [:], createdAt: "2026-08-25 10:00:00", sentAt: nil
+    )
+    private let followUpFrame = DashXRealtimeMessage.inAppChatMessage(DashXRealtimeChatMessage(
+        id: "v3", externalUid: "in_app_chat:abc", conversationId: "c1", aiRole: "user", turnSeq: 3
+    ))
+
+    func testFinishedRunOvertakenByALaterTurnStillFetchesItsLostStoredReply() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 5, storedReplyGrace: 0.3)
+        )
+        let followUpRow = self.followUpRow
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2), followUpRow] : [] }
+
+        // r2's own frame is lost; the lease is not visible, so read marking reconciles nothing.
+        deliver(stream(turn: 2, seq: 0, text: "Done"), stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+        awaitUntil(what: "finished preview") { self.streamingReply(lease)?.isComplete == true }
+        deliver(followUpFrame, stream(turn: 3, seq: 0, text: "next"), to: backend)
+        awaitUntil(what: "later turn streaming") { self.streamingReply(lease)?.text == "next" }
+
+        awaitUntil(what: "stored reply fetched") { self.readyIds(lease) == ["m1", "r2", "v3"] }
+        XCTAssertEqual(backend.fetchAfterCursors.value, ["m1"])
+        XCTAssertEqual(streamingReply(lease)?.text, "next")
+        session.endSession()
+    }
+
+    func testUnfinishedRunOvertakenByALaterTurnStillChecksHistoryWhenItGoesQuiet() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 0.5, storedReplyGrace: 30)
+        )
+        let followUpRow = self.followUpRow
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2), followUpRow] : [] }
+
+        // A lagging socket drops turn 2's END and its stored frame; the lease is not visible.
+        deliver(stream(turn: 2, seq: 0, text: "Done"), followUpFrame, to: backend)
+        awaitUntil(what: "preview ended by the later turn") {
+            self.readyIds(lease) == ["m1", "v3"] && self.streamingReply(lease) == nil
+        }
+        deliver(stream(turn: 3, seq: 0, text: "next"), stream(turn: 3, seq: 1, .end, persisted: true), to: backend)
+
+        awaitUntil(what: "stored reply fetched") { self.readyIds(lease) == ["m1", "r2", "v3"] }
+        XCTAssertEqual(backend.fetchAfterCursors.value, ["m1"])
+        XCTAssertEqual(streamingReply(lease), DashXStreamingReply(turnSeq: 3, text: "next", isComplete: true))
+        session.endSession()
+    }
+
+    func testEndWithoutAStoredReplyAfterALaterTurnCancelsTheIdleCheck() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 0.5, storedReplyGrace: 30)
+        )
+
+        deliver(stream(turn: 2, seq: 0, text: "Done"), followUpFrame, to: backend)
+        awaitUntil(what: "preview ended by the later turn") {
+            self.readyIds(lease) == ["m1", "v3"] && self.streamingReply(lease) == nil
+        }
+        // The server drops turn 2's reply once turn 3 is in, after turn 3 has started streaming.
+        deliver(
+            stream(turn: 3, seq: 0, text: "next"),
+            stream(turn: 3, seq: 1, .end, persisted: true),
+            stream(turn: 2, seq: 1, .end, persisted: false),
+            to: backend
+        )
+        awaitUntil(what: "later turn finished") { self.streamingReply(lease)?.isComplete == true }
+        settle(0.8)
+        XCTAssertTrue(backend.fetchAfterCursors.value.isEmpty, "an END without a stored reply still fetched")
+        session.endSession()
+    }
+
+    func testEndArrivingAfterALaterTurnStillFetchesItsLostStoredReply() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 5, storedReplyGrace: 0.3)
+        )
+        let followUpRow = self.followUpRow
+        backend.after.value = { cursor in cursor == "m1" ? [chatMessage("r2", seq: 2), followUpRow] : [] }
+
+        deliver(stream(turn: 2, seq: 0, text: "Done"), followUpFrame, to: backend)
+        awaitUntil(what: "preview ended by the later turn") {
+            self.readyIds(lease) == ["m1", "v3"] && self.streamingReply(lease) == nil
+        }
+        deliver(stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+
+        awaitUntil(what: "stored reply fetched") { self.readyIds(lease) == ["m1", "r2", "v3"] }
+        XCTAssertNil(streamingReply(lease))
+        session.endSession()
+    }
+
+    func testStoredReplyArrivingWithinTheGracePeriodNeedsNoFetch() {
+        let backend = FakeBackend()
+        let (session, lease) = openReady(
+            backend, history: [chatMessage("m1", seq: 1)],
+            streamTimeouts: ReplyStreamTimeouts(idle: 5, storedReplyGrace: 0.2)
+        )
+
+        deliver(stream(turn: 2, seq: 0, text: "Done"), stream(turn: 2, seq: 1, .end, persisted: true), to: backend)
+        deliver(chatFrame("r2", seq: 2), to: backend)
+        awaitUntil(what: "stored reply") { self.readyIds(lease) == ["m1", "r2"] }
+        settle(0.4)
+        XCTAssertTrue(backend.fetchAfterCursors.value.isEmpty, "a delivered reply was fetched again")
+        session.endSession()
+    }
+
     func testEndWithoutAStoredReplyClearsTheStreamAndIgnoresItsLateFrames() {
         let backend = FakeBackend()
         let (session, lease) = openReady(backend, history: [chatMessage("m1", seq: 1)])
