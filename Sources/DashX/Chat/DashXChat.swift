@@ -345,6 +345,18 @@ final class ConversationSession {
     /// Server-confirmed reconnect cursor, advanced only by fetch results. Frames can arrive out of
     /// order, and a frame-advanced cursor would leap past a lost sibling no walk could return.
     private var lastKnownMessageId: String?
+    /// An acknowledgement's sync has not completed: frames sent while disconnected may be
+    /// missing, so live messages wait for it rather than show past the gap.
+    private var reconnectGap = false
+    /// A stream timeout's sync is running on a loaded conversation. Live messages keep showing
+    /// meanwhile, so a reply that arrives over the socket is not held back behind the fetch.
+    private var showLiveDuringSync = false
+    /// Channel acknowledgements so far, and the count when the current pass started buffering: a
+    /// pass that sees them differ was overtaken by a reconnect during its fetch.
+    private var acknowledgements = 0
+    private var acknowledgementsAtPassStart = 0
+    /// Set by a pass a reconnect overtook: its buffer carries, unshown, into the pass after.
+    private var carryBuffer = false
 
     private var markedMessageId: String?
     private var markInFlight = false
@@ -358,8 +370,9 @@ final class ConversationSession {
     /// The newest run any frame has named. Kept apart from `replyStream`, which a reconnect
     /// clears: a superseded run's delayed frames must not come back afterwards.
     private var newestStreamRun: ReplyStreamRun?
-    /// The pending stream timeout; every stream frame reschedules it.
-    private var streamTimeout: DispatchWorkItem?
+    /// Pending idle checks of unfinished runs. A frame of the same turn reschedules or cancels its
+    /// turn's check and an `END` cancels its run's; a later turn's frames leave it to finish.
+    private var idleChecks: [ReplyStreamRun: DispatchWorkItem] = [:]
     private let streamTimeouts: ReplyStreamTimeouts
 
     init(
@@ -450,9 +463,18 @@ final class ConversationSession {
                 // Now, not after the reconcile: a failing fetch would otherwise keep it on screen.
                 self.publishReadyIfShown()
             }
+            self.reconnectGap = true
+            self.acknowledgements += 1
             self.syncAttempts = 0
             if self.syncing {
-                // The running fetch may predate the gap; re-run once it completes.
+                // The running fetch may predate the gap; re-run once it completes. A pass that has
+                // already published left buffering off until the rerun, a separate lane hop away,
+                // so buffering restarts now and carries into it: frames behind this
+                // acknowledgement must not show before the rerun recovers what the drop lost.
+                if !self.buffering {
+                    self.startBuffering()
+                    self.carryBuffer = true
+                }
                 self.resyncPending = true
                 return
             }
@@ -475,10 +497,18 @@ final class ConversationSession {
     private func mergeLive(_ message: DashXChatMessage) {
         if buffering {
             if buffer.count >= Self.bufferLimit { bufferOverflowed = true } else { buffer.append(message) }
+            // Shown as well as buffered: the fetch still merges it by id. Read marking waits for
+            // the cycle, which marks only through the server-confirmed cursor.
+            if showsLiveDuringSync { applyMerge([message]) }
             return
         }
         applyMerge([message])
         maybeMarkRead()
+    }
+
+    private var showsLiveDuringSync: Bool {
+        guard showLiveDuringSync, !reconnectGap, case .ready = state else { return false }
+        return true
     }
 
     /// Starts buffering synchronously: a frame queued on the lane right behind the acknowledgement
@@ -511,6 +541,8 @@ final class ConversationSession {
                 if self.resyncPending { return true }
                 self.syncAttempts = 0
                 self.syncing = false
+                self.reconnectGap = false
+                self.showLiveDuringSync = false
                 return false
             })
         } catch {
@@ -571,6 +603,7 @@ final class ConversationSession {
             let candidate = mergeInto([], rows)
             let oldestFetched = oldestPage
             let done: Bool = await onLane {
+                if self.overtakenByReconnect() { return false }
                 let (bufferSnapshot, overflowed) = self.drainBufferAndResumeLive()
                 if overflowed { return false }
                 self.messages = self.mergeInto(candidate, bufferSnapshot)
@@ -624,6 +657,7 @@ final class ConversationSession {
                 return
             }
             let done: Bool = await onLane {
+                if self.overtakenByReconnect() { return false }
                 let (bufferSnapshot, overflowed) = self.drainBufferAndResumeLive()
                 if overflowed { return false }
                 self.applyMerge(fetched + bufferSnapshot)
@@ -646,8 +680,24 @@ final class ConversationSession {
         min(Self.cursorRetryBase * pow(2, Double(min(attempt - 1, 5))), Self.cursorRetryMax)
     }
 
+    /// A reconnect acknowledged during this pass's fetch: the fetch may predate messages the drop
+    /// lost, so neither its rows nor the buffer is shown. The pass repeats from a fetch started
+    /// after the acknowledgement, which is the rerun it queued, and the buffer carries into it,
+    /// since frames can hold rows a cursor walk does not return.
+    private func overtakenByReconnect() -> Bool {
+        guard acknowledgements != acknowledgementsAtPassStart else { return false }
+        carryBuffer = true
+        resyncPending = false
+        return true
+    }
+
     private func startBuffering() {
         buffering = true
+        acknowledgementsAtPassStart = acknowledgements
+        if carryBuffer {
+            carryBuffer = false
+            return
+        }
         buffer.removeAll()
         bufferOverflowed = false
     }
@@ -691,6 +741,13 @@ final class ConversationSession {
     /// current one. Published only while the state is `.ready`.
     private func mergeStream(_ frame: DashXRealtimeChatStream) {
         let run = ReplyStreamRun(turnSeq: frame.turnSeq, run: frame.run)
+        // Before the run checks, which drop a run a later turn or a newer run has ended: its
+        // `END` still replaces the idle fallback. Nothing was stored, or the stored reply is in
+        // history and fetched if its frame does not follow.
+        if frame.kind == .end {
+            idleChecks.removeValue(forKey: run)?.cancel()
+            if frame.persisted == true { fetchStoredReplyIfMissing(run) }
+        }
         if let settledStreamRun, run <= settledStreamRun { return }
         if let newestStreamRun, run < newestStreamRun { return }
         newestStreamRun = run
@@ -706,7 +763,7 @@ final class ConversationSession {
                 settleStream()
             }
         }
-        armStreamTimeout()
+        armStreamTimeout(run)
         publishReadyIfShown()
     }
 
@@ -718,35 +775,54 @@ final class ConversationSession {
 
     /// A lost frame must not leave a preview up forever. An unfinished run that goes quiet is
     /// hidden but kept, since a tool call sends nothing for a while and its answer may still
-    /// stream; a finished one whose stored reply has not arrived is dropped. Either way history
-    /// is reconciled, which fetches a stored reply whose frame was lost.
-    private func armStreamTimeout() {
-        streamTimeout?.cancel()
-        streamTimeout = nil
-        guard let run = replyStream?.run, let isComplete = replyStream?.isComplete else { return }
+    /// stream, and history is reconciled in case its `END` was lost. A finished run is left to
+    /// `fetchStoredReplyIfMissing`.
+    ///
+    /// The check outlives the preview: a later turn ends the preview, but the run's reply may be
+    /// in history with its `END` and stored frame both lost, as a lagging socket drops frames
+    /// without reconnecting. Only hiding depends on the run still being shown.
+    private func armStreamTimeout(_ run: ReplyStreamRun) {
+        idleChecks.keys.filter { $0.turnSeq == run.turnSeq }
+            .forEach { idleChecks.removeValue(forKey: $0)?.cancel() }
+        guard replyStream?.run == run, replyStream?.isComplete == false else { return }
         // Only the run is captured: a copy of the accumulator would keep its deltas alive and
         // make every later delta copy them.
         let timeout = DispatchWorkItem { [weak self] in
-            guard let self, self.replyStream?.run == run, !self.isEnded else { return }
-            self.streamTimeout = nil
-            if self.replyStream?.isComplete == true {
-                self.settleStream()
-            } else {
-                self.replyStream?.hide()
-            }
-            // A first load still in flight may predate the stored reply, so it is followed by a
-            // reconcile too. One not yet started fetches everything when it runs.
-            if self.snapshotDone || self.syncing { self.requestResync() }
-            self.publishReadyIfShown()
+            guard let self, !self.isEnded else { return }
+            self.idleChecks.removeValue(forKey: run)
+            guard !self.hasStoredReply(forTurn: run.turnSeq) else { return }
+            if self.replyStream?.run == run { self.replyStream?.hide() }
+            self.reconcileAfterStreamTimeout()
         }
-        streamTimeout = timeout
-        lane.asyncAfter(deadline: .now() + (isComplete ? streamTimeouts.storedReplyGrace : streamTimeouts.idle), execute: timeout)
+        idleChecks[run] = timeout
+        lane.asyncAfter(deadline: .now() + streamTimeouts.idle, execute: timeout)
+    }
+
+    /// A finished run's reply is in history, so its fetch outlives the preview: a later turn or a
+    /// newer run ends the preview, not this. Skipped once the stored reply has arrived; otherwise
+    /// the preview, if still this run's, is dropped.
+    private func fetchStoredReplyIfMissing(_ run: ReplyStreamRun) {
+        lane.asyncAfter(deadline: .now() + streamTimeouts.storedReplyGrace) { [weak self] in
+            guard let self, !self.isEnded, !self.hasStoredReply(forTurn: run.turnSeq) else { return }
+            if self.replyStream?.run == run { self.settleStream() }
+            self.reconcileAfterStreamTimeout()
+        }
+    }
+
+    private func reconcileAfterStreamTimeout() {
+        if case .ready = state { showLiveDuringSync = true }
+        // A first load still in flight may predate the stored reply, so it is followed by a
+        // reconcile too. One not yet started fetches everything when it runs.
+        if snapshotDone || syncing { requestResync() }
+        publishReadyIfShown()
     }
 
     /// The stored reply replaces the stream, whether it arrived before the stream's frames or after.
+    /// A later turn ends it too: the server stores a visible reply only while its turn is current.
     private func settleAnsweredStream() {
-        guard let turnSeq = replyStream?.run.turnSeq, hasStoredReply(forTurn: turnSeq) else { return }
-        settleStream()
+        guard let turnSeq = replyStream?.run.turnSeq else { return }
+        let overtaken = (messages.last?.turnSeq).map { $0 > turnSeq } ?? false
+        if overtaken || hasStoredReply(forTurn: turnSeq) { settleStream() }
     }
 
     private func settleStream() {
@@ -1091,7 +1167,7 @@ final class ConversationSession {
 }
 
 /// Identifies one reply run: the turn it answers, then the run number a retry raises.
-struct ReplyStreamRun: Comparable {
+struct ReplyStreamRun: Comparable, Hashable {
     let turnSeq: Int
     let run: Int
 

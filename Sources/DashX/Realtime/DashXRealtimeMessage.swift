@@ -95,7 +95,8 @@ struct DashXRealtimeChatStream: Equatable {
     /// The model response a delta belongs to; only the run's last response is the reply.
     let responseId: String?
     let text: String?
-    /// On `end`: whether a visible reply was stored, so an `.inAppChatMessage` is on its way.
+    /// On `end`: whether a visible reply is committed and available in history. Its
+    /// `.inAppChatMessage` is not guaranteed; a missed one is fetched.
     let persisted: Bool?
 
     init(
