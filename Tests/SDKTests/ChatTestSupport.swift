@@ -3,8 +3,10 @@ import XCTest
 @testable import DashX
 
 /// Polls `condition` while servicing the main run loop, so main-queue callbacks keep flowing.
+/// The default timeout is generous because a met condition returns at once: it only bounds how
+/// long a stalled CI runner may take. Pass a tight `timeout` when the deadline is the assertion.
 func awaitUntil(
-    timeout: TimeInterval = 5,
+    timeout: TimeInterval = 20,
     what: String = "condition",
     file: StaticString = #filePath,
     line: UInt = #line,
@@ -15,6 +17,8 @@ func awaitUntil(
         if condition() { return }
         RunLoop.current.run(until: Date().addingTimeInterval(0.01))
     }
+    // A runner paused across the deadline must not fail a condition that was met meanwhile.
+    if condition() { return }
     XCTFail("Timed out waiting for: \(what)", file: file, line: line)
 }
 
