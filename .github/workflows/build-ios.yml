@@ -26,10 +26,6 @@ jobs:
       XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
     steps:
       - uses: actions/checkout@v7
-        with:
-          # The PR merge commit's first parent is the base tip, which the
-          # xcframework check diffs against.
-          fetch-depth: 2
 
       - name: Verify xcodeproj matches project.yml
         run: |
@@ -44,15 +40,9 @@ jobs:
             exit 1
           fi
 
-      - name: Verify xcframeworks were rebuilt
+      - name: Verify xcframeworks match this tree
         if: github.base_ref == 'main'
-        run: |
-          changed="$(git diff --name-only HEAD^1 HEAD)"
-          if grep -qE '^Sources/(DashX|DashXCore|DashXNotificationServiceExtension)/' <<<"$changed" \
-            && ! grep -q '^xcframeworks/' <<<"$changed"; then
-            echo "::error::Sources compiled into the xcframeworks changed, but xcframeworks/ did not. Run scripts/build_xcframeworks.sh and commit the output."
-            exit 1
-          fi
+        run: ./scripts/check_xcframeworks.sh
 
       - name: Cache Swift packages
         uses: actions/cache@v6
