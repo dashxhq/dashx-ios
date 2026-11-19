@@ -114,6 +114,7 @@ public protocol DashXConversationLease : AnyObject {
   @discardableResult
   func sendMessage(content: [Swift::String : Any], completion: @escaping (Swift::Result<DashX::DashXChatMessage, any Swift::Error>) -> Swift::Void) -> Swift::String
   func loadPreviousPage(onError: ((any Swift::Error) -> Swift::Void)?)
+  func loadPreviousPage(onError: ((any Swift::Error) -> Swift::Void)?, onComplete: @escaping () -> Swift::Void)
   func setVisible(_ visible: Swift::Bool)
   func close()
 }
