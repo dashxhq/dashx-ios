@@ -1,41 +1,86 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
-    runs-on: macos-latest
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      # The xcframeworks are built with a newer Xcode than this image ships,
+      # so the DashXFirebase step doubles as an Xcode 26 consumer check.
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      # Must match the XcodeGen version contributors run locally; another
+      # version can emit a different pbxproj and fail the drift check.
+      XCODEGEN_VERSION: 2.46.0
+      XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      - name: Verify xcodeproj matches project.yml
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          (cd build-project && "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --quiet)
+          if [ -n "$(git status --porcelain -- build-project)" ]; then
+            git status --short -- build-project
+            echo "::error::build-project/DashX.xcodeproj is out of date. Run 'cd build-project && xcodegen generate' with XcodeGen $XCODEGEN_VERSION and commit the result."
+            exit 1
+          fi
+
+      - name: Verify xcframeworks match this tree
+        if: github.base_ref == 'main'
+        run: ./scripts/check_xcframeworks.sh
+
+      - name: Cache Swift packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved', 'build-project/project.yml') }}
+          restore-keys: spm-${{ runner.os }}-
 
       # Package.swift ships binary targets (DashX, DashXNotificationServiceExtension)
       # so consumers don't collide on Apollo. Build DashXFirebase to confirm
       # the source target still compiles against the binary DashX.
       - name: Build DashXFirebase (SPM, source, against binary DashX)
-        run: xcodebuild -scheme DashXFirebase -destination 'generic/platform=iOS' build
+        run: |
+          xcodebuild build \
+            -scheme DashXFirebase \
+            -destination 'generic/platform=iOS' \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages/root"
 
       # Tests live in build-project/DashX.xcodeproj rather than a `.testTarget`
       # in Package.swift because binary SPM targets can't satisfy `@testable
       # import`. The Debug config of this xcodeproj builds the same Sources/**
-      # with ENABLE_TESTABILITY=YES. The DashXTests scheme aggregates both
-      # DashXTests and DashXNotificationServiceExtensionTests bundles.
-      # See CONTRIBUTING.md → "Running tests".
+      # with ENABLE_TESTABILITY=YES. The DashXTests scheme aggregates the
+      # DashXTests, DashXNotificationServiceExtensionTests, and DashXSmokeTests
+      # bundles. See CONTRIBUTING.md → "Running tests".
       - name: Run Tests
         run: |
           xcodebuild test \
             -project build-project/DashX.xcodeproj \
             -scheme DashXTests \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
-            -enableCodeCoverage YES \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages/project" \
             -resultBundlePath TestResults.xcresult
 
       - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: failure()
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: TestResults.xcresult
+          retention-days: 14
+          if-no-files-found: ignore

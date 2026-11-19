@@ -134,12 +134,14 @@ Building the XCFrameworks requires [`xcodegen`](https://github.com/yonaskolb/Xco
 brew install xcodegen
 ```
 
+CI regenerates the project with XcodeGen 2.46.0 (`XCODEGEN_VERSION` in `.github/workflows/build-ios.yml`) and fails on any diff, so use the same version locally and bump both together.
+
 `build-project/DashX.xcodeproj` is committed so PRs touching `project.yml` surface a reviewable pbxproj diff, and so a release can proceed on a machine without xcodegen if the project hasn't drifted. It lives in `build-project/` — not the repo root — so it doesn't shadow `Package.swift` when `xcodebuild -scheme …` runs in CI or locally.
 
 ### Cutting a release
 
 1. Bump version in `Sources/DashX/Constants.swift` (`PACKAGE_VERSION`), `DashX.podspec` (`s.version`), and `build-project/project.yml` (`MARKETING_VERSION`).
-2. Build the XCFrameworks: `./scripts/build_xcframeworks.sh` (regenerates `build-project/DashX.xcodeproj` if xcodegen is installed).
+2. Build the XCFrameworks: `./scripts/build_xcframeworks.sh` (regenerates `build-project/DashX.xcodeproj` if xcodegen is installed), then confirm with `./scripts/check_xcframeworks.sh`.
 3. Commit the version bumps + the refreshed xcodeproj + xcframeworks:
    ```sh
    git add Sources/DashX/Constants.swift DashX.podspec build-project/ xcframeworks/
@@ -149,4 +151,11 @@ brew install xcodegen
 
 SPM and CocoaPods consumers both pick the new version up from the git tag.
 
-CI runs tests on every push and PR via `xcodebuild test -project build-project/DashX.xcodeproj -scheme DashXTests`, and smoke-builds `DashXFirebase` against the committed xcframework.
+CI runs on every PR into `main` or `develop` (and on demand via *Run workflow*) on `macos-26` with Xcode 26.6. It:
+
+- fails if `build-project/DashX.xcodeproj` differs from what `project.yml` generates;
+- on PRs into `main`, runs `scripts/check_xcframeworks.sh`. `build_xcframeworks.sh` records SHA-256 fingerprints of each framework's inputs (its own `Sources/<Framework>`, plus `Sources/DashXCore`, `project.yml`, and `build_xcframeworks.sh`) and of every file in each xcframework in `xcframeworks/manifest.sha256`. The check recomputes both, so it fails if any input changed after the last build or if an xcframework was edited or only partly committed. It also fails if `s.version` or `PACKAGE_VERSION` differs from `MARKETING_VERSION`. Never edit the manifest by hand;
+- smoke-builds `DashXFirebase` against the committed xcframework;
+- runs `xcodebuild test -project build-project/DashX.xcodeproj -scheme DashXTests`, uploading the `.xcresult` bundle only when the job fails.
+
+Pushes to `main` are not built separately: the develop → `main` PR already tested the same tree.

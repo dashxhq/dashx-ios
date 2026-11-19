@@ -33,6 +33,8 @@ final class SceneColdLaunchSmokeTests: XCTestCase {
             if condition() { return }
             RunLoop.current.run(until: Date().addingTimeInterval(0.05))
         }
+        // A runner paused across the deadline must not fail a condition that was met meanwhile.
+        if condition() { return }
         XCTFail("Timed out waiting for \(what); connection is \(DashX.connectionState), conversation is \(String(describing: SmokeHost.shared.lease?.state))")
     }
 }

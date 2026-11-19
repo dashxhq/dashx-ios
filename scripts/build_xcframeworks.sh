@@ -6,6 +6,8 @@
 # Produces under xcframeworks/:
 #   - DashX.xcframework                              main SDK (Apollo + DashXCore baked in)
 #   - DashXNotificationServiceExtension.xcframework  NSE base class (DashXCore baked in)
+#   - manifest.sha256                                input/output fingerprints that
+#                                                    `check_xcframeworks.sh` verifies
 #
 # `DashXCore` sources are compiled into each framework directly (see
 # `project.yml` → "Each framework target includes a copy of DashXCore"),
@@ -57,6 +59,10 @@ if command -v xcodegen >/dev/null 2>&1; then
 else
   echo "note: xcodegen not installed — skipping project regeneration, using committed $PROJECT_PATH" >&2
 fi
+
+# Fingerprint the inputs before building, so a source edit made while the
+# build runs is recorded as not built.
+INPUT_FINGERPRINTS="$(./scripts/xcframework_manifest.sh inputs)"
 
 # Wipe the committed `xcframeworks/` before re-emitting. If xcodebuild fails
 # partway, the repo is left without binaries until the script completes —
@@ -134,6 +140,11 @@ for scheme in "${SCHEMES[@]}"; do
 done
 
 rm -rf "$BUILD_DIR"
+
+{
+  echo "$INPUT_FINGERPRINTS"
+  ./scripts/xcframework_manifest.sh outputs
+} > "$OUTPUT_DIR/manifest.sha256"
 
 echo ""
 echo "✓ xcframeworks built at $OUTPUT_DIR/"
