@@ -134,6 +134,8 @@ Building the XCFrameworks requires [`xcodegen`](https://github.com/yonaskolb/Xco
 brew install xcodegen
 ```
 
+CI regenerates the project with XcodeGen 2.46.0 (`XCODEGEN_VERSION` in `.github/workflows/build-ios.yml`) and fails on any diff, so use the same version locally and bump both together.
+
 `build-project/DashX.xcodeproj` is committed so PRs touching `project.yml` surface a reviewable pbxproj diff, and so a release can proceed on a machine without xcodegen if the project hasn't drifted. It lives in `build-project/` — not the repo root — so it doesn't shadow `Package.swift` when `xcodebuild -scheme …` runs in CI or locally.
 
 ### Cutting a release
@@ -149,4 +151,11 @@ brew install xcodegen
 
 SPM and CocoaPods consumers both pick the new version up from the git tag.
 
-CI runs tests on every push and PR via `xcodebuild test -project build-project/DashX.xcodeproj -scheme DashXTests`, and smoke-builds `DashXFirebase` against the committed xcframework.
+CI runs on every PR into `main` or `develop` (and on demand via *Run workflow*) on `macos-26` with Xcode 26.6. It:
+
+- fails if `build-project/DashX.xcodeproj` differs from what `project.yml` generates;
+- on PRs into `main`, fails if `Sources/DashX`, `Sources/DashXCore`, or `Sources/DashXNotificationServiceExtension` changed without a matching `xcframeworks/` change;
+- smoke-builds `DashXFirebase` against the committed xcframework;
+- runs `xcodebuild test -project build-project/DashX.xcodeproj -scheme DashXTests`, uploading the `.xcresult` bundle only when the job fails.
+
+Pushes to `main` are not built separately: the develop → `main` PR already tested the same tree.
