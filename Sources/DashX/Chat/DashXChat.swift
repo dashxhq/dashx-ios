@@ -119,6 +119,11 @@ public protocol DashXConversationLease: AnyObject {
     /// Prepends older history; a failure leaves the current list intact.
     func loadPreviousPage(onError: ((Error) -> Void)?)
 
+    /// Calls `onComplete` exactly once on the main queue, after `onError` on failure. Also
+    /// completes ignored calls (loading, no older history, closed or ended) and results
+    /// discarded after a history rebuild. An accepted fetch completes when it returns.
+    func loadPreviousPage(onError: ((Error) -> Void)?, onComplete: @escaping () -> Void)
+
     /// Declares whether this conversation is on screen: drives read-marking and push suppression.
     func setVisible(_ visible: Bool)
 
@@ -852,19 +857,23 @@ final class ConversationSession {
         recipients.forEach { $0.notifyStateListeners(newState) }
     }
 
-    fileprivate func loadPreviousPageInternal(onError: ((Error) -> Void)?) {
+    fileprivate func loadPreviousPageInternal(onError: ((Error) -> Void)?, onComplete: @escaping () -> Void) {
         lane.async {
             let page = self.oldestFetchedPage - 1
-            guard self.snapshotDone, page >= 1, !self.loadingPreviousPage else { return }
+            guard !self.isEnded, self.snapshotDone, page >= 1, !self.loadingPreviousPage else {
+                self.deliver(onComplete)
+                return
+            }
             self.loadingPreviousPage = true
             let generation = self.historyGeneration
             Task {
+                defer { self.deliver(onComplete) }
                 do {
                     let rows = try await self.backend.fetchPage(conversationId: self.key.conversationId, limit: Self.pageSize, page: page)
                     await self.onLane {
                         self.loadingPreviousPage = false
                         // Numbered against the replaced snapshot; the next call pages from the new one.
-                        guard self.historyGeneration == generation else { return }
+                        guard !self.isEnded, self.historyGeneration == generation else { return }
                         self.oldestFetchedPage = page
                         self.applyMerge(rows)
                     }
@@ -1134,7 +1143,18 @@ final class ConversationSession {
         }
 
         func loadPreviousPage(onError: ((Error) -> Void)?) {
-            session.loadPreviousPageInternal(onError: onError)
+            loadPreviousPage(onError: onError, onComplete: {})
+        }
+
+        func loadPreviousPage(onError: ((Error) -> Void)?, onComplete: @escaping () -> Void) {
+            lock.lock()
+            let isClosed = closed
+            lock.unlock()
+            guard !isClosed else {
+                session.deliver(onComplete)
+                return
+            }
+            session.loadPreviousPageInternal(onError: onError, onComplete: onComplete)
         }
 
         private var canSend: Bool {
