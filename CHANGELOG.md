@@ -2,6 +2,31 @@
 
 All notable changes to `dashx-ios` are documented in this file. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.2] — 2026-11-19
+
+### Breaking
+
+- **`DashXConversationLease` has a new requirement**, `loadPreviousPage(onError:onComplete:)`.
+  Code that calls a lease the SDK returned is unaffected. A type of your own that conforms to the
+  protocol, such as a test fake, no longer compiles until it adds the method: call `onComplete`
+  exactly once per call, after `onError` on failure, and also when the call does nothing.
+
+### Added
+
+- `loadPreviousPage(onError:onComplete:)` reports completion for every pagination call:
+  successful, failed, ignored (another load in flight, no older history, history not loaded yet,
+  lease closed or session ended) and discarded after a history rebuild. `onError` is called
+  before `onComplete`, both on the main queue. This lets bridges release per-request callbacks
+  even when no conversation state changes.
+
+### Changed
+
+- **`loadPreviousPage` on a closed lease, or after the session has ended, does nothing**, with
+  either overload: no page is fetched and `onError` is not called. A closed lease used to fetch
+  the page for the shared conversation when another lease kept it open, and a call after the
+  session ended still made the request. The existing `loadPreviousPage(onError:)` signature is
+  unchanged.
+
 ## [1.7.1] — 2026-11-18
 
 ### Fixed

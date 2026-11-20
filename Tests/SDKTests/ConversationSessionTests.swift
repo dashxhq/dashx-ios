@@ -669,6 +669,132 @@ final class ConversationSessionTests: XCTestCase {
         session.endSession()
     }
 
+    func testPaginationCompletionDistinguishesActiveAndIgnoredCalls() {
+        let backend = FakeBackend()
+        backend.count.value = 100
+        backend.pages.value = [
+            2: (51...100).map { chatMessage("m\($0)", seq: $0) },
+            1: (1...50).map { chatMessage("m\($0)", seq: $0) },
+        ]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "newest page Ready") { self.readyIds(lease)?.count == 50 }
+
+        let gate = Gate()
+        backend.pageGate.value = gate
+        let active = Atomic<Int>(0)
+        let ignored = Atomic<Int>(0)
+        lease.loadPreviousPage(onError: { _ in XCTFail("active load should succeed") }, onComplete: {
+            _ = active.increment()
+        })
+        awaitUntil(what: "older page in flight") { backend.fetchPageCalls.value == [2, 1] }
+        lease.loadPreviousPage(onError: { _ in XCTFail("ignored load cannot fail") }, onComplete: {
+            _ = ignored.increment()
+        })
+        awaitUntil(what: "ignored request completed") { ignored.value == 1 }
+        XCTAssertEqual(active.value, 0)
+
+        gate.open()
+        awaitUntil(what: "active request completed") { active.value == 1 }
+        XCTAssertEqual(readyIds(lease)?.count, 100)
+        lease.loadPreviousPage(onError: nil, onComplete: { _ = ignored.increment() })
+        awaitUntil(what: "no older history completed") { ignored.value == 2 }
+        XCTAssertEqual(backend.fetchPageCalls.value, [2, 1])
+        session.endSession()
+    }
+
+    func testPaginationCompletesEvenWhenTheStateDoesNotChange() {
+        let backend = FakeBackend()
+        backend.count.value = 150
+        backend.pages.value = [3: (101...150).map { chatMessage("m\($0)", seq: $0) }]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "newest page Ready") { self.readyIds(lease)?.count == 50 }
+        let before = lease.state
+        let completed = Atomic<Int>(0)
+        lease.loadPreviousPage(onError: { _ in XCTFail("empty page should not fail") }, onComplete: {
+            _ = completed.increment()
+        })
+        awaitUntil(what: "unchanged request completed") { completed.value == 1 }
+        XCTAssertEqual(lease.state, before)
+        XCTAssertEqual(backend.fetchPageCalls.value, [3, 2])
+        session.endSession()
+    }
+
+    func testPaginationInFlightAtSessionEndStillCompletes() {
+        let backend = FakeBackend()
+        backend.count.value = 100
+        backend.pages.value = [2: (51...100).map { chatMessage("m\($0)", seq: $0) }]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "newest page Ready") { self.readyIds(lease)?.count == 50 }
+        let gate = Gate()
+        backend.pageGate.value = gate
+        let completed = Atomic<Int>(0)
+        lease.loadPreviousPage(onError: { _ in XCTFail("discarded load should not fail") }, onComplete: {
+            _ = completed.increment()
+        })
+        awaitUntil(what: "older page in flight") { backend.fetchPageCalls.value == [2, 1] }
+        session.endSession()
+        gate.open()
+        awaitUntil(what: "ended request completed") { completed.value == 1 }
+        if case .sessionEnded? = errorOf(lease) {} else { XCTFail("session must stay ended") }
+    }
+
+    func testPaginationReportsErrorBeforeCompletionAndCanRetry() {
+        let backend = FakeBackend()
+        backend.count.value = 100
+        backend.pages.value = [
+            2: (51...100).map { chatMessage("m\($0)", seq: $0) },
+            1: (1...50).map { chatMessage("m\($0)", seq: $0) },
+        ]
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        backend.handles.value[0].onEstablished(false)
+        awaitUntil(what: "newest page Ready") { self.readyIds(lease)?.count == 50 }
+
+        backend.pageFailures.value = 1
+        let events = Atomic<[String]>([])
+        lease.loadPreviousPage(onError: { _ in events.append("error") }, onComplete: {
+            events.append("complete")
+        })
+        awaitUntil(what: "failed request completed") { events.value.count == 2 }
+        XCTAssertEqual(events.value, ["error", "complete"])
+        XCTAssertEqual(readyIds(lease)?.count, 50)
+
+        lease.loadPreviousPage(onError: { _ in XCTFail("retry should succeed") }, onComplete: {
+            events.append("retried")
+        })
+        awaitUntil(what: "retry completed") { events.value.last == "retried" }
+        XCTAssertEqual(readyIds(lease)?.count, 100)
+        session.endSession()
+    }
+
+    func testPaginationCompletesWithoutFetchingBeforeReadyAfterCloseAndAfterSessionEnd() {
+        let backend = FakeBackend()
+        let session = ConversationSession(key: key, backend: backend)
+        let lease = session.newLease()!
+        let completed = Atomic<Int>(0)
+        lease.loadPreviousPage(onError: { _ in XCTFail("ignored request cannot fail") }, onComplete: {
+            _ = completed.increment()
+        })
+        awaitUntil(what: "before-ready request completed") { completed.value == 1 }
+        session.endSession()
+        lease.loadPreviousPage(onError: { _ in XCTFail("ended request cannot fail") }, onComplete: {
+            _ = completed.increment()
+        })
+        awaitUntil(what: "ended request completed") { completed.value == 2 }
+        lease.close()
+        lease.loadPreviousPage(onError: { _ in XCTFail("closed request cannot fail") }, onComplete: {
+            _ = completed.increment()
+        })
+        awaitUntil(what: "closed request completed") { completed.value == 3 }
+        XCTAssertTrue(backend.fetchPageCalls.value.isEmpty)
+    }
+
     func testReadyReportsOlderHistoryUntilTheFirstPageIsFetched() {
         let backend = FakeBackend()
         backend.count.value = 100
@@ -1106,7 +1232,10 @@ final class ConversationSessionTests: XCTestCase {
 
         let gate = Gate()
         backend.gatedPages.value = [3: gate]
-        lease.loadPreviousPage()
+        let completed = Atomic<Int>(0)
+        lease.loadPreviousPage(onError: { _ in XCTFail("discarded request should not fail") }, onComplete: {
+            _ = completed.increment()
+        })
         awaitUntil(what: "page 3 requested") { backend.fetchPageCalls.value == [4, 3] }
 
         // A reconnect finds the cursor deleted and rebuilds from a grown history: pages 5 and up.
@@ -1119,7 +1248,7 @@ final class ConversationSessionTests: XCTestCase {
         awaitUntil(what: "rebuilt from page 5") { self.readyIds(lease) == rebuilt }
 
         gate.open()
-        settle(0.3)
+        awaitUntil(what: "discarded request completed") { completed.value == 1 }
         XCTAssertEqual(readyIds(lease), rebuilt, "page 3 would leave page 4 missing between it and page 5")
         XCTAssertEqual(hasOlder(lease), true)
 
